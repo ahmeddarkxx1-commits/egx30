@@ -147,23 +147,32 @@ export default function SignalBot({ onBack }) {
         </div>
       </div>
 
-      <button style={{ 
-        width: '100%', 
-        background: '#f59e0b', 
-        color: '#000', 
-        padding: '16px', 
-        borderRadius: '12px', 
-        fontWeight: 'bold', 
-        fontSize: '18px', 
-        border: 'none', 
-        cursor: 'pointer',
-        boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '20px'
-      }}>
+      <button 
+        onClick={() => {
+          if (window.Telegram && window.Telegram.WebApp) {
+            const data = JSON.stringify({ action: "analyze", asset: asset, timeframe: timeframe });
+            window.Telegram.WebApp.sendData(data);
+          } else {
+            alert(`تحليل ${asset} على فريم ${timeframe}`);
+          }
+        }}
+        style={{ 
+          width: '100%', 
+          background: '#f59e0b', 
+          color: '#000', 
+          padding: '16px', 
+          borderRadius: '12px', 
+          fontWeight: 'bold', 
+          fontSize: '18px', 
+          border: 'none', 
+          cursor: 'pointer',
+          boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '20px'
+        }}>
         🤖 تحليل Traden الشامل
       </button>
 

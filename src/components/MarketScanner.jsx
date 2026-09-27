@@ -98,8 +98,42 @@ export default function MarketScanner({ onBack }) {
           </div>
           <div style={{ fontSize: '12px', color: '#9ca3af' }}>مخطط احترافي</div>
         </div>
-        <TradingViewWidget symbol={selectedCoin.symbol} />
+        <TradingViewWidget symbol={selectedCoin.symbol} height={550} />
       </div>
+
+      <button 
+        onClick={() => {
+          if (window.Telegram && window.Telegram.WebApp) {
+            const data = JSON.stringify({ 
+              action: "analyze", 
+              symbol: selectedCoin.pair, 
+              name: selectedCoin.name 
+            });
+            window.Telegram.WebApp.sendData(data);
+          } else {
+            alert(`تم إرسال طلب التحليل لعملة ${selectedCoin.pair} إلى البوت!`);
+          }
+        }}
+        style={{ 
+          width: '100%', 
+          background: '#f59e0b', 
+          color: '#000', 
+          padding: '16px', 
+          borderRadius: '12px', 
+          fontWeight: 'bold', 
+          fontSize: '18px', 
+          border: 'none', 
+          cursor: 'pointer',
+          boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px',
+          marginTop: '8px',
+          marginBottom: '24px'
+        }}>
+        🤖 تحليل Traden الشامل ({selectedCoin.pair})
+      </button>
     </div>
   );
 }

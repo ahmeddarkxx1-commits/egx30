@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewWidget({ symbol = "BINANCE:BTCUSDT" }) {
+function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550 }) {
   const container = useRef();
 
   useEffect(() => {
@@ -15,7 +15,9 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT" }) {
     script.async = true;
     script.innerHTML = `
       {
-        "autosize": true,
+        "autosize": false,
+        "width": "100%",
+        "height": "${height}",
         "symbol": "${symbol}",
         "interval": "60",
         "timezone": "Etc/UTC",
@@ -27,15 +29,14 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT" }) {
         "gridColor": "#1f2937",
         "hide_top_toolbar": false,
         "hide_legend": false,
-        "save_image": false,
-        "container_id": "tradingview_${Math.random().toString(36).substring(7)}"
+        "save_image": false
       }`;
     container.current.appendChild(script);
-  }, [symbol]);
+  }, [symbol, height]);
 
   return (
-    <div className="tradingview-widget-container" ref={container} style={{ height: "600px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
-      <div className="tradingview-widget-container__widget" style={{ height: "calc(100% - 32px)", width: "100%" }}></div>
+    <div className="tradingview-widget-container" ref={container} style={{ height: `${height}px`, width: "100%", borderRadius: "12px", overflow: "hidden" }}>
+      <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
     </div>
   );
 }
