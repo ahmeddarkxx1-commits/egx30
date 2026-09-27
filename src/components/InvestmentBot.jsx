@@ -1,26 +1,85 @@
-import React, { useState } from 'react';
-import { ChevronRight, Sparkles, TrendingUp, ShieldCheck, PieChart, DollarSign, Calculator, Check, Lock, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Sparkles, TrendingUp, ShieldCheck, DollarSign, Calculator, RefreshCw, Trophy, Award } from 'lucide-react';
 
-const allInvestableAssets = [
-  { id: 'BTC', pair: 'BTC/USDT', name: 'Bitcoin', icon: '₿', category: 'crypto', isHalal: true, basePrice: 84250, targetMultiplier: 1.45, risk: 'منخفضة 🟢', score: 96, thesis: 'مخزن القيمة الرقمي الأساسي لجميع المحافظ طويلة الأجل.' },
-  { id: 'ETH', pair: 'ETH/USDT', name: 'Ethereum', icon: 'Ξ', category: 'crypto', isHalal: true, basePrice: 2678, targetMultiplier: 1.65, risk: 'منخفضة 🟢', score: 92, thesis: 'عمود اقتصاد العقود الذكية والتطبيقات اللامركزية.' },
-  { id: 'PAXG', pair: 'PAXG/USDT', name: 'الذهب الرقمي (PAX Gold)', icon: '🥇', category: 'metals', isHalal: true, basePrice: 2682, targetMultiplier: 1.18, risk: 'آمن جداً 🟢', score: 98, thesis: 'تحوط عالي الأمان ومطابق للشريعة 100% ضد التضخم.' },
-  { id: 'SOL', pair: 'SOL/USDT', name: 'Solana', icon: '◎', category: 'crypto', isHalal: true, basePrice: 121.45, targetMultiplier: 2.10, risk: 'متوسطة 🟡', score: 88, thesis: 'بلوكتشين عالي السرعة مع جذب هائل للمطورين والسيولة.' },
-  { id: 'NVDA', pair: 'NVDA', name: 'NVIDIA Corp', icon: '🟢', category: 'stocks', isHalal: true, basePrice: 120, targetMultiplier: 1.80, risk: 'متوسطة 🟡', score: 94, thesis: 'العملاق القائد لثورة معالجات الذكاء الاصطناعي.' },
-  { id: 'AAPL', pair: 'AAPL', name: 'Apple Inc.', icon: '🍎', category: 'stocks', isHalal: true, basePrice: 225, targetMultiplier: 1.35, risk: 'منخفضة 🟢', score: 93, thesis: 'شركة تكنولوجية قوية تدفقات نقدية مستقرة ومتوافقة شرعاً.' },
-  { id: 'LINK', pair: 'LINK/USDT', name: 'Chainlink', icon: '⬢', category: 'crypto', isHalal: true, basePrice: 13.95, targetMultiplier: 2.30, risk: 'متوسطة 🟡', score: 85, thesis: 'البنية التحتية لربط البنوك والمؤسسات بالبلوكتشين.' },
-  { id: 'RENDER', pair: 'RENDER/USDT', name: 'Render Network', icon: '🎨', category: 'crypto', isHalal: true, basePrice: 5.40, targetMultiplier: 3.10, risk: 'عالية 🔴', score: 89, thesis: 'شبكة رندرة وحوسبة الذكاء الاصطناعي السحابية.' },
-  { id: 'BNB', pair: 'BNB/USDT', name: 'Binance Coin', icon: '🔶', category: 'crypto', isHalal: false, basePrice: 585, targetMultiplier: 1.50, risk: 'متوسطة 🟡', score: 84, thesis: 'عملة منصة تداول مركزية (تتضمن خدمات ربوية).' },
-  { id: 'COIN', pair: 'COIN', name: 'Coinbase Stock', icon: '🪙', category: 'stocks', isHalal: false, basePrice: 165, targetMultiplier: 1.90, risk: 'عالية 🔴', score: 80, thesis: 'أسهم بورصة كريبتو تعتمد على إيرادات الستيكينغ والإقراض الربوي.' }
+const initialRatedCoins = [
+  { rank: 1, id: 'BTC', symbol: 'BTC/USDT', bSymbol: 'BTCUSDT', name: 'Bitcoin', icon: '₿', priceStr: '$84,336.9', score: 68, evalText: 'جيد 🟢', isTrophy: true, isHalal: true, targetMultiplier: 1.45, thesis: 'مخزن القيمة الرقمي الأساسي لجميع المحافظ طويلة الأجل.' },
+  { rank: 2, id: 'NEAR', symbol: 'NEAR/USDT', bSymbol: 'NEARUSDT', name: 'NEAR Protocol', icon: 'Ⓝ', priceStr: '$5.42', score: 66, evalText: 'جيد 🟢', isTrophy: true, isHalal: true, targetMultiplier: 2.40, thesis: 'شبكة ذكاء اصطناعي وبنية تحتية عالية التوسع.' },
+  { rank: 3, id: 'SUI', symbol: 'SUI/USDT', bSymbol: 'SUIUSDT', name: 'Sui', icon: '💧', priceStr: '$1.26', score: 66, evalText: 'جيد 🟢', isTrophy: true, isHalal: true, targetMultiplier: 2.80, thesis: 'بلوكتشين الجيل القادم لسرعة المعاملات والالعاب.' },
+  { rank: 4, id: 'ETH', symbol: 'ETH/USDT', bSymbol: 'ETHUSDT', name: 'Ethereum', icon: 'Ξ', priceStr: '$2,683.84', score: 63, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 1.65, thesis: 'عمود اقتصاد العقود الذكية والتطبيقات اللامركزية.' },
+  { rank: 5, id: 'SOL', symbol: 'SOL/USDT', bSymbol: 'SOLUSDT', name: 'Solana', icon: '◎', priceStr: '$121.92', score: 63, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 2.10, thesis: 'أسرع شبكة بلوكتشين وتدفق سيولة عالي للسيولة.' },
+  { rank: 6, id: 'ADA', symbol: 'ADA/USDT', bSymbol: 'ADAUSDT', name: 'Cardano', icon: '₳', priceStr: '$0.25', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 1.80, thesis: 'شبكة علمية آمنة مبنية على الأبحاث الأكاديمية.' },
+  { rank: 7, id: 'DOT', symbol: 'DOT/USDT', bSymbol: 'DOTUSDT', name: 'Polkadot', icon: '🟣', priceStr: '$1.26', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 2.20, thesis: 'ربط الشبكات المتعددة وحوكمة لامركزية متقدمة.' },
+  { rank: 8, id: 'LINK', symbol: 'LINK/USDT', bSymbol: 'LINKUSDT', name: 'Chainlink', icon: '⬢', priceStr: '$13.98', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 2.30, thesis: 'جسر البيانات الأهم بين البنوك والمؤسسات المالي.' },
+  { rank: 9, id: 'AVAX', symbol: 'AVAX/USDT', bSymbol: 'AVAXUSDT', name: 'Avalanche', icon: '🔺', priceStr: '$10.83', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 2.50, thesis: 'شبكات المؤسسات المالية والتداول السريع.' },
+  { rank: 10, id: 'ATOM', symbol: 'ATOM/USDT', bSymbol: 'ATOMUSDT', name: 'Cosmos', icon: '⚛️', priceStr: '$1.87', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 2.10, thesis: 'إنترنت البلوكتشين والتواصل بين سلاسل التداول.' },
+  { rank: 11, id: 'OP', symbol: 'OP/USDT', bSymbol: 'OPUSDT', name: 'Optimism', icon: '🔴', priceStr: '$0.15', score: 62, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 3.00, thesis: 'حلول الطبقة الثانية لتوسيع شبكة الايثريوم.' },
+  { rank: 12, id: 'BNB', symbol: 'BNB/USDT', bSymbol: 'BNBUSDT', name: 'BNB', icon: '🔶', priceStr: '$777.7', score: 60, evalText: 'جيد 🟢', isTrophy: false, isHalal: false, targetMultiplier: 1.50, thesis: 'عملة المنصة الأولى عالمياً مع حرق دوري.' },
+  { rank: 13, id: 'INJ', symbol: 'INJ/USDT', bSymbol: 'INJUSDT', name: 'Injective', icon: '⚡', priceStr: '$7.76', score: 57, evalText: 'محايد 🟡', isTrophy: false, isHalal: true, targetMultiplier: 2.20, thesis: 'بلوكتشين متخصص للأسواق المالية والمشتقات.' },
+  { rank: 14, id: 'POL', symbol: 'POL/USDT', bSymbol: 'MATICUSDT', name: 'Polygon', icon: '⬡', priceStr: '$0.38', score: 55, evalText: 'محايد 🟡', isTrophy: false, isHalal: true, targetMultiplier: 1.90, thesis: 'شبكة التوسعة الرئيسية للايثريوم والشراكات.' },
+  { rank: 15, id: 'PAXG', symbol: 'PAXG/USDT', bSymbol: 'PAXGUSDT', name: 'PAX Gold', icon: '🥇', priceStr: '$2,682.50', score: 72, evalText: 'ممتاز 🔥', isTrophy: true, isHalal: true, targetMultiplier: 1.18, thesis: 'ذهب رقمي مغطى بالكامل ومطابق للشريعة 100%.' },
+  { rank: 16, id: 'RENDER', symbol: 'RENDER/USDT', bSymbol: 'RENDERUSDT', name: 'Render', icon: '🎨', priceStr: '$5.40', score: 65, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 3.10, thesis: 'شبكة رندرة وحوسبة الذكاء الاصطناعي السحابية.' },
+  { rank: 17, id: 'FET', symbol: 'FET/USDT', bSymbol: 'FETUSDT', name: 'Fetch.ai', icon: '🤖', priceStr: '$1.45', score: 64, evalText: 'جيد 🟢', isTrophy: false, isHalal: true, targetMultiplier: 3.20, thesis: 'ائتلاف بروتوكولات الذكاء الاصطناعي والوكلاء.' },
+  { rank: 18, id: 'APT', symbol: 'APT/USDT', bSymbol: 'APTUSDT', name: 'Aptos', icon: '🌐', priceStr: '$8.20', score: 59, evalText: 'محايد 🟡', isTrophy: false, isHalal: true, targetMultiplier: 2.00, thesis: 'لغة Move البرمجية المعالجة فائقة السرعة.' },
+  { rank: 19, id: 'ARB', symbol: 'ARB/USDT', bSymbol: 'ARBUSDT', name: 'Arbitrum', icon: '🟦', priceStr: '$0.58', score: 56, evalText: 'محايد 🟡', isTrophy: false, isHalal: true, targetMultiplier: 2.10, thesis: 'أعلى القيمة المقفولة TVL في الطبقة الثانية.' },
+  { rank: 20, id: 'PEPE', symbol: 'PEPE/USDT', bSymbol: 'PEPEUSDT', name: 'Pepe Meme', icon: '🐸', priceStr: '$0.0000095', score: 32, evalText: 'ضعيف 🔴', isTrophy: false, isHalal: false, targetMultiplier: 1.10, thesis: 'عملة ميم عالية التقلب تفتقر للمنافع التقنية.' }
 ];
 
 export default function InvestmentBot({ onBack }) {
+  const [ratedCoins, setRatedCoins] = useState(initialRatedCoins);
   const [investmentAmount, setInvestmentAmount] = useState('1000');
   const [durationMonths, setDurationMonths] = useState(12);
   const [halalOnly, setHalalOnly] = useState(true);
-  const [riskTolerance, setRiskTolerance] = useState('balanced'); // 'conservative', 'balanced', 'growth'
+  const [riskTolerance, setRiskTolerance] = useState('balanced');
   const [generatedPortfolio, setGeneratedPortfolio] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(new Date().toLocaleTimeString('ar-EG'));
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Live Real-Time Price Auto Refresh (Binance 24h Ticker)
+  const fetchLivePrices = async () => {
+    setIsUpdating(true);
+    try {
+      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+      if (res.ok) {
+        const binanceData = await res.json();
+        const mapBinance = {};
+        binanceData.forEach(item => {
+          mapBinance[item.symbol] = item;
+        });
+
+        setRatedCoins(prev => prev.map(coin => {
+          const live = mapBinance[coin.bSymbol];
+          if (live) {
+            const rawPrice = parseFloat(live.lastPrice);
+            const priceStr = rawPrice > 100
+              ? `$${rawPrice.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`
+              : rawPrice > 1
+              ? `$${rawPrice.toFixed(2)}`
+              : `$${rawPrice.toFixed(4)}`;
+            
+            return {
+              ...coin,
+              priceStr
+            };
+          }
+          return coin;
+        }));
+      }
+    } catch (e) {
+      console.log('Using fallback prices for rating table:', e);
+    } finally {
+      setLastUpdate(new Date().toLocaleTimeString('ar-EG'));
+      setTimeout(() => setIsUpdating(false), 500);
+    }
+  };
+
+  useEffect(() => {
+    fetchLivePrices();
+    const interval = setInterval(() => {
+      fetchLivePrices();
+    }, 6000); // refresh every 6s
+    return () => clearInterval(interval);
+  }, []);
 
   const numAmount = parseFloat(investmentAmount) || 0;
 
@@ -28,35 +87,32 @@ export default function InvestmentBot({ onBack }) {
     setIsGenerating(true);
 
     setTimeout(() => {
-      // Filter assets based on Halal toggle
-      let eligible = allInvestableAssets.filter(a => !halalOnly || a.isHalal);
+      let eligible = ratedCoins.filter(a => !halalOnly || a.isHalal);
 
-      // Select portfolio allocations
       let selected = [];
       if (riskTolerance === 'conservative') {
         selected = [
-          { ...eligible.find(a => a.id === 'BTC') || eligible[0], sharePercent: 50 },
+          { ...eligible.find(a => a.id === 'BTC') || eligible[0], sharePercent: 45 },
           { ...eligible.find(a => a.id === 'PAXG') || eligible[1], sharePercent: 30 },
-          { ...eligible.find(a => a.id === 'ETH') || eligible[2], sharePercent: 20 }
+          { ...eligible.find(a => a.id === 'ETH') || eligible[2], sharePercent: 25 }
         ];
       } else if (riskTolerance === 'growth') {
         selected = [
-          { ...eligible.find(a => a.id === 'SOL') || eligible[0], sharePercent: 35 },
-          { ...eligible.find(a => a.id === 'RENDER') || eligible[1], sharePercent: 25 },
-          { ...eligible.find(a => a.id === 'NVDA') || eligible[2], sharePercent: 20 },
-          { ...eligible.find(a => a.id === 'LINK') || eligible[3], sharePercent: 20 }
+          { ...eligible.find(a => a.id === 'SOL') || eligible[0], sharePercent: 30 },
+          { ...eligible.find(a => a.id === 'SUI') || eligible[1], sharePercent: 25 },
+          { ...eligible.find(a => a.id === 'NEAR') || eligible[2], sharePercent: 25 },
+          { ...eligible.find(a => a.id === 'RENDER') || eligible[3], sharePercent: 20 }
         ];
       } else {
         // Balanced
         selected = [
-          { ...eligible.find(a => a.id === 'BTC') || eligible[0], sharePercent: 40 },
+          { ...eligible.find(a => a.id === 'BTC') || eligible[0], sharePercent: 35 },
           { ...eligible.find(a => a.id === 'ETH') || eligible[1], sharePercent: 25 },
           { ...eligible.find(a => a.id === 'SOL') || eligible[2], sharePercent: 20 },
-          { ...eligible.find(a => a.id === 'NVDA') || eligible[3], sharePercent: 15 }
+          { ...eligible.find(a => a.id === 'NEAR') || eligible[3], sharePercent: 20 }
         ];
       }
 
-      // Calculate exact dollar allocations and expected returns
       let totalExpectedReturn = 0;
       const portfolioItems = selected.map(item => {
         const itemAmount = (numAmount * item.sharePercent) / 100;
@@ -95,12 +151,14 @@ export default function InvestmentBot({ onBack }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>بوت الاستثمار الذكي 🌱</h2>
-            <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
-              Smart Portfolio
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '12px', color: '#10b981', fontSize: '11px', fontWeight: 'bold' }}>
+              <span className={isUpdating ? 'spin' : ''}>🟢</span>
+              <span>مباشر</span>
+            </div>
           </div>
-          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
-            صمم محفظتك الاستثمارية المخصصة حسب رأس مالك والمدة والشرعية
+          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>تحديث الأسعار: {lastUpdate} · {ratedCoins.length} عملة محللة</span>
+            <RefreshCw size={12} className={isUpdating ? 'spin' : ''} style={{ cursor: 'pointer' }} onClick={fetchLivePrices} />
           </div>
         </div>
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
@@ -108,37 +166,34 @@ export default function InvestmentBot({ onBack }) {
         </button>
       </div>
 
-      {/* Input Form Box */}
+      {/* Input Calculator Form Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         
-        {/* 1. Custom Investment Amount */}
+        {/* Custom Investment Amount Input */}
         <div>
           <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
             <DollarSign size={16} color="#f59e0b" />
             <span>1. اكتب مبلغ الاستثمار المخصص ($)</span>
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="number"
-              placeholder="اكتب المبلغ مثل: 1000..."
-              value={investmentAmount}
-              onChange={(e) => setInvestmentAmount(e.target.value)}
-              style={{
-                width: '100%',
-                background: '#181b22',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '12px',
-                padding: '12px 14px',
-                color: '#fff',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                direction: 'rtl',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-          {/* Quick Preset Amount Buttons */}
+          <input
+            type="number"
+            placeholder="اكتب المبلغ مثل: 1000..."
+            value={investmentAmount}
+            onChange={(e) => setInvestmentAmount(e.target.value)}
+            style={{
+              width: '100%',
+              background: '#181b22',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              color: '#fff',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              direction: 'rtl',
+              outline: 'none',
+              boxSizing: 'border-box'
+            }}
+          />
           <div style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto' }}>
             {['100', '250', '500', '1000', '2500', '5000', '10000'].map(val => (
               <button
@@ -161,7 +216,7 @@ export default function InvestmentBot({ onBack }) {
           </div>
         </div>
 
-        {/* 2. Custom Duration */}
+        {/* Custom Duration Selector */}
         <div>
           <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
             <Calculator size={16} color="#60a5fa" />
@@ -195,13 +250,13 @@ export default function InvestmentBot({ onBack }) {
           </div>
         </div>
 
-        {/* 3. Halal Filter Toggle */}
+        {/* Halal Filter Toggle */}
         <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '12px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '20px' }}>🕌</span>
             <div>
               <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#10b981' }}>فلتر الحلال 100% (تصفية شرعية معتمدة)</div>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>استبعاد الأصول المشبوهة أو المتضمنة فوائد ربوية</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>استبعاد العملات المشبوهة أو الربوية تلقائياً</div>
             </div>
           </div>
           <input
@@ -212,7 +267,7 @@ export default function InvestmentBot({ onBack }) {
           />
         </div>
 
-        {/* 4. Risk Tolerance Selection */}
+        {/* Risk Tolerance Buttons */}
         <div>
           <label style={{ fontSize: '12px', color: '#9ca3af', display: 'block', marginBottom: '6px' }}>درجة تحمّل المخاطرة:</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -241,7 +296,7 @@ export default function InvestmentBot({ onBack }) {
           </div>
         </div>
 
-        {/* Generate Portfolio Button */}
+        {/* Generate Button */}
         <button
           onClick={handleGeneratePortfolio}
           disabled={isGenerating || numAmount <= 0}
@@ -269,22 +324,21 @@ export default function InvestmentBot({ onBack }) {
 
       </div>
 
-      {/* Generated Portfolio Results Display */}
+      {/* Generated Custom Portfolio Results */}
       {generatedPortfolio && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           
-          {/* Summary Box */}
           <div style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%)', border: '1px solid #10b981', borderRadius: '16px', padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontSize: '11px', background: '#10b981', color: '#000', padding: '3px 8px', borderRadius: '8px', fontWeight: 'bold' }}>
                 العائد التقديري المتوقع: +{generatedPortfolio.roiPercent}% 🚀
               </span>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#10b981', fontWeight: 'bold' }}>نتائج المحفظة المخصصة</h3>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#10b981', fontWeight: 'bold' }}>توزيع المحفظة المخصصة</h3>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px' }}>
               <div>
-                <div style={{ fontSize: '10px', color: '#9ca3af' }}>رأس المال النهائي</div>
+                <div style={{ fontSize: '10px', color: '#9ca3af' }}>المبلغ المستثمر</div>
                 <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#fff', marginTop: '2px' }}>${generatedPortfolio.totalInitial.toLocaleString()}</div>
               </div>
               <div>
@@ -298,7 +352,7 @@ export default function InvestmentBot({ onBack }) {
             </div>
           </div>
 
-          {/* Selected Assets List ("يختارلك كذا حاجة") */}
+          {/* Allocation Cards */}
           <div style={{ fontSize: '14px', color: '#fff', fontWeight: 'bold', textAlign: 'right' }}>
             الأصول المختارة وتوزيع المبالغ ({generatedPortfolio.items.length} أصول):
           </div>
@@ -331,7 +385,7 @@ export default function InvestmentBot({ onBack }) {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{item.pair}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{item.symbol}</div>
                       <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.name}</div>
                     </div>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
@@ -360,6 +414,64 @@ export default function InvestmentBot({ onBack }) {
 
         </div>
       )}
+
+      {/* FULL COIN EVALUATION TABLE SECTION ("تقييم جميع العملات 📊") */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden', marginTop: '8px' }}>
+        
+        {/* Table Header Banner */}
+        <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '12px', color: '#9ca3af' }}>{ratedCoins.length} عملة محللة (تحديث حي)</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#fff', fontWeight: 'bold' }}>تقييم جميع العملات 📊</h3>
+          </div>
+        </div>
+
+        {/* Coin Ranking Rows */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {ratedCoins.map((coin) => (
+            <div
+              key={coin.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                background: coin.rank <= 3 ? 'rgba(245, 158, 11, 0.03)' : 'transparent',
+                transition: 'background 0.2s'
+              }}
+            >
+              {/* Left Side: Score & Rating Badge */}
+              <div style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {coin.rank <= 3 && <span style={{ fontSize: '16px' }}>🏆</span>}
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '15px', color: coin.score >= 65 ? '#10b981' : coin.score >= 50 ? '#f59e0b' : '#f87171' }}>
+                    {coin.score}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#9ca3af' }}>{coin.evalText}</div>
+                </div>
+              </div>
+
+              {/* Right Side: Rank, Icon, Name, Price */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{coin.name}</div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>{coin.priceStr}</div>
+                </div>
+
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                  {coin.icon}
+                </div>
+
+                <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold', width: '20px', textAlign: 'center' }}>
+                  {coin.rank}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
 
     </div>
   );
