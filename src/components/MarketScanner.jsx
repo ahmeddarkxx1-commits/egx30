@@ -2,30 +2,51 @@ import React, { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 
-const coins = [
-  { pair: 'BTC/USDT', name: 'Bitcoin', symbol: 'BINANCE:BTCUSDT', icon: '₿' },
-  { pair: 'ETH/USDT', name: 'Ethereum', symbol: 'BINANCE:ETHUSDT', icon: 'Ξ' },
-  { pair: 'BNB/USDT', name: 'BNB', symbol: 'BINANCE:BNBUSDT', icon: '🔶' },
-  { pair: 'SOL/USDT', name: 'Solana', symbol: 'BINANCE:SOLUSDT', icon: '◎' },
-  { pair: 'ADA/USDT', name: 'Cardano', symbol: 'BINANCE:ADAUSDT', icon: '₳' },
-  { pair: 'XRP/USDT', name: 'XRP', symbol: 'BINANCE:XRPUSDT', icon: '✕' },
-  { pair: 'DOT/USDT', name: 'Polkadot', symbol: 'BINANCE:DOTUSDT', icon: '●' },
-  { pair: 'AVAX/USDT', name: 'Avalanche', symbol: 'BINANCE:AVAXUSDT', icon: '🔺' },
-  { pair: 'DOGE/USDT', name: 'Dogecoin', symbol: 'BINANCE:DOGEUSDT', icon: 'Ð' },
-  { pair: 'LINK/USDT', name: 'Chainlink', symbol: 'BINANCE:LINKUSDT', icon: '🔗' },
-  { pair: 'SHIB/USDT', name: 'Shiba Inu', symbol: 'BINANCE:SHIBUSDT', icon: '🐕' }
+const allAssets = [
+  // Forex
+  { pair: 'EUR/USD', name: 'يورو / دولار أمريكي', symbol: 'FX:EURUSD', icon: '💶', category: 'forex' },
+  { pair: 'GBP/USD', name: 'جنيه استرليني / دولار', symbol: 'FX:GBPUSD', icon: '💷', category: 'forex' },
+  { pair: 'USD/JPY', name: 'دولار / ين ياباني', symbol: 'FX:USDJPY', icon: '💴', category: 'forex' },
+  { pair: 'AUD/USD', name: 'دولار أسترالي / دولار', symbol: 'FX:AUDUSD', icon: '🇦🇺', category: 'forex' },
+  { pair: 'USD/CAD', name: 'دولار / دولار كندي', symbol: 'FX:USDCAD', icon: '🇨🇦', category: 'forex' },
+  { pair: 'USD/CHF', name: 'دولار / فرنك سويسري', symbol: 'FX:USDCHF', icon: '🇨🇭', category: 'forex' },
+  { pair: 'NZD/USD', name: 'دولار نيوزيلندي / دولار', symbol: 'FX:NZDUSD', icon: '🇳🇿', category: 'forex' },
+  { pair: 'EUR/GBP', name: 'يورو / جنيه استرليني', symbol: 'FX:EURGBP', icon: '🇪🇺', category: 'forex' },
+
+  // Metals & Energy
+  { pair: 'XAU/USD', name: 'الذهب / Dollar', symbol: 'OANDA:XAUUSD', icon: '🥇', category: 'metals' },
+  { pair: 'XAG/USD', name: 'الفضة / Dollar', symbol: 'OANDA:XAGUSD', icon: '🥈', category: 'metals' },
+  { pair: 'WTI', name: 'النفط الخام الأمريكي', symbol: 'TVC:USOIL', icon: '🛢️', category: 'metals' },
+  { pair: 'BRENT', name: 'نفط برنت العالمي', symbol: 'TVC:UKOIL', icon: '⛽', category: 'metals' },
+
+  // Crypto
+  { pair: 'BTC/USDT', name: 'Bitcoin', symbol: 'BINANCE:BTCUSDT', icon: '₿', category: 'crypto' },
+  { pair: 'ETH/USDT', name: 'Ethereum', symbol: 'BINANCE:ETHUSDT', icon: 'Ξ', category: 'crypto' },
+  { pair: 'BNB/USDT', name: 'Binance Coin', symbol: 'BINANCE:BNBUSDT', icon: '🔶', category: 'crypto' },
+  { pair: 'SOL/USDT', name: 'Solana', symbol: 'BINANCE:SOLUSDT', icon: '◎', category: 'crypto' },
+  { pair: 'ADA/USDT', name: 'Cardano', symbol: 'BINANCE:ADAUSDT', icon: '₳', category: 'crypto' },
+  { pair: 'XRP/USDT', name: 'Ripple XRP', symbol: 'BINANCE:XRPUSDT', icon: '✕', category: 'crypto' },
+  { pair: 'AVAX/USDT', name: 'Avalanche', symbol: 'BINANCE:AVAXUSDT', icon: '🔺', category: 'crypto' },
+
+  // Indices
+  { pair: 'US30', name: 'مؤشر داو جونز الأمريكي', symbol: 'GLOBALPRIME:US30', icon: '📈', category: 'indices' },
+  { pair: 'NAS100', name: 'مؤشر ناسداك التكنولوجي', symbol: 'GLOBALPRIME:NAS100', icon: '💻', category: 'indices' },
+  { pair: 'SPX500', name: 'مؤشر S&P 500 الرئيسي', symbol: 'GLOBALPRIME:SPX500', icon: '📊', category: 'indices' }
 ];
 
 export default function MarketScanner({ onBack }) {
   const [search, setSearch] = useState('');
-  const [selectedCoin, setSelectedCoin] = useState(coins[0]);
+  const [activeCategory, setActiveCategory] = useState('forex');
+  const [selectedCoin, setSelectedCoin] = useState(allAssets[0]);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  const filteredCoins = coins.filter(c => 
-    c.pair.toLowerCase().includes(search.toLowerCase()) || 
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCoins = allAssets.filter(c => {
+    const matchesCategory = activeCategory === 'all' || c.category === activeCategory;
+    const matchesSearch = c.pair.toLowerCase().includes(search.toLowerCase()) || 
+                          c.name.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const handleAnalyze = () => {
     setLoading(true);
@@ -73,11 +94,39 @@ export default function MarketScanner({ onBack }) {
         </button>
       </div>
 
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+        {[
+          { id: 'forex', label: 'فوركس 💶' },
+          { id: 'metals', label: 'معادن ونفط 🥇' },
+          { id: 'crypto', label: 'كريبتو ₿' },
+          { id: 'indices', label: 'مؤشرات 📈' },
+          { id: 'all', label: 'الجميع 🌐' }
+        ].map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            style={{
+              background: activeCategory === cat.id ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+              color: activeCategory === cat.id ? '#000' : '#fff',
+              border: 'none',
+              padding: '8px 14px',
+              borderRadius: '20px',
+              fontWeight: 'bold',
+              fontSize: '13px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
       <div style={{ position: 'relative' }}>
         <Search size={20} color="#9ca3af" style={{ position: 'absolute', right: '12px', top: '12px' }} />
         <input 
           type="text" 
-          placeholder="اكتب اسم العملة... مثال: BTC, ETH"
+          placeholder="ابحث عن أي زوج... مثال: EUR/USD, XAU/USD, BTC"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ 
