@@ -4,6 +4,7 @@ import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
 import TradenRadar from './components/TradenRadar';
+import PreciousMetals from './components/PreciousMetals';
 import './App.css';
 
 function App() {
@@ -18,6 +19,14 @@ function App() {
       }
     }
   }, []);
+
+  if (currentView === 'precious_metals') {
+    return (
+      <div className="app-container">
+        <PreciousMetals onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
 
   if (currentView === 'traden_radar') {
     return (
@@ -121,9 +130,9 @@ function App() {
             <span className="card-icon">🌅</span>
             <div className="card-title">Traden الصباحي</div>
           </div>
-          <div className="card">
+          <div className="card" onClick={() => setCurrentView('precious_metals')}>
             <span className="card-icon">🥇</span>
-            <div className="card-title">أسعار الذهب</div>
+            <div className="card-title">المعادن الثمينة</div>
           </div>
           <div className="card">
             <BookOpen size={24} color="#a78bfa" />
