@@ -34,7 +34,7 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT" }) {
   }, [symbol]);
 
   return (
-    <div className="tradingview-widget-container" ref={container} style={{ height: "400px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
+    <div className="tradingview-widget-container" ref={container} style={{ height: "600px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
       <div className="tradingview-widget-container__widget" style={{ height: "calc(100% - 32px)", width: "100%" }}></div>
     </div>
   );

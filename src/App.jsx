@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Bot, LineChart, Target, BookOpen, Bell, Coins, BarChart2, Star, Share2, Activity, Zap, Shield, TrendingUp } from 'lucide-react';
 import MarketScanner from './components/MarketScanner';
+import SignalBot from './components/SignalBot';
+import MarketNews from './components/MarketNews';
 import './App.css';
 
 function App() {
@@ -20,6 +22,22 @@ function App() {
     return (
       <div className="app-container">
         <MarketScanner onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
+  if (currentView === 'signal_bot') {
+    return (
+      <div className="app-container">
+        <SignalBot onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
+  if (currentView === 'market_news') {
+    return (
+      <div className="app-container">
+        <MarketNews onBack={() => setCurrentView('home')} />
       </div>
     );
   }
@@ -59,7 +77,7 @@ function App() {
             <div className="card-desc">يفتح ويغلق صفقاتك تلقائياً</div>
             <div className="badge">PRO</div>
           </div>
-          <div className="card">
+          <div className="card" onClick={() => setCurrentView('signal_bot')}>
             <span className="card-icon">📡</span>
             <div className="card-title">رصد Bot</div>
             <div className="card-desc">إشارات BUY/SELL بالذكاء</div>
@@ -98,7 +116,7 @@ function App() {
             <Shield size={24} color="#34d399" />
             <div className="card-title">دليل الحلال</div>
           </div>
-          <div className="card">
+          <div className="card" onClick={() => setCurrentView('market_news')}>
             <span className="card-icon">📰</span>
             <div className="card-title">الأخبار</div>
           </div>
