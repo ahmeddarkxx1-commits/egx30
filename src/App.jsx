@@ -6,6 +6,7 @@ import MarketNews from './components/MarketNews';
 import TradenRadar from './components/TradenRadar';
 import PreciousMetals from './components/PreciousMetals';
 import HalalGuide from './components/HalalGuide';
+import InvestmentBot from './components/InvestmentBot';
 import './App.css';
 
 function App() {
@@ -21,6 +22,14 @@ function App() {
       }
     }
   }, []);
+
+  if (currentView === 'investment_bot') {
+    return (
+      <div className="app-container">
+        <InvestmentBot onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
 
   if (currentView === 'halal_guide') {
     return (
@@ -116,10 +125,10 @@ function App() {
             <div className="card-title">Traden Bot</div>
             <div className="card-desc">إشارات BUY/SELL بالذكاء</div>
           </div>
-          <div className="card" style={{ gridColumn: 'span 2' }}>
+          <div className="card" onClick={() => setCurrentView('investment_bot')} style={{ gridColumn: 'span 2', cursor: 'pointer' }}>
             <span className="card-icon">🌱</span>
-            <div className="card-title">بوت الاستثمار</div>
-            <div className="card-desc">أفضل عملات للاحتفاظ</div>
+            <div className="card-title">بوت الاستثمار الذكي ✦</div>
+            <div className="card-desc">أفضل أصول للاحتفاظ والدخل السلبي (HODL & DCA)</div>
           </div>
         </div>
       </section>
