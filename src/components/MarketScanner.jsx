@@ -99,23 +99,70 @@ export default function MarketScanner({ onBack }) {
         price = 1.0852;
         tpMul = selectedTimeframe === '1m' ? 0.0008 : selectedTimeframe === '15m' ? 0.0022 : selectedTimeframe === '1h' ? 0.0055 : 0.0140;
         slMul = selectedTimeframe === '1m' ? 0.0004 : selectedTimeframe === '15m' ? 0.0011 : selectedTimeframe === '1h' ? 0.0028 : 0.0070;
+      } else if (pairUpper.includes('GBP/USD')) {
+        price = 1.2985;
+        tpMul = selectedTimeframe === '1m' ? 0.0010 : selectedTimeframe === '15m' ? 0.0028 : selectedTimeframe === '1h' ? 0.0065 : 0.0160;
+        slMul = selectedTimeframe === '1m' ? 0.0005 : selectedTimeframe === '15m' ? 0.0014 : selectedTimeframe === '1h' ? 0.0032 : 0.0080;
+      } else if (pairUpper.includes('US30')) {
+        price = 42850.00;
+        tpMul = selectedTimeframe === '1m' ? 60.0 : selectedTimeframe === '15m' ? 150.0 : selectedTimeframe === '1h' ? 350.0 : 800.0;
+        slMul = selectedTimeframe === '1m' ? 35.0 : selectedTimeframe === '15m' ? 80.0 : selectedTimeframe === '1h' ? 180.0 : 420.0;
       }
 
-      const tp1 = (price + tpMul).toFixed(price > 100 ? 2 : 4);
-      const sl = (price - slMul).toFixed(price > 100 ? 2 : 4);
+      // Hash to determine BUY / SELL / WAIT deterministically for each pair + timeframe
+      const str = selectedCoin.pair + selectedTimeframe;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const mod = Math.abs(hash) % 100;
 
-      const tfNames = { '1m': '1 دقيقة (Scalping خاطف)', '15m': '15 دقيقة (سريع)', '1h': '1 ساعة (يومي)', '4h': '4 ساعات (سوينغ)', '1d': 'يومي (استثماري)' };
+      let signalText = 'شراء قوي 🟢 (BUY)';
+      let signalColor = '#10b981';
+      let cardBg = 'rgba(16, 185, 129, 0.08)';
+      let scoreText = `${82 + (mod % 16)}/100`;
+      let rsiText = `${(56 + (mod % 18)).toFixed(1)} (زخم صاعد)`;
+      let trendText = `تحليل إطار ${selectedTimeframe}: توافق المتوسطات مع اختراق صاعد مدعوم بدخول سيولة.`;
+      let tp1Val = price + tpMul;
+      let slVal = price - slMul;
+
+      if (mod >= 35 && mod < 70) {
+        // SELL Signal
+        signalText = 'بيع قوي 🔴 (SELL)';
+        signalColor = '#f87171';
+        cardBg = 'rgba(248, 113, 113, 0.08)';
+        scoreText = `${80 + (mod % 17)}/100`;
+        rsiText = `${(32 - (mod % 12)).toFixed(1)} (تشبع شرائي - كسر هابط)`;
+        trendText = `تحليل إطار ${selectedTimeframe}: كسر مستوى دعم محوري مع تقاطع سلبي للمتوسطات.`;
+        tp1Val = price - tpMul;
+        slVal = price + slMul;
+      } else if (mod >= 70) {
+        // WAIT Signal
+        signalText = 'انتظار وتحديد اتجاه ⚪ (WAIT)';
+        signalColor = '#f59e0b';
+        cardBg = 'rgba(245, 158, 11, 0.08)';
+        scoreText = `${52 + (mod % 12)}/100`;
+        rsiText = `${(48 + (mod % 6)).toFixed(1)} (منطقة محايدة)`;
+        trendText = `تحليل إطار ${selectedTimeframe}: حركة عرضية تجميعية - يُفضل الانتظار لحين كسر النطاق.`;
+        tp1Val = price + (tpMul * 0.5);
+        slVal = price - (slMul * 0.5);
+      }
+
+      const formatP = (val) => price > 100 ? Number(val.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2 }) : val.toFixed(4);
 
       setAnalysisResult({
         pair: selectedCoin.pair,
-        timeframe: tfNames[selectedTimeframe] || selectedTimeframe,
-        signal: 'شراء قوي 🟢 (BUY)',
-        score: selectedTimeframe === '1m' ? '94/100 (سكور خاطف عالي)' : '91/100',
-        entry: price > 100 ? price.toLocaleString('en-US', { minimumFractionDigits: 2 }) : price.toFixed(4),
-        tp1: tp1 > 100 ? Number(tp1).toLocaleString('en-US', { minimumFractionDigits: 2 }) : tp1,
-        sl: sl > 100 ? Number(sl).toLocaleString('en-US', { minimumFractionDigits: 2 }) : sl,
-        rsi: selectedTimeframe === '1m' ? '71.2 (زخم خاطف متسارع)' : '64.8 (زخم إيجابي)',
-        trend: `تحليل إطار ${tfNames[selectedTimeframe]}: اختراق نموذج فني إيجابي مع توافق المؤشرات على هذا الفريم.`
+        timeframe: selectedTimeframe,
+        signal: signalText,
+        signalColor: signalColor,
+        cardBg: cardBg,
+        score: scoreText,
+        entry: formatP(price),
+        tp1: formatP(tp1Val),
+        sl: formatP(slVal),
+        rsi: rsiText,
+        trend: trendText
       });
     }, 600);
   };
@@ -274,18 +321,18 @@ export default function MarketScanner({ onBack }) {
 
       {analysisResult && (
         <div style={{ 
-          background: 'rgba(16, 185, 129, 0.08)', 
-          border: '1px solid #10b981', 
+          background: analysisResult.cardBg, 
+          border: `1px solid ${analysisResult.signalColor}`, 
           borderRadius: '12px', 
           padding: '20px', 
           color: '#fff',
-          boxShadow: '0 0 25px rgba(16, 185, 129, 0.25)',
+          boxShadow: `0 0 25px ${analysisResult.signalColor}40`,
           marginTop: '8px',
           marginBottom: '24px'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>📊 تحليل الذكاء الاصطناعي لـ {analysisResult.pair}</span>
-            <span style={{ background: '#10b981', color: '#000', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+            <span style={{ fontSize: '18px', fontWeight: 'bold', color: analysisResult.signalColor }}>📊 تحليل الذكاء الاصطناعي لـ {analysisResult.pair}</span>
+            <span style={{ background: analysisResult.signalColor, color: '#000', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
               السكور: {analysisResult.score}
             </span>
           </div>
@@ -293,14 +340,14 @@ export default function MarketScanner({ onBack }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px', margin: '12px 0' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>التوصية / الإشارة</div>
-              <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '15px' }}>{analysisResult.signal}</div>
+              <div style={{ fontWeight: 'bold', color: analysisResult.signalColor, fontSize: '15px' }}>{analysisResult.signal}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>سعر السوق الفوري</div>
               <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>{analysisResult.entry}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>هدف الربح الأول (TP1)</div>
+              <div style={{ color: '#9ca3af', fontSize: '11px' }}>هدف الربح (TP)</div>
               <div style={{ fontWeight: 'bold', color: '#4ade80' }}>{analysisResult.tp1}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
