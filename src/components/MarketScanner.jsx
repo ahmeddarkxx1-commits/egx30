@@ -3,7 +3,7 @@ import { Search, ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 
 const allAssets = [
-  // Forex
+  // Forex Majors
   { pair: 'EUR/USD', name: 'يورو / دولار أمريكي', symbol: 'FX:EURUSD', icon: '💶', category: 'forex' },
   { pair: 'GBP/USD', name: 'جنيه استرليني / دولار', symbol: 'FX:GBPUSD', icon: '💷', category: 'forex' },
   { pair: 'USD/JPY', name: 'دولار / ين ياباني', symbol: 'FX:USDJPY', icon: '💴', category: 'forex' },
@@ -11,7 +11,25 @@ const allAssets = [
   { pair: 'USD/CAD', name: 'دولار / دولار كندي', symbol: 'FX:USDCAD', icon: '🇨🇦', category: 'forex' },
   { pair: 'USD/CHF', name: 'دولار / فرنك سويسري', symbol: 'FX:USDCHF', icon: '🇨🇭', category: 'forex' },
   { pair: 'NZD/USD', name: 'دولار نيوزيلندي / دولار', symbol: 'FX:NZDUSD', icon: '🇳🇿', category: 'forex' },
+
+  // Forex Minors & Crosses
   { pair: 'EUR/GBP', name: 'يورو / جنيه استرليني', symbol: 'FX:EURGBP', icon: '🇪🇺', category: 'forex' },
+  { pair: 'EUR/JPY', name: 'يورو / ين ياباني', symbol: 'FX:EURJPY', icon: '💶', category: 'forex' },
+  { pair: 'GBP/JPY', name: 'جنيه استرليني / ين', symbol: 'FX:GBPJPY', icon: '💷', category: 'forex' },
+  { pair: 'AUD/JPY', name: 'دولار أسترالي / ين', symbol: 'FX:AUDJPY', icon: '🇦🇺', category: 'forex' },
+  { pair: 'CAD/JPY', name: 'دولار كندي / ين', symbol: 'FX:CADJPY', icon: '🇨🇦', category: 'forex' },
+  { pair: 'CHF/JPY', name: 'فرنك سويسري / ين', symbol: 'FX:CHFJPY', icon: '🇨🇭', category: 'forex' },
+  { pair: 'NZD/JPY', name: 'دولار نيوزيلندي / ين', symbol: 'FX:NZDJPY', icon: '🇳🇿', category: 'forex' },
+  { pair: 'EUR/AUD', name: 'يورو / دولار أسترالي', symbol: 'FX:EURAUD', icon: '🇪🇺', category: 'forex' },
+  { pair: 'EUR/CAD', name: 'يورو / دولار كندي', symbol: 'FX:EURCAD', icon: '🇪🇺', category: 'forex' },
+  { pair: 'GBP/AUD', name: 'جنيه / دولار أسترالي', symbol: 'FX:GBPAUD', icon: '💷', category: 'forex' },
+  { pair: 'GBP/CAD', name: 'جنيه / دولار كندي', symbol: 'FX:GBPCAD', icon: '💷', category: 'forex' },
+
+  // Forex Exotics
+  { pair: 'USD/TRY', name: 'دولار / ليرة تركية', symbol: 'FX:USDTRY', icon: '🇹🇷', category: 'forex' },
+  { pair: 'USD/EGP', name: 'دولار / جنيه مصري', symbol: 'FX:USDEGP', icon: '🇪🇬', category: 'forex' },
+  { pair: 'USD/SAR', name: 'دولار / ريال سعودي', symbol: 'FX:USDSAR', icon: '🇸🇦', category: 'forex' },
+  { pair: 'USD/AED', name: 'دولار / درهم إماراتي', symbol: 'FX:USDAED', icon: '🇦🇪', category: 'forex' },
 
   // Metals & Energy
   { pair: 'XAU/USD', name: 'الذهب / Dollar', symbol: 'OANDA:XAUUSD', icon: '🥇', category: 'metals' },

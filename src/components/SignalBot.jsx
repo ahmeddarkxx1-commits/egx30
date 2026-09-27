@@ -10,10 +10,15 @@ const categories = [
 ];
 
 const assets = {
-  crypto: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'DOT/USDT', 'MATIC/USDT', 'BNB/USDT', 'XRP/USDT', 'LINK/USDT'],
-  forex: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD'],
-  metals: ['XAU/USD', 'XAG/USD', 'XPT/USD', 'WTI/USD'],
-  indices: ['US30', 'SPX500', 'NAS100']
+  crypto: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'DOT/USDT', 'MATIC/USDT', 'BNB/USDT', 'XRP/USDT', 'LINK/USDT', 'ADA/USDT', 'AVAX/USDT'],
+  forex: [
+    'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD',
+    'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'CAD/JPY', 'CHF/JPY', 'NZD/JPY',
+    'EUR/AUD', 'EUR/CAD', 'EUR/NZD', 'GBP/AUD', 'GBP/CAD', 'GBP/NZD', 'AUD/CAD',
+    'USD/TRY', 'USD/EGP', 'USD/SAR', 'USD/AED', 'USD/MXN', 'USD/ZAR'
+  ],
+  metals: ['XAU/USD', 'XAG/USD', 'XPT/USD', 'WTI/USD', 'BRENT/USD'],
+  indices: ['US30', 'SPX500', 'NAS100', 'GER30', 'UK100', 'JPN225']
 };
 
 const timeframes = [
@@ -25,22 +30,20 @@ const timeframes = [
 
 const getSymbol = (assetPair) => {
   if (!assetPair) return 'BINANCE:BTCUSDT';
-  if (assetPair.includes('BTC')) return 'BINANCE:BTCUSDT';
-  if (assetPair.includes('ETH')) return 'BINANCE:ETHUSDT';
-  if (assetPair.includes('SOL')) return 'BINANCE:SOLUSDT';
-  if (assetPair.includes('DOT')) return 'BINANCE:DOTUSDT';
-  if (assetPair.includes('MATIC')) return 'BINANCE:MATICUSDT';
-  if (assetPair.includes('BNB')) return 'BINANCE:BNBUSDT';
-  if (assetPair.includes('XRP')) return 'BINANCE:XRPUSDT';
-  if (assetPair.includes('LINK')) return 'BINANCE:LINKUSDT';
-  if (assetPair.includes('EUR')) return 'FX:EURUSD';
-  if (assetPair.includes('GBP')) return 'FX:GBPUSD';
-  if (assetPair.includes('JPY')) return 'FX:USDJPY';
-  if (assetPair.includes('XAU')) return 'OANDA:XAUUSD';
-  if (assetPair.includes('XAG')) return 'OANDA:XAGUSD';
-  if (assetPair.includes('XPT')) return 'OANDA:XPTUSD';
+  if (assetPair.includes('/')) {
+    const clean = assetPair.replace('/', '');
+    if (assetPair.includes('USDT')) return 'BINANCE:' + clean;
+    if (assetPair.includes('XAU')) return 'OANDA:XAUUSD';
+    if (assetPair.includes('XAG')) return 'OANDA:XAGUSD';
+    if (assetPair.includes('XPT')) return 'OANDA:XPTUSD';
+    if (assetPair.includes('WTI')) return 'TVC:USOIL';
+    if (assetPair.includes('BRENT')) return 'TVC:UKOIL';
+    return 'FX:' + clean;
+  }
   if (assetPair.includes('US30')) return 'FOREXCOM:DJI';
-  return 'BINANCE:' + assetPair.replace('/', '');
+  if (assetPair.includes('SPX')) return 'FOREXCOM:SPX';
+  if (assetPair.includes('NAS')) return 'FOREXCOM:NSX';
+  return 'FX:' + assetPair;
 };
 
 export default function SignalBot({ onBack, initialSymbol }) {

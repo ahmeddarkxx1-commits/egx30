@@ -2,19 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, RefreshCw } from 'lucide-react';
 
 const initialRadarAssets = [
+  // Crypto
   { pair: 'SOL/USDT', price: '$121.45', score: 88, signal: 'BUY', signalType: 'buy', change: '+0.17%', isUp: true, sparkline: [10, 15, 12, 22, 18, 25, 20], category: 'crypto', isHot: true },
   { pair: 'DOT/USDT', price: '$1.2510', score: 88, signal: 'BUY', signalType: 'buy', change: '+0.89%', isUp: true, sparkline: [8, 12, 18, 14, 24, 28, 30], category: 'crypto', isHot: true },
   { pair: 'MATIC/USDT', price: '$0.3794', score: 88, signal: 'BUY', signalType: 'buy', change: '-0.29%', isUp: false, sparkline: [25, 20, 15, 18, 12, 10, 8], category: 'crypto', isHot: true },
-  { pair: 'XPT/USD', price: '$1,778', score: 88, signal: 'BUY', signalType: 'buy', change: '0.00%', isUp: true, sparkline: [12, 10, 15, 14, 18, 12, 10], category: 'metals', isHot: true },
   { pair: 'BTC/USDT', price: '$84,232', score: 82, signal: 'BUY', signalType: 'buy', change: '-0.13%', isUp: false, sparkline: [30, 28, 32, 26, 22, 25, 20], category: 'crypto', isHot: true },
-  { pair: 'GBP/USD', price: '$1.3228', score: 78, signal: 'BUY', signalType: 'buy', change: '+0.00%', isUp: true, sparkline: [14, 18, 15, 22, 20, 26, 24], category: 'forex', isHot: false },
   { pair: 'ETH/USDT', price: '$2,678.20', score: 76, signal: 'BUY', signalType: 'buy', change: '+0.45%', isUp: true, sparkline: [15, 18, 22, 20, 26, 24, 28], category: 'crypto', isHot: false },
-  { pair: 'EUR/USD', price: '$1.0852', score: 71, signal: 'BUY', signalType: 'buy', change: '+0.12%', isUp: true, sparkline: [12, 14, 16, 15, 18, 20, 22], category: 'forex', isHot: false },
-  { pair: 'US30', price: '$42,850', score: 68, signal: 'BUY', signalType: 'buy', change: '+0.34%', isUp: true, sparkline: [20, 22, 25, 24, 28, 30, 32], category: 'indices', isHot: false },
-  { pair: 'WTI/USD', price: '$71.40', score: 55, signal: 'HOLD', signalType: 'wait', change: '0.00%', isUp: true, sparkline: [18, 18, 19, 18, 19, 18, 19], category: 'metals', isHot: false },
   { pair: 'LINK/USDT', price: '$13.9490', score: 32, signal: 'SELL', signalType: 'sell', change: '-0.42%', isUp: false, sparkline: [24, 20, 18, 15, 12, 10, 8], category: 'crypto', isHot: false },
-  { pair: 'USD/JPY', price: '$157.6440', score: 22, signal: 'SELL', signalType: 'sell', change: '0.00%', isUp: true, sparkline: [28, 25, 22, 18, 15, 12, 10], category: 'forex', isHot: true },
-  { pair: 'XAU/USD', price: '$4,297', score: 12, signal: 'SELL', signalType: 'sell', change: '0.00%', isUp: true, sparkline: [22, 20, 18, 15, 12, 10, 6], category: 'metals', isHot: true }
+
+  // Forex Majors
+  { pair: 'EUR/USD', price: '$1.0852', score: 71, signal: 'BUY', signalType: 'buy', change: '+0.12%', isUp: true, sparkline: [12, 14, 16, 15, 18, 20, 22], category: 'forex', isHot: false },
+  { pair: 'GBP/USD', price: '$1.3228', score: 78, signal: 'BUY', signalType: 'buy', change: '+0.08%', isUp: true, sparkline: [14, 18, 15, 22, 20, 26, 24], category: 'forex', isHot: false },
+  { pair: 'USD/JPY', price: '$157.6440', score: 22, signal: 'SELL', signalType: 'sell', change: '+0.15%', isUp: true, sparkline: [28, 25, 22, 18, 15, 12, 10], category: 'forex', isHot: true },
+  { pair: 'AUD/USD', price: '$0.6710', score: 75, signal: 'BUY', signalType: 'buy', change: '+0.22%', isUp: true, sparkline: [10, 12, 15, 18, 20, 22, 25], category: 'forex', isHot: false },
+  { pair: 'USD/CAD', price: '$1.3540', score: 28, signal: 'SELL', signalType: 'sell', change: '-0.10%', isUp: false, sparkline: [25, 22, 20, 18, 16, 14, 12], category: 'forex', isHot: false },
+  { pair: 'USD/CHF', price: '$0.8490', score: 30, signal: 'SELL', signalType: 'sell', change: '-0.05%', isUp: false, sparkline: [20, 18, 16, 15, 14, 12, 10], category: 'forex', isHot: false },
+  { pair: 'NZD/USD', price: '$0.6230', score: 72, signal: 'BUY', signalType: 'buy', change: '+0.18%', isUp: true, sparkline: [12, 15, 18, 20, 22, 24, 26], category: 'forex', isHot: false },
+
+  // Forex Minors & Crosses
+  { pair: 'EUR/GBP', price: '$0.8415', score: 55, signal: 'HOLD', signalType: 'wait', change: '+0.04%', isUp: true, sparkline: [18, 18, 19, 18, 19, 18, 19], category: 'forex', isHot: false },
+  { pair: 'EUR/JPY', price: '$171.10', score: 81, signal: 'BUY', signalType: 'buy', change: '+0.28%', isUp: true, sparkline: [15, 18, 22, 25, 28, 30, 32], category: 'forex', isHot: true },
+  { pair: 'GBP/JPY', price: '$208.50', score: 84, signal: 'BUY', signalType: 'buy', change: '+0.24%', isUp: true, sparkline: [18, 20, 24, 28, 30, 32, 35], category: 'forex', isHot: true },
+  { pair: 'AUD/JPY', price: '$105.78', score: 79, signal: 'BUY', signalType: 'buy', change: '+0.35%', isUp: true, sparkline: [12, 16, 20, 24, 26, 28, 30], category: 'forex', isHot: false },
+  { pair: 'CAD/JPY', price: '$116.40', score: 70, signal: 'BUY', signalType: 'buy', change: '+0.12%', isUp: true, sparkline: [14, 16, 18, 20, 22, 24, 25], category: 'forex', isHot: false },
+  { pair: 'CHF/JPY', price: '$185.65', score: 76, signal: 'BUY', signalType: 'buy', change: '+0.20%', isUp: true, sparkline: [16, 18, 20, 22, 25, 28, 30], category: 'forex', isHot: false },
+  { pair: 'NZD/JPY', price: '$98.25', score: 77, signal: 'BUY', signalType: 'buy', change: '+0.30%', isUp: true, sparkline: [14, 16, 20, 22, 24, 26, 28], category: 'forex', isHot: false },
+  { pair: 'EUR/AUD', price: '$1.6170', score: 34, signal: 'SELL', signalType: 'sell', change: '-0.11%', isUp: false, sparkline: [24, 22, 20, 18, 16, 14, 12], category: 'forex', isHot: false },
+  { pair: 'EUR/CAD', price: '$1.4690', score: 58, signal: 'HOLD', signalType: 'wait', change: '+0.02%', isUp: true, sparkline: [18, 19, 18, 19, 18, 19, 18], category: 'forex', isHot: false },
+  { pair: 'EUR/NZD', price: '$1.7418', score: 31, signal: 'SELL', signalType: 'sell', change: '-0.06%', isUp: false, sparkline: [22, 20, 18, 16, 14, 12, 10], category: 'forex', isHot: false },
+  { pair: 'GBP/AUD', price: '$1.9710', score: 33, signal: 'SELL', signalType: 'sell', change: '-0.14%', isUp: false, sparkline: [26, 24, 22, 20, 18, 16, 14], category: 'forex', isHot: false },
+  { pair: 'GBP/CAD', price: '$1.7910', score: 52, signal: 'HOLD', signalType: 'wait', change: '-0.02%', isUp: false, sparkline: [19, 18, 19, 18, 19, 18, 18], category: 'forex', isHot: false },
+  { pair: 'GBP/NZD', price: '$2.1230', score: 29, signal: 'SELL', signalType: 'sell', change: '-0.10%', isUp: false, sparkline: [25, 23, 21, 19, 17, 15, 13], category: 'forex', isHot: false },
+  { pair: 'AUD/CAD', price: '$0.9080', score: 68, signal: 'BUY', signalType: 'buy', change: '+0.12%', isUp: true, sparkline: [12, 14, 16, 18, 20, 22, 24], category: 'forex', isHot: false },
+
+  // Forex Exotics & Arab Currencies
+  { pair: 'USD/TRY', price: '$34.1500', score: 18, signal: 'SELL', signalType: 'sell', change: '+0.45%', isUp: true, sparkline: [35, 30, 25, 20, 15, 10, 5], category: 'forex', isHot: true },
+  { pair: 'USD/EGP', price: '$48.6000', score: 45, signal: 'HOLD', signalType: 'wait', change: '+0.10%', isUp: true, sparkline: [20, 20, 21, 20, 21, 20, 21], category: 'forex', isHot: false },
+  { pair: 'USD/SAR', price: '$3.7510', score: 50, signal: 'HOLD', signalType: 'wait', change: '0.00%', isUp: true, sparkline: [20, 20, 20, 20, 20, 20, 20], category: 'forex', isHot: false },
+  { pair: 'USD/AED', price: '$3.6725', score: 50, signal: 'HOLD', signalType: 'wait', change: '0.00%', isUp: true, sparkline: [20, 20, 20, 20, 20, 20, 20], category: 'forex', isHot: false },
+  { pair: 'USD/MXN', price: '$19.6500', score: 26, signal: 'SELL', signalType: 'sell', change: '-0.18%', isUp: false, sparkline: [28, 25, 22, 19, 16, 13, 10], category: 'forex', isHot: false },
+  { pair: 'USD/ZAR', price: '$17.8500', score: 24, signal: 'SELL', signalType: 'sell', change: '-0.32%', isUp: false, sparkline: [30, 26, 22, 18, 14, 10, 8], category: 'forex', isHot: true },
+
+  // Metals & Energy & Indices
+  { pair: 'XAU/USD', price: '$4,297', score: 12, signal: 'SELL', signalType: 'sell', change: '0.00%', isUp: true, sparkline: [22, 20, 18, 15, 12, 10, 6], category: 'metals', isHot: true },
+  { pair: 'XAG/USD', price: '$31.85', score: 85, signal: 'BUY', signalType: 'buy', change: '+0.76%', isUp: true, sparkline: [12, 15, 18, 22, 25, 28, 30], category: 'metals', isHot: true },
+  { pair: 'XPT/USD', price: '$1,778', score: 88, signal: 'BUY', signalType: 'buy', change: '0.00%', isUp: true, sparkline: [12, 10, 15, 14, 18, 12, 10], category: 'metals', isHot: true },
+  { pair: 'WTI/USD', price: '$71.40', score: 55, signal: 'HOLD', signalType: 'wait', change: '0.00%', isUp: true, sparkline: [18, 18, 19, 18, 19, 18, 19], category: 'metals', isHot: false },
+  { pair: 'US30', price: '$42,850', score: 68, signal: 'BUY', signalType: 'buy', change: '+0.34%', isUp: true, sparkline: [20, 22, 25, 24, 28, 30, 32], category: 'indices', isHot: false }
 ];
 
 export default function TradenRadar({ onBack, onOpenBot }) {
