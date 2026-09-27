@@ -1,24 +1,81 @@
-import React, { useState } from 'react';
-import { ChevronRight, Link2, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Link2 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 
-export default function SignalBot({ onBack }) {
+const categories = [
+  { id: 'crypto', label: 'كريبتو', icon: '₿' },
+  { id: 'forex', label: 'فوركس', icon: '💶' },
+  { id: 'metals', label: 'معادن', icon: '🥇' },
+  { id: 'indices', label: 'مؤشرات', icon: '📈' }
+];
+
+const assets = {
+  crypto: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'DOT/USDT', 'MATIC/USDT', 'BNB/USDT', 'XRP/USDT', 'LINK/USDT'],
+  forex: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD'],
+  metals: ['XAU/USD', 'XAG/USD', 'XPT/USD', 'WTI/USD'],
+  indices: ['US30', 'SPX500', 'NAS100']
+};
+
+const timeframes = [
+  { id: '1m', label: 'دقيقة 1', desc: 'تداول خاطف فائق السرعة' },
+  { id: '15m', label: '15 دقيقة', desc: 'توازن بين السرعة والدقة' },
+  { id: '1h', label: 'ساعة 1', desc: 'تحليل قوي للاتجاه اليومي' },
+  { id: '4h', label: '4 ساعات', desc: 'تداول سوينغ عالي الأمان' }
+];
+
+const getSymbol = (assetPair) => {
+  if (!assetPair) return 'BINANCE:BTCUSDT';
+  if (assetPair.includes('BTC')) return 'BINANCE:BTCUSDT';
+  if (assetPair.includes('ETH')) return 'BINANCE:ETHUSDT';
+  if (assetPair.includes('SOL')) return 'BINANCE:SOLUSDT';
+  if (assetPair.includes('DOT')) return 'BINANCE:DOTUSDT';
+  if (assetPair.includes('MATIC')) return 'BINANCE:MATICUSDT';
+  if (assetPair.includes('BNB')) return 'BINANCE:BNBUSDT';
+  if (assetPair.includes('XRP')) return 'BINANCE:XRPUSDT';
+  if (assetPair.includes('LINK')) return 'BINANCE:LINKUSDT';
+  if (assetPair.includes('EUR')) return 'FX:EURUSD';
+  if (assetPair.includes('GBP')) return 'FX:GBPUSD';
+  if (assetPair.includes('JPY')) return 'FX:USDJPY';
+  if (assetPair.includes('XAU')) return 'OANDA:XAUUSD';
+  if (assetPair.includes('XAG')) return 'OANDA:XAGUSD';
+  if (assetPair.includes('XPT')) return 'OANDA:XPTUSD';
+  if (assetPair.includes('US30')) return 'FOREXCOM:DJI';
+  return 'BINANCE:' + assetPair.replace('/', '');
+};
+
+export default function SignalBot({ onBack, initialSymbol }) {
   const [category, setCategory] = useState('crypto');
   const [asset, setAsset] = useState('BTC/USDT');
+  const [timeframe, setTimeframe] = useState('15m');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialSymbol) {
+      setAsset(initialSymbol);
+      if (initialSymbol.includes('EUR') || initialSymbol.includes('GBP') || initialSymbol.includes('JPY') || initialSymbol.includes('AUD') || initialSymbol.includes('CAD')) {
+        setCategory('forex');
+      } else if (initialSymbol.includes('XAU') || initialSymbol.includes('XAG') || initialSymbol.includes('XPT') || initialSymbol.includes('WTI')) {
+        setCategory('metals');
+      } else if (initialSymbol.includes('US30') || initialSymbol.includes('SPX') || initialSymbol.includes('NAS')) {
+        setCategory('indices');
+      } else {
+        setCategory('crypto');
+      }
+    }
+  }, [initialSymbol]);
 
   const handleAnalyze = () => {
     setLoading(true);
     setAnalysisResult(null);
 
-    // Attempt Telegram sendData if available
-    if (window.Telegram && window.Telegram.WebApp) {
+    // Safe Telegram sendData check
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
       try {
         const data = JSON.stringify({ action: "analyze", asset: asset, timeframe: timeframe });
         window.Telegram.WebApp.sendData(data);
       } catch (e) {
-        console.log("Telegram sendData not supported on inline button context", e);
+        console.log("Telegram sendData not supported on inline keyboard button context", e);
       }
     }
 
@@ -29,23 +86,25 @@ export default function SignalBot({ onBack }) {
         timeframe,
         signal: 'BUY 🟢 (شراء قوي)',
         score: '88/100',
-        entry: asset.includes('BTC') ? '84,650.00' : '2,645.50',
-        tp1: asset.includes('BTC') ? '85,800.00' : '2,680.00',
-        tp2: asset.includes('BTC') ? '87,200.00' : '2,710.00',
-        sl: asset.includes('BTC') ? '83,900.00' : '2,615.00',
+        entry: asset.includes('BTC') ? '$84,650.00' : asset.includes('SOL') ? '$121.45' : asset.includes('XAU') ? '$2,682.50' : '$1.0852',
+        tp1: asset.includes('BTC') ? '$85,800.00' : asset.includes('SOL') ? '$125.00' : asset.includes('XAU') ? '$2,705.00' : '$1.0910',
+        tp2: asset.includes('BTC') ? '$87,200.00' : asset.includes('SOL') ? '$130.00' : asset.includes('XAU') ? '$2,725.00' : '$1.0970',
+        sl: asset.includes('BTC') ? '$83,900.00' : asset.includes('SOL') ? '$118.50' : asset.includes('XAU') ? '$2,660.00' : '$1.0810',
         rsi: '62.4 (زخم صاعد)',
-        trend: 'اتجاه صاعد مدعوم بتدفق سيولة مؤسسية'
+        trend: `اتجاه صاعد مدعوم بتدفق سيولة وحجم تداول قوي على زوج ${asset}`
       });
     }, 800);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '24px' }}>🤖</span>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px' }}>Traden Signal Bot</h2>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>Traden Signal Bot</h2>
             <div style={{ fontSize: '12px', color: '#9ca3af' }}>تحليل فني + ماكرو + خوف/طمع + AI</div>
           </div>
         </div>
@@ -54,6 +113,7 @@ export default function SignalBot({ onBack }) {
         </button>
       </div>
 
+      {/* Premium Connect Banner */}
       <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link2 color="#f59e0b" size={24} />
@@ -65,6 +125,7 @@ export default function SignalBot({ onBack }) {
         <button style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer' }}>ربط ←</button>
       </div>
 
+      {/* Step 1: Category */}
       <div>
         <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>① اختر الفئة</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
@@ -76,7 +137,7 @@ export default function SignalBot({ onBack }) {
                 background: category === cat.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${category === cat.id ? '#fff' : 'rgba(255,255,255,0.05)'}`,
                 color: category === cat.id ? '#fff' : '#9ca3af',
-                padding: '12px 0', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+                padding: '12px 0', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'
               }}
             >
               {cat.icon} {cat.label}
@@ -85,30 +146,34 @@ export default function SignalBot({ onBack }) {
         </div>
       </div>
 
+      {/* Step 2: Asset */}
       <div>
         <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>② اختر الأصل</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          {assets[category].map(a => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          {(assets[category] || assets.crypto).map(a => (
             <button 
               key={a}
               onClick={() => setAsset(a)}
               style={{
-                background: asset === a ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255,255,255,0.02)',
+                background: asset === a ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${asset === a ? '#f59e0b' : 'rgba(255,255,255,0.05)'}`,
-                color: '#fff', padding: '16px', borderRadius: '8px', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+                color: asset === a ? '#f59e0b' : '#fff',
+                padding: '10px 4px', borderRadius: '8px', cursor: 'pointer',
+                fontWeight: 'bold', fontSize: '12px', textAlign: 'center'
               }}
             >
-              <div style={{ fontWeight: 'bold' }}>{a}</div>
+              {a}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ marginTop: '8px', marginBottom: '8px' }}>
-        <TradingViewWidget symbol={getSymbol(asset)} height={550} />
+      {/* Live Chart */}
+      <div style={{ marginTop: '4px', marginBottom: '4px' }}>
+        <TradingViewWidget symbol={getSymbol(asset)} timeframe={timeframe} height={550} />
       </div>
 
+      {/* Step 3: Timeframe */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ fontSize: '14px', color: '#9ca3af', textAlign: 'right' }}>③ الإطار الزمني</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -130,12 +195,9 @@ export default function SignalBot({ onBack }) {
             </button>
           ))}
         </div>
-        
-        <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '8px', textAlign: 'center', color: '#f59e0b', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>
-          ✅ ✅ جيد — توازن بين السرعة والدقة
-        </div>
       </div>
 
+      {/* Analyze Trigger Button */}
       <button 
         onClick={handleAnalyze}
         disabled={loading}
@@ -155,9 +217,10 @@ export default function SignalBot({ onBack }) {
           alignItems: 'center',
           gap: '8px'
         }}>
-        {loading ? '⚡ جاري تحليل البيانات بالذكاء الاصطناعي...' : '🤖 تحليل Traden الشامل'}
+        {loading ? '⚡ جاري تحليل البيانات بالذكاء الاصطناعي...' : `🤖 تحليل ${asset} بالذكاء الاصطناعي`}
       </button>
 
+      {/* Analysis Result Card */}
       {analysisResult && (
         <div style={{ 
           background: 'rgba(16, 185, 129, 0.08)', 

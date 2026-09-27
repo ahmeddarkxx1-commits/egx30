@@ -11,6 +11,7 @@ import './App.css';
 function App() {
   const [tgUser, setTgUser] = useState(null);
   const [currentView, setCurrentView] = useState('home');
+  const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -42,7 +43,10 @@ function App() {
       <div className="app-container">
         <TradenRadar 
           onBack={() => setCurrentView('home')} 
-          onOpenBot={(symbol) => setCurrentView('signal_bot')}
+          onOpenBot={(symbol) => {
+            if (symbol) setSelectedSymbol(symbol);
+            setCurrentView('signal_bot');
+          }}
         />
       </div>
     );
@@ -59,7 +63,7 @@ function App() {
   if (currentView === 'signal_bot') {
     return (
       <div className="app-container">
-        <SignalBot onBack={() => setCurrentView('home')} />
+        <SignalBot initialSymbol={selectedSymbol} onBack={() => setCurrentView('home')} />
       </div>
     );
   }

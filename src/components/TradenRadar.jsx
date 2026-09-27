@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { ChevronRight, Flame, TrendingUp, TrendingDown, RefreshCw, Bot } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, RefreshCw } from 'lucide-react';
 
-const radarAssets = [
-  { pair: 'SOL/USDT', price: '$121.4500', score: 88, signal: 'BUY', signalType: 'buy', change: '+0.17%', isUp: true, sparkline: [10, 15, 12, 22, 18, 25, 20], category: 'crypto', isHot: true },
+const initialRadarAssets = [
+  { pair: 'SOL/USDT', price: '$121.45', score: 88, signal: 'BUY', signalType: 'buy', change: '+0.17%', isUp: true, sparkline: [10, 15, 12, 22, 18, 25, 20], category: 'crypto', isHot: true },
   { pair: 'DOT/USDT', price: '$1.2510', score: 88, signal: 'BUY', signalType: 'buy', change: '+0.89%', isUp: true, sparkline: [8, 12, 18, 14, 24, 28, 30], category: 'crypto', isHot: true },
   { pair: 'MATIC/USDT', price: '$0.3794', score: 88, signal: 'BUY', signalType: 'buy', change: '-0.29%', isUp: false, sparkline: [25, 20, 15, 18, 12, 10, 8], category: 'crypto', isHot: true },
   { pair: 'XPT/USD', price: '$1,778', score: 88, signal: 'BUY', signalType: 'buy', change: '0.00%', isUp: true, sparkline: [12, 10, 15, 14, 18, 12, 10], category: 'metals', isHot: true },
@@ -18,11 +18,91 @@ const radarAssets = [
 ];
 
 export default function TradenRadar({ onBack, onOpenBot }) {
+  const [assets, setAssets] = useState(initialRadarAssets);
+  const [lastScanTime, setLastScanTime] = useState(new Date().toLocaleTimeString('ar-EG'));
+  const [isUpdating, setIsUpdating] = useState(false);
   const [filterSignal, setFilterSignal] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('score');
 
-  const filteredAssets = radarAssets.filter(asset => {
+  // Live Auto-Refresh simulation & Binance API ticker fetch
+  const fetchLiveData = async () => {
+    setIsUpdating(true);
+    try {
+      const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+      if (res.ok) {
+        const binanceData = await res.json();
+        const mapBinance = {};
+        binanceData.forEach(item => {
+          mapBinance[item.symbol] = item;
+        });
+
+        setAssets(prev => prev.map(a => {
+          const bSymbol = a.pair.replace('/', '');
+          const liveTicker = mapBinance[bSymbol];
+          if (liveTicker) {
+            const rawPrice = parseFloat(liveTicker.lastPrice);
+            const priceStr = rawPrice > 100 
+              ? `$${rawPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : `$${rawPrice.toFixed(4)}`;
+            
+            const rawChange = parseFloat(liveTicker.priceChangePercent);
+            const isUp = rawChange >= 0;
+            const changeStr = `${isUp ? '+' : ''}${rawChange.toFixed(2)}%`;
+
+            // Calculate dynamic Traden Score
+            const dynamicScore = Math.min(99, Math.max(10, Math.round(50 + rawChange * 5 + (Math.random() * 4 - 2))));
+            const signalType = dynamicScore >= 65 ? 'buy' : dynamicScore <= 35 ? 'sell' : 'wait';
+            const signal = signalType === 'buy' ? 'BUY' : signalType === 'sell' ? 'SELL' : 'HOLD';
+
+            // Add new point to sparkline
+            const newSpark = [...a.sparkline.slice(1), Math.round(20 + Math.random() * 15)];
+
+            return {
+              ...a,
+              price: priceStr,
+              score: dynamicScore,
+              signal,
+              signalType,
+              change: changeStr,
+              isUp,
+              sparkline: newSpark,
+              isHot: dynamicScore >= 80 || dynamicScore <= 25
+            };
+          }
+
+          // Random slight fluctuation for non-binance assets
+          const delta = (Math.random() - 0.49) * 0.2;
+          const isUp = delta >= 0;
+          return {
+            ...a,
+            sparkline: [...a.sparkline.slice(1), Math.round(15 + Math.random() * 15)],
+            isUp
+          };
+        }));
+      }
+    } catch (e) {
+      console.log('Using simulated live feed:', e);
+    } finally {
+      setLastScanTime(new Date().toLocaleTimeString('ar-EG'));
+      setTimeout(() => setIsUpdating(false), 500);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveData();
+    const interval = setInterval(() => {
+      fetchLiveData();
+    }, 8000); // refresh every 8 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const totalScanned = assets.length;
+  const hotCount = assets.filter(a => a.isHot).length;
+  const buyCount = assets.filter(a => a.signalType === 'buy').length;
+  const sellCount = assets.filter(a => a.signalType === 'sell').length;
+
+  const filteredAssets = assets.filter(asset => {
     if (filterSignal === 'buy' && asset.signalType !== 'buy') return false;
     if (filterSignal === 'sell' && asset.signalType !== 'sell') return false;
     if (filterSignal === 'hot' && !asset.isHot) return false;
@@ -34,8 +114,8 @@ export default function TradenRadar({ onBack, onOpenBot }) {
     return 0;
   });
 
-  const topBuy = radarAssets.filter(a => a.signalType === 'buy').slice(0, 3);
-  const topSell = radarAssets.filter(a => a.signalType === 'sell').slice(0, 3);
+  const topBuy = [...assets].filter(a => a.signalType === 'buy').sort((a,b) => b.score - a.score).slice(0, 3);
+  const topSell = [...assets].filter(a => a.signalType === 'sell').sort((a,b) => a.score - b.score).slice(0, 3);
 
   const renderSparkline = (points, isUp) => {
     const min = Math.min(...points);
@@ -65,14 +145,21 @@ export default function TradenRadar({ onBack, onOpenBot }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px' }}>رادار الفرص اللحظي 🔭</h2>
-            <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '12px', color: '#9ca3af' }}>مباشر 🟢</span>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>رادار الفرص اللحظي 🔭</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '12px', color: '#10b981', fontSize: '11px', fontWeight: 'bold' }}>
+              <span className={isUpdating ? 'spin' : ''}>🟢</span>
+              <span>مباشر</span>
+            </div>
           </div>
-          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>آخر مسح: 1:54:40 ص · 20/20 أصل</div>
+          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>آخر مسح: {lastScanTime} · {totalScanned}/{totalScanned} أصل</span>
+            <RefreshCw size={12} className={isUpdating ? 'spin' : ''} style={{ cursor: 'pointer' }} onClick={fetchLiveData} />
+          </div>
         </div>
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
           <ChevronRight size={28} />
@@ -82,19 +169,19 @@ export default function TradenRadar({ onBack, onOpenBot }) {
       {/* Stats Cards Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>20</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>{totalScanned}</div>
           <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>إجمالي مفحوص</div>
         </div>
         <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>8</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>{hotCount}</div>
           <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '2px' }}>فرص ساخنة</div>
         </div>
         <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f87171' }}>4</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f87171' }}>{sellCount}</div>
           <div style={{ fontSize: '11px', color: '#f87171', marginTop: '2px' }}>إشارات بيع</div>
         </div>
         <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>8</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>{buyCount}</div>
           <div style={{ fontSize: '11px', color: '#10b981', marginTop: '2px' }}>إشارات شراء</div>
         </div>
       </div>
@@ -121,7 +208,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
               >
                 <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '15px' }}>{item.score}</span>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{item.pair}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
                   <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
                 </div>
               </div>
@@ -142,7 +229,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
               >
                 <span style={{ fontWeight: 'bold', color: '#f87171', fontSize: '15px' }}>{item.score}</span>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{item.pair}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
                   <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
                 </div>
               </div>
@@ -151,7 +238,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
         </div>
       </div>
 
-      {/* Filter Tabs Bar (Row 1: Signal filter, Row 2: Category filter) */}
+      {/* Filter Tabs Bar */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
           {[
@@ -233,7 +320,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
             }}
           >
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{asset.pair}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{asset.pair}</div>
               <div style={{ fontSize: '11px', color: '#9ca3af' }}>{asset.price}</div>
             </div>
 
@@ -276,7 +363,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
         ))}
       </div>
 
-      {/* Score Guide Box ("دليل درجة تريدن") */}
+      {/* Score Guide Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
         <div style={{ fontSize: '13px', color: '#9ca3af', textAlign: 'center', marginBottom: '12px', fontWeight: 'bold' }}>دليل درجة Traden Score</div>
         
