@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, RefreshCw } from 'lucide-react';
+import { AssetLogo } from '../utils/assetLogos';
 
 const initialRadarAssets = [
   // Crypto
@@ -241,9 +242,12 @@ export default function TradenRadar({ onBack, onOpenBot }) {
                 style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '8px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
               >
                 <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '15px' }}>{item.score}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
-                  <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
+                  </div>
+                  <AssetLogo symbol={item.pair} containerSize={28} size={18} />
                 </div>
               </div>
             ))}
@@ -262,9 +266,12 @@ export default function TradenRadar({ onBack, onOpenBot }) {
                 style={{ background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
               >
                 <span style={{ fontWeight: 'bold', color: '#f87171', fontSize: '15px' }}>{item.score}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
-                  <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>{item.price}</div>
+                  </div>
+                  <AssetLogo symbol={item.pair} containerSize={28} size={18} />
                 </div>
               </div>
             ))}
@@ -353,9 +360,12 @@ export default function TradenRadar({ onBack, onOpenBot }) {
               transition: 'background 0.2s'
             }}
           >
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{asset.pair}</div>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>{asset.price}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AssetLogo symbol={asset.pair} containerSize={32} size={20} />
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{asset.pair}</div>
+                <div style={{ fontSize: '11px', color: '#9ca3af' }}>{asset.price}</div>
+              </div>
             </div>
 
             <div style={{ textAlign: 'center' }}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import { AssetLogo } from '../utils/assetLogos';
 
 const allAssets = [
   // Forex Majors
@@ -263,18 +264,7 @@ export default function MarketScanner({ onBack }) {
               <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{coin.pair}</div>
               <div style={{ fontSize: '11px', color: '#9ca3af' }}>{coin.name}</div>
             </div>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: '50%', 
-              background: 'rgba(255,255,255,0.1)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              fontSize: '14px'
-            }}>
-              {coin.icon}
-            </div>
+            <AssetLogo symbol={coin.pair} fallbackIcon={coin.icon} containerSize={32} size={20} />
           </div>
         ))}
       </div>

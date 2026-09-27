@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronRight, Search, ShieldCheck, AlertTriangle, AlertCircle, XCircle, Bot, Sparkles } from 'lucide-react';
+import { AssetLogo } from '../utils/assetLogos';
 
 const halalAssetsData = [
   {
@@ -340,9 +341,7 @@ export default function HalalGuide({ onBack }) {
                   <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{asset.pair}</div>
                   <div style={{ fontSize: '10px', color: '#9ca3af' }}>{asset.name}</div>
                 </div>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-                  {asset.icon}
-                </div>
+                <AssetLogo symbol={asset.pair} fallbackIcon={asset.icon} containerSize={36} size={22} />
               </div>
             </div>
 
