@@ -101,49 +101,71 @@ export default function SignalBot({ onBack }) {
         </div>
       </div>
 
-      <div>
-        <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>③ الإطار الزمني</div>
+      <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+        <TradingViewWidget symbol={getSymbol(asset)} />
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ fontSize: '14px', color: '#9ca3af', textAlign: 'right' }}>③ الإطار الزمني</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           {timeframes.map(tf => (
             <button 
               key={tf.id}
               onClick={() => setTimeframe(tf.id)}
               style={{
-                background: timeframe === tf.id ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255,255,255,0.02)',
+                background: timeframe === tf.id ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
                 border: `1px solid ${timeframe === tf.id ? '#f59e0b' : 'rgba(255,255,255,0.05)'}`,
                 color: '#fff', padding: '12px', borderRadius: '8px', cursor: 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
               }}
             >
-              <div style={{ fontWeight: 'bold', color: timeframe === tf.id ? '#f59e0b' : '#fff' }}>
-                {timeframe === tf.id ? '✅ ' : ''}{tf.label}
+              <div style={{ fontWeight: 'bold', color: timeframe === tf.id ? '#f59e0b' : '#9ca3af' }}>
+                {timeframe === tf.id ? '✅ ' : '⚡ '}{tf.label}
               </div>
               <div style={{ fontSize: '11px', color: '#9ca3af' }}>{tf.desc}</div>
             </button>
           ))}
         </div>
+        
+        <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '8px', textAlign: 'center', color: '#f59e0b', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>
+          ✅ ✅ جيد — توازن بين السرعة والدقة
+        </div>
       </div>
 
       <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: '#1d4ed8', padding: '8px', borderRadius: '50%' }}>
-            <Send size={20} color="#fff" />
-          </div>
+        <button style={{ background: 'transparent', color: '#3b82f6', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          انضم ←
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'right' }}>
           <div>
             <div style={{ fontWeight: 'bold', color: '#fff' }}>بوت Traden BOT</div>
             <div style={{ fontSize: '11px', color: '#9ca3af' }}>جميع الإشارات تُرسل تلقائياً للقناة · انضم الآن</div>
           </div>
+          <div style={{ background: '#1d4ed8', padding: '8px', borderRadius: '50%' }}>
+            <Send size={20} color="#fff" />
+          </div>
         </div>
-        <button style={{ background: 'transparent', color: '#3b82f6', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>انضم ←</button>
       </div>
 
-      <button style={{ width: '100%', background: '#f59e0b', color: '#000', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', border: 'none', cursor: 'pointer' }}>
+      <button style={{ 
+        width: '100%', 
+        background: '#f59e0b', 
+        color: '#000', 
+        padding: '16px', 
+        borderRadius: '12px', 
+        fontWeight: 'bold', 
+        fontSize: '18px', 
+        border: 'none', 
+        cursor: 'pointer',
+        boxShadow: '0 0 20px rgba(245, 158, 11, 0.4)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '20px'
+      }}>
         🤖 تحليل Traden الشامل
       </button>
-
-      <div style={{ marginTop: '16px' }}>
-        <TradingViewWidget symbol={getSymbol(asset)} />
-      </div>
 
     </div>
   );
