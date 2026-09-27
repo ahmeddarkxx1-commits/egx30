@@ -101,11 +101,6 @@ function App() {
             مرحباً بك، {tgUser.first_name}
           </div>
         )}
-
-        <div className="action-buttons">
-          <button className="btn btn-primary">ابدأ مجاناً ←</button>
-          <button className="btn btn-secondary">جرب البوت</button>
-        </div>
       </header>
 
       <section>
@@ -114,18 +109,12 @@ function App() {
           البوتات الذكية
         </div>
         <div className="grid-2">
-          <div className="card">
-            <span className="card-icon">🤖</span>
-            <div className="card-title">بوت التداول الآلي</div>
-            <div className="card-desc">يفتح ويغلق صفقاتك تلقائياً</div>
-            <div className="badge">PRO</div>
-          </div>
           <div className="card" onClick={() => setCurrentView('signal_bot')}>
             <span className="card-icon">📡</span>
             <div className="card-title">Traden Bot</div>
             <div className="card-desc">إشارات BUY/SELL بالذكاء</div>
           </div>
-          <div className="card" onClick={() => setCurrentView('investment_bot')} style={{ gridColumn: 'span 2', cursor: 'pointer' }}>
+          <div className="card" onClick={() => setCurrentView('investment_bot')} style={{ cursor: 'pointer' }}>
             <span className="card-icon">🌱</span>
             <div className="card-title">بوت الاستثمار الذكي ✦</div>
             <div className="card-desc">أفضل أصول للاحتفاظ والدخل السلبي (HODL & DCA)</div>
@@ -148,10 +137,6 @@ function App() {
             <BarChart2 size={24} color="#60a5fa" />
             <div className="card-title">Market Scanner</div>
           </div>
-          <div className="card">
-            <span className="card-icon">🌅</span>
-            <div className="card-title">Traden الصباحي</div>
-          </div>
           <div className="card" onClick={() => setCurrentView('precious_metals')}>
             <span className="card-icon">🥇</span>
             <div className="card-title">المعادن الثمينة</div>
@@ -167,10 +152,6 @@ function App() {
           <div className="card">
             <Activity size={24} color="#f472b6" />
             <div className="card-title">مصفوفة الارتباط</div>
-          </div>
-          <div className="card">
-            <Bell size={24} color="#fbbf24" />
-            <div className="card-title">تنبيهات السعر</div>
           </div>
         </div>
       </section>
