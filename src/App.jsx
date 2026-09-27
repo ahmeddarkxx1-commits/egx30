@@ -3,6 +3,7 @@ import { Bot, LineChart, Target, BookOpen, Bell, Coins, BarChart2, Star, Share2,
 import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
+import TradenRadar from './components/TradenRadar';
 import './App.css';
 
 function App() {
@@ -17,6 +18,17 @@ function App() {
       }
     }
   }, []);
+
+  if (currentView === 'traden_radar') {
+    return (
+      <div className="app-container">
+        <TradenRadar 
+          onBack={() => setCurrentView('home')} 
+          onOpenBot={(symbol) => setCurrentView('signal_bot')}
+        />
+      </div>
+    );
+  }
 
   if (currentView === 'market_scanner') {
     return (
@@ -96,6 +108,11 @@ function App() {
           الأدوات
         </div>
         <div className="grid-3">
+          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' }}>
+            <span className="card-icon">🔭</span>
+            <div className="card-title">رادار الفرص ✦</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>جديد 🔥</div>
+          </div>
           <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={24} color="#60a5fa" />
             <div className="card-title">Market Scanner</div>
