@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550 }) {
+function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe = "1h" }) {
   const container = useRef();
+
+  const getTvInterval = (tf) => {
+    if (tf === '1m') return '1';
+    if (tf === '5m') return '5';
+    if (tf === '15m') return '15';
+    if (tf === '1h') return '60';
+    if (tf === '4h') return '240';
+    if (tf === '1d' || tf === 'D') return 'D';
+    return tf || '60';
+  };
 
   useEffect(() => {
     // Clear the container first to avoid duplicate widgets
@@ -9,6 +19,8 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550 }) {
         container.current.innerHTML = "";
     }
     
+    const tvInterval = getTvInterval(timeframe);
+
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
@@ -19,7 +31,7 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550 }) {
         "width": "100%",
         "height": "${height}",
         "symbol": "${symbol}",
-        "interval": "60",
+        "interval": "${tvInterval}",
         "timezone": "Etc/UTC",
         "theme": "dark",
         "style": "1",
@@ -32,7 +44,7 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550 }) {
         "save_image": false
       }`;
     container.current.appendChild(script);
-  }, [symbol, height]);
+  }, [symbol, height, timeframe]);
 
   return (
     <div className="tradingview-widget-container" ref={container} style={{ height: `${height}px`, width: "100%", borderRadius: "12px", overflow: "hidden" }}>

@@ -38,8 +38,17 @@ export default function MarketScanner({ onBack }) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('forex');
   const [selectedCoin, setSelectedCoin] = useState(allAssets[0]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1h');
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  const timeframes = [
+    { id: '1m', label: '1 دقيقة ⚡', desc: 'سكالبينج خاطف' },
+    { id: '15m', label: '15 دقيقة 🚀', desc: 'صفقة سريعة' },
+    { id: '1h', label: '1 ساعة 📊', desc: 'صفقة يومية' },
+    { id: '4h', label: '4 ساعات 🎯', desc: 'سوينغ متوسط' },
+    { id: '1d', label: 'يومي 🏛️', desc: 'اتجاه عام' }
+  ];
 
   const filteredCoins = allAssets.filter(c => {
     const matchesCategory = activeCategory === 'all' || c.category === activeCategory;
@@ -61,7 +70,8 @@ export default function MarketScanner({ onBack }) {
         const data = JSON.stringify({ 
           action: "analyze", 
           symbol: selectedCoin.pair, 
-          name: selectedCoin.name 
+          name: selectedCoin.name,
+          timeframe: selectedTimeframe
         });
         window.Telegram.WebApp.sendData(data);
       } catch (err) {
@@ -72,37 +82,40 @@ export default function MarketScanner({ onBack }) {
     setTimeout(() => {
       setLoading(false);
 
-      let priceData = { entry: '1.0850', tp1: '1.0895', tp2: '1.0940', sl: '1.0810', trend: 'اتجاه صاعد مدعوم بنمو المؤشرات الاقتصادية الأوروبية' };
       const pairUpper = selectedCoin.pair.toUpperCase();
+      let price = 1.0850;
+      let tpMul = 0.0040;
+      let slMul = 0.0025;
 
-      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD') || pairUpper.includes('ذهب')) {
-        priceData = { entry: '2,678.50', tp1: '2,695.00', tp2: '2,715.00', sl: '2,662.00', trend: 'ارتداد إيجابي من منطقة دعم رئيسية بعد تدفقات الذهب العالمية' };
-      } else if (pairUpper.includes('XAG') || pairUpper.includes('SILVER')) {
-        priceData = { entry: '31.85', tp1: '32.40', tp2: '33.10', sl: '31.30', trend: 'زخم إيجابي قوي على الفضة مع زيادة طلب الصناعة' };
+      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
+        price = 2678.50;
+        tpMul = selectedTimeframe === '1m' ? 4.5 : selectedTimeframe === '15m' ? 12.0 : selectedTimeframe === '1h' ? 25.0 : 60.0;
+        slMul = selectedTimeframe === '1m' ? 2.5 : selectedTimeframe === '15m' ? 7.0 : selectedTimeframe === '1h' ? 14.0 : 35.0;
       } else if (pairUpper.includes('BTC')) {
-        priceData = { entry: '84,650.00', tp1: '86,200.00', tp2: '88,500.00', sl: '83,400.00', trend: 'اختراق نموذجي لخط الاتجاه مع زيادة سيولة الكريبتو' };
-      } else if (pairUpper.includes('ETH')) {
-        priceData = { entry: '2,678.20', tp1: '2,740.00', tp2: '2,820.00', sl: '2,630.00', trend: 'تجميع إيجابي أعلى المتوسط المتحرك 200' };
+        price = 84650.00;
+        tpMul = selectedTimeframe === '1m' ? 180.0 : selectedTimeframe === '15m' ? 450.0 : selectedTimeframe === '1h' ? 1200.0 : 3500.0;
+        slMul = selectedTimeframe === '1m' ? 90.0 : selectedTimeframe === '15m' ? 220.0 : selectedTimeframe === '1h' ? 650.0 : 1800.0;
       } else if (pairUpper.includes('EUR/USD')) {
-        priceData = { entry: '1.0852', tp1: '1.0895', tp2: '1.0945', sl: '1.0815', trend: 'صعود تدريجي يختبر مستويات المقاومة اليومية' };
-      } else if (pairUpper.includes('GBP/USD')) {
-        priceData = { entry: '1.2985', tp1: '1.3040', tp2: '1.3110', sl: '1.2930', trend: 'زخم صاعد مدعوم ببيانات التضخم البريطانية' };
-      } else if (pairUpper.includes('US30')) {
-        priceData = { entry: '42,850.00', tp1: '43,150.00', tp2: '43,450.00', sl: '42,600.00', trend: 'ارتفاع مؤشر الداو جونز مع نتائج أرباح الشركات' };
-      } else if (pairUpper.includes('WTI') || pairUpper.includes('OIL')) {
-        priceData = { entry: '71.40', tp1: '72.80', tp2: '74.20', sl: '70.20', trend: 'ارتفاع النفط الخام نتيجة مخاوف الإمدادات' };
+        price = 1.0852;
+        tpMul = selectedTimeframe === '1m' ? 0.0008 : selectedTimeframe === '15m' ? 0.0022 : selectedTimeframe === '1h' ? 0.0055 : 0.0140;
+        slMul = selectedTimeframe === '1m' ? 0.0004 : selectedTimeframe === '15m' ? 0.0011 : selectedTimeframe === '1h' ? 0.0028 : 0.0070;
       }
+
+      const tp1 = (price + tpMul).toFixed(price > 100 ? 2 : 4);
+      const sl = (price - slMul).toFixed(price > 100 ? 2 : 4);
+
+      const tfNames = { '1m': '1 دقيقة (Scalping خاطف)', '15m': '15 دقيقة (سريع)', '1h': '1 ساعة (يومي)', '4h': '4 ساعات (سوينغ)', '1d': 'يومي (استثماري)' };
 
       setAnalysisResult({
         pair: selectedCoin.pair,
+        timeframe: tfNames[selectedTimeframe] || selectedTimeframe,
         signal: 'شراء قوي 🟢 (BUY)',
-        score: '91/100',
-        entry: priceData.entry,
-        tp1: priceData.tp1,
-        tp2: priceData.tp2,
-        sl: priceData.sl,
-        rsi: '64.8 (زخم إيجابي)',
-        trend: priceData.trend
+        score: selectedTimeframe === '1m' ? '94/100 (سكور خاطف عالي)' : '91/100',
+        entry: price > 100 ? price.toLocaleString('en-US', { minimumFractionDigits: 2 }) : price.toFixed(4),
+        tp1: tp1 > 100 ? Number(tp1).toLocaleString('en-US', { minimumFractionDigits: 2 }) : tp1,
+        sl: sl > 100 ? Number(sl).toLocaleString('en-US', { minimumFractionDigits: 2 }) : sl,
+        rsi: selectedTimeframe === '1m' ? '71.2 (زخم خاطف متسارع)' : '64.8 (زخم إيجابي)',
+        trend: `تحليل إطار ${tfNames[selectedTimeframe]}: اختراق نموذج فني إيجابي مع توافق المؤشرات على هذا الفريم.`
       });
     }, 600);
   };
@@ -206,9 +219,34 @@ export default function MarketScanner({ onBack }) {
           <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#f59e0b' }}>
             {selectedCoin.pair}
           </div>
-          <div style={{ fontSize: '12px', color: '#9ca3af' }}>مخطط احترافي</div>
+          <div style={{ fontSize: '12px', color: '#9ca3af' }}>مخطط تفاعلي</div>
         </div>
-        <TradingViewWidget symbol={selectedCoin.symbol} height={550} />
+
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {timeframes.map(tf => (
+            <button
+              key={tf.id}
+              onClick={() => { setSelectedTimeframe(tf.id); setAnalysisResult(null); }}
+              style={{
+                flex: 1,
+                background: selectedTimeframe === tf.id ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                color: selectedTimeframe === tf.id ? '#f59e0b' : '#9ca3af',
+                border: `1px solid ${selectedTimeframe === tf.id ? '#f59e0b' : 'rgba(255,255,255,0.08)'}`,
+                padding: '8px 4px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                fontSize: '12px',
+                cursor: 'pointer',
+                textAlign: 'center',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <div>{tf.label}</div>
+            </button>
+          ))}
+        </div>
+
+        <TradingViewWidget symbol={selectedCoin.symbol} height={550} timeframe={selectedTimeframe} />
       </div>
 
       <button 
