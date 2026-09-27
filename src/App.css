@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0d0f14;
+  color: #fff;
+  overflow-x: hidden;
+  direction: rtl;
+}
+
+.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.header-title span {
+  color: #f59e0b;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 16px;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background-color: #f59e0b;
+  color: #000;
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a1a1aa;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.card-icon {
+  font-size: 24px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e5e7eb;
+}
+
+.card-desc {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.chart-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.price-sub {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.trend-up {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.chart-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-box {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+
+.stat-title {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.stat-val {
+  font-size: 12px;
+  font-weight: bold;
+  color: #d1d5db;
+}
+
+@media (max-width: 600px) {
+  .grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
