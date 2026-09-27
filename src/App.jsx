@@ -47,7 +47,7 @@ function App() {
       
       <header className="header">
         <div className="header-title">
-          تداول أذكى <span>مع RASAD AI ✦</span>
+          تداول أذكى <span>مع Traden AI ✦</span>
         </div>
         <div style={{ fontSize: '12px', color: '#9ca3af' }}>
           إشارات ذكية · تحليل فني · فتح صفقات مباشر
@@ -79,7 +79,7 @@ function App() {
           </div>
           <div className="card" onClick={() => setCurrentView('signal_bot')}>
             <span className="card-icon">📡</span>
-            <div className="card-title">رصد Bot</div>
+            <div className="card-title">Traden Bot</div>
             <div className="card-desc">إشارات BUY/SELL بالذكاء</div>
           </div>
           <div className="card" style={{ gridColumn: 'span 2' }}>
@@ -102,7 +102,7 @@ function App() {
           </div>
           <div className="card">
             <span className="card-icon">🌅</span>
-            <div className="card-title">رصد الصباحي</div>
+            <div className="card-title">Traden الصباحي</div>
           </div>
           <div className="card">
             <span className="card-icon">🥇</span>
@@ -110,7 +110,7 @@ function App() {
           </div>
           <div className="card">
             <BookOpen size={24} color="#a78bfa" />
-            <div className="card-title">أكاديمية RASAD</div>
+            <div className="card-title">أكاديمية Traden</div>
           </div>
           <div className="card">
             <Shield size={24} color="#34d399" />

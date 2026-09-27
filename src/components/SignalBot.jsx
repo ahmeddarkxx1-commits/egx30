@@ -41,7 +41,7 @@ export default function SignalBot({ onBack }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '24px' }}>🤖</span>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px' }}>رصد Signal Bot</h2>
+            <h2 style={{ margin: 0, fontSize: '20px' }}>Traden Signal Bot</h2>
             <div style={{ fontSize: '12px', color: '#9ca3af' }}>تحليل فني + ماكرو + خوف/طمع + AI</div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function SignalBot({ onBack }) {
             <Send size={20} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 'bold', color: '#fff' }}>بوت رصد RASAD BOT</div>
+            <div style={{ fontWeight: 'bold', color: '#fff' }}>بوت Traden BOT</div>
             <div style={{ fontSize: '11px', color: '#9ca3af' }}>جميع الإشارات تُرسل تلقائياً للقناة · انضم الآن</div>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function SignalBot({ onBack }) {
       </div>
 
       <button style={{ width: '100%', background: '#f59e0b', color: '#000', padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', border: 'none', cursor: 'pointer' }}>
-        🤖 تحليل رصد الشامل
+        🤖 تحليل Traden الشامل
       </button>
 
       <div style={{ marginTop: '16px' }}>
