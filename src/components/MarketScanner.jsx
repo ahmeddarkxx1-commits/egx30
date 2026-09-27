@@ -71,18 +71,40 @@ export default function MarketScanner({ onBack }) {
 
     setTimeout(() => {
       setLoading(false);
+
+      let priceData = { entry: '1.0850', tp1: '1.0895', tp2: '1.0940', sl: '1.0810', trend: 'اتجاه صاعد مدعوم بنمو المؤشرات الاقتصادية الأوروبية' };
+      const pairUpper = selectedCoin.pair.toUpperCase();
+
+      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD') || pairUpper.includes('ذهب')) {
+        priceData = { entry: '2,678.50', tp1: '2,695.00', tp2: '2,715.00', sl: '2,662.00', trend: 'ارتداد إيجابي من منطقة دعم رئيسية بعد تدفقات الذهب العالمية' };
+      } else if (pairUpper.includes('XAG') || pairUpper.includes('SILVER')) {
+        priceData = { entry: '31.85', tp1: '32.40', tp2: '33.10', sl: '31.30', trend: 'زخم إيجابي قوي على الفضة مع زيادة طلب الصناعة' };
+      } else if (pairUpper.includes('BTC')) {
+        priceData = { entry: '84,650.00', tp1: '86,200.00', tp2: '88,500.00', sl: '83,400.00', trend: 'اختراق نموذجي لخط الاتجاه مع زيادة سيولة الكريبتو' };
+      } else if (pairUpper.includes('ETH')) {
+        priceData = { entry: '2,678.20', tp1: '2,740.00', tp2: '2,820.00', sl: '2,630.00', trend: 'تجميع إيجابي أعلى المتوسط المتحرك 200' };
+      } else if (pairUpper.includes('EUR/USD')) {
+        priceData = { entry: '1.0852', tp1: '1.0895', tp2: '1.0945', sl: '1.0815', trend: 'صعود تدريجي يختبر مستويات المقاومة اليومية' };
+      } else if (pairUpper.includes('GBP/USD')) {
+        priceData = { entry: '1.2985', tp1: '1.3040', tp2: '1.3110', sl: '1.2930', trend: 'زخم صاعد مدعوم ببيانات التضخم البريطانية' };
+      } else if (pairUpper.includes('US30')) {
+        priceData = { entry: '42,850.00', tp1: '43,150.00', tp2: '43,450.00', sl: '42,600.00', trend: 'ارتفاع مؤشر الداو جونز مع نتائج أرباح الشركات' };
+      } else if (pairUpper.includes('WTI') || pairUpper.includes('OIL')) {
+        priceData = { entry: '71.40', tp1: '72.80', tp2: '74.20', sl: '70.20', trend: 'ارتفاع النفط الخام نتيجة مخاوف الإمدادات' };
+      }
+
       setAnalysisResult({
         pair: selectedCoin.pair,
         signal: 'شراء قوي 🟢 (BUY)',
         score: '91/100',
-        entry: selectedCoin.pair.includes('BTC') ? '84,650.00' : selectedCoin.pair.includes('ETH') ? '2,678.20' : '145.30',
-        tp1: selectedCoin.pair.includes('BTC') ? '85,900.00' : selectedCoin.pair.includes('ETH') ? '2,740.00' : '152.00',
-        tp2: selectedCoin.pair.includes('BTC') ? '87,400.00' : selectedCoin.pair.includes('ETH') ? '2,810.00' : '158.50',
-        sl: selectedCoin.pair.includes('BTC') ? '83,800.00' : selectedCoin.pair.includes('ETH') ? '2,630.00' : '139.00',
-        rsi: '64.8 (زخم إيجابي صاعد)',
-        trend: 'اختراق نموذج وتد صاعد مدعوم بدخول سيولة عالية'
+        entry: priceData.entry,
+        tp1: priceData.tp1,
+        tp2: priceData.tp2,
+        sl: priceData.sl,
+        rsi: '64.8 (زخم إيجابي)',
+        trend: priceData.trend
       });
-    }, 700);
+    }, 600);
   };
 
   return (
