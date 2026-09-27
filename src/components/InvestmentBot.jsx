@@ -140,13 +140,13 @@ export default function InvestmentBot({ onBack }) {
             <select
               value={monthlyAmount}
               onChange={(e) => setMonthlyAmount(Number(e.target.value))}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', color: '#fff', fontSize: '13px', direction: 'rtl' }}
+              style={{ width: '100%', background: '#181b22', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '8px', color: '#fff', fontSize: '13px', direction: 'rtl' }}
             >
-              <option value={50}>50 $ / شهرياً</option>
-              <option value={100}>100 $ / شهرياً</option>
-              <option value={250}>250 $ / شهرياً</option>
-              <option value={500}>500 $ / شهرياً</option>
-              <option value={1000}>1,000 $ / شهرياً</option>
+              <option value={50} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>50 $ / شهرياً</option>
+              <option value={100} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>100 $ / شهرياً</option>
+              <option value={250} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>250 $ / شهرياً</option>
+              <option value={500} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>500 $ / شهرياً</option>
+              <option value={1000} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>1,000 $ / شهرياً</option>
             </select>
           </div>
 
@@ -155,11 +155,11 @@ export default function InvestmentBot({ onBack }) {
             <select
               value={years}
               onChange={(e) => setYears(Number(e.target.value))}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '8px', color: '#fff', fontSize: '13px', direction: 'rtl' }}
+              style={{ width: '100%', background: '#181b22', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '8px', color: '#fff', fontSize: '13px', direction: 'rtl' }}
             >
-              <option value={1}>سنة واحدة (12 شهر)</option>
-              <option value={3}>3 سنوات (36 شهر)</option>
-              <option value={5}>5 سنوات (60 شهر)</option>
+              <option value={1} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>سنة واحدة (12 شهر)</option>
+              <option value={3} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>3 سنوات (36 شهر)</option>
+              <option value={5} style={{ backgroundColor: '#181b22', color: '#ffffff' }}>5 سنوات (60 شهر)</option>
             </select>
           </div>
         </div>
