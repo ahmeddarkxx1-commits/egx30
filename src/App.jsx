@@ -5,6 +5,7 @@ import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
 import TradenRadar from './components/TradenRadar';
 import PreciousMetals from './components/PreciousMetals';
+import HalalGuide from './components/HalalGuide';
 import './App.css';
 
 function App() {
@@ -19,6 +20,14 @@ function App() {
       }
     }
   }, []);
+
+  if (currentView === 'halal_guide') {
+    return (
+      <div className="app-container">
+        <HalalGuide onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
 
   if (currentView === 'precious_metals') {
     return (
@@ -138,7 +147,7 @@ function App() {
             <BookOpen size={24} color="#a78bfa" />
             <div className="card-title">أكاديمية Traden</div>
           </div>
-          <div className="card">
+          <div className="card" onClick={() => setCurrentView('halal_guide')}>
             <Shield size={24} color="#34d399" />
             <div className="card-title">دليل الحلال</div>
           </div>
