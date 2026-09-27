@@ -88,6 +88,48 @@ const halalAssetsData = [
     impureIncome: '0.0%',
     purification: '0.0%'
   },
+  {
+    id: 'SUI',
+    pair: 'SUI/USDT',
+    name: 'Sui Network',
+    icon: '💧',
+    category: 'crypto',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'شبكة بلوكتشين حديثة عالية السرعة. يتطلب التأكد من عدم استخدام بروتوكولات الإقراض الربوي التابعة للشبكة.',
+    aaoifi: 'متوافق مع الاحتياط من DeFi الربوي',
+    debtRatio: '0.0%',
+    impureIncome: '0.8%',
+    purification: '0.8%'
+  },
+  {
+    id: 'NEAR',
+    pair: 'NEAR/USDT',
+    name: 'Near Protocol',
+    icon: 'Ⓝ',
+    category: 'crypto',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'منصة عقود ذكية وسحابية لامركزية ذات استخدامات نافعة ولكن تستوجب الحذر من تطبيقات الـ Staking المزودة بعوائد ثابتة.',
+    aaoifi: 'مباح للتحويل بدون Staking ربوي',
+    debtRatio: '0.0%',
+    impureIncome: '1.1%',
+    purification: '1.1%'
+  },
+  {
+    id: 'AAVE',
+    pair: 'AAVE/USDT',
+    name: 'Aave Protocol',
+    icon: '👻',
+    category: 'crypto',
+    status: 'doubtful',
+    statusLabel: 'مشكوك فيه ❌',
+    explanation: 'بروتوكول إقراض واقتراض بالفوائد الربوية صراحة في التمويل اللامركزي (DeFi).',
+    aaoifi: 'غير جائز شرعاً لربويتها المباشرة',
+    debtRatio: '100%',
+    impureIncome: '100%',
+    purification: 'غير جائز'
+  },
 
   // Stocks & Commodities
   {
@@ -161,6 +203,62 @@ const halalAssetsData = [
     purification: '1.8%'
   },
   {
+    id: 'AMZN',
+    pair: 'AMZN',
+    name: 'Amazon.com Inc.',
+    icon: '📦',
+    category: 'stocks',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'التجارة والحوسبة السحابية مباحة، ولكن تستدعي الاحتياط بسبب الاستثمارات المالية والتسهيلات البنكية الجانبية.',
+    aaoifi: 'متوافق مع التطهير بنسبة 2.1%',
+    debtRatio: '24.1%',
+    impureIncome: '2.1%',
+    purification: '2.1%'
+  },
+  {
+    id: 'GOOGL',
+    pair: 'GOOGL',
+    name: 'Alphabet Inc.',
+    icon: '🔍',
+    category: 'stocks',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'محرك البحث والتكنولوجيا مباحان، مع وجود إيرادات إعلانات وتسهيلات نقدية بفائدة تتطلب تطهيراً سنوياً.',
+    aaoifi: 'متوافق مع التطهير الشرعي',
+    debtRatio: '11.8%',
+    impureIncome: '1.5%',
+    purification: '1.5%'
+  },
+  {
+    id: 'META',
+    pair: 'META',
+    name: 'Meta Platforms',
+    icon: '♾️',
+    category: 'stocks',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'شبكات التواصل والتكنولوجيا مباحة ولكن تستدعي التطهير بسبب إيرادات الإعلانات غير المفلترة بنسبة بسيطة.',
+    aaoifi: 'متوافق بشرط استقطاع نسبة التطهير',
+    debtRatio: '15.4%',
+    impureIncome: '2.4%',
+    purification: '2.4%'
+  },
+  {
+    id: 'AMD',
+    pair: 'AMD',
+    name: 'Advanced Micro Devices',
+    icon: '💻',
+    category: 'stocks',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'صناعة أشباه الموصلات مباحة 100% ونسبة الديون الربوية قريبة من الحد الأعلى المسموح (AAOIFI 33%).',
+    aaoifi: 'متوافق تحت حد الديون الأعلى',
+    debtRatio: '28.9%',
+    impureIncome: '1.9%',
+    purification: '1.9%'
+  },
+  {
     id: 'COIN',
     pair: 'COIN',
     name: 'Coinbase Global',
@@ -172,6 +270,20 @@ const halalAssetsData = [
     aaoifi: 'غير متوافق بسبب إيرادات الإقراض والربا',
     debtRatio: '42.1%',
     impureIncome: '18.4%',
+    purification: 'غير جائز'
+  },
+  {
+    id: 'JPM',
+    pair: 'JPM',
+    name: 'JPMorgan Chase',
+    icon: '🏦',
+    category: 'stocks',
+    status: 'doubtful',
+    statusLabel: 'مشكوك فيه ❌',
+    explanation: 'بنك تجاري تقليدي يقوم نشاطه الجوهري على الفوائد والإقراض الربوي غير الجائز شرعاً.',
+    aaoifi: 'غير متوافق شرعاً بالكامل',
+    debtRatio: '95%',
+    impureIncome: '92%',
     purification: 'غير جائز'
   },
 
@@ -217,6 +329,34 @@ const halalAssetsData = [
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
+  },
+  {
+    id: 'AUDUSD',
+    pair: 'AUD/USD',
+    name: 'الدولار الأسترالي / الأمريكي',
+    icon: '🇦🇺',
+    category: 'forex',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'مباح للتداول الفوري المباشر مع وجوب التحقق من مزود سيولة الحساب الإسلامي لضمان خلوه من عمولات الفوارق الربوية.',
+    aaoifi: 'معيار الصرف الفوري مع مراعاة مزود السيولة',
+    debtRatio: '0.0%',
+    impureIncome: '0.5%',
+    purification: '0.5%'
+  },
+  {
+    id: 'USDCAD',
+    pair: 'USD/CAD',
+    name: 'الدولار الأمريكي / الكندي',
+    icon: '🇨🇦',
+    category: 'forex',
+    status: 'precaution',
+    statusLabel: 'يحتاج احتياط 🔵',
+    explanation: 'صرف عملات مباشر يتطلب تجنب صفقات العقود الآجلة غير المقبوضة بشرط التقابض الفوري.',
+    aaoifi: 'معيار الصرف الفوري',
+    debtRatio: '0.0%',
+    impureIncome: '0.4%',
+    purification: '0.4%'
   },
   {
     id: 'USDSAR',
@@ -270,7 +410,17 @@ export default function HalalGuide({ onBack }) {
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiCustomResult, setAiCustomResult] = useState(null);
 
-  // Dynamic filter
+  // Filter dataset by current category (for dynamic top summary numbers)
+  const categoryPool = selectedCategory === 'all' 
+    ? halalAssetsData 
+    : halalAssetsData.filter(a => a.category === selectedCategory);
+
+  const dynamicHalalCount = categoryPool.filter(a => a.status === 'halal').length;
+  const dynamicDiffersCount = categoryPool.filter(a => a.status === 'differs').length;
+  const dynamicPrecautionCount = categoryPool.filter(a => a.status === 'precaution').length;
+  const dynamicDoubtfulCount = categoryPool.filter(a => a.status === 'doubtful').length;
+
+  // Filtered Assets list display
   const filteredAssets = halalAssetsData.filter(asset => {
     if (selectedCategory !== 'all' && asset.category !== selectedCategory) return false;
     if (selectedStatus !== 'all' && asset.status !== selectedStatus) return false;
@@ -289,7 +439,6 @@ export default function HalalGuide({ onBack }) {
     setAiCustomResult(null);
 
     setTimeout(() => {
-      // Find if exact match exists in database
       const matched = halalAssetsData.find(a => 
         a.pair.toLowerCase().includes(q.toLowerCase()) || 
         a.name.toLowerCase().includes(q.toLowerCase())
@@ -298,7 +447,6 @@ export default function HalalGuide({ onBack }) {
       if (matched) {
         setActiveModalAsset(matched);
       } else {
-        // AI generated synthesis for custom symbol
         setAiCustomResult({
           pair: q.toUpperCase(),
           name: `${q.toUpperCase()} Global Asset`,
@@ -334,57 +482,57 @@ export default function HalalGuide({ onBack }) {
         </button>
       </div>
 
-      {/* Status Summary Grid (4 Stat Cards) */}
+      {/* Dynamic Status Summary Grid (4 Stat Cards) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
         <div 
-          onClick={() => setSelectedStatus('halal')}
+          onClick={() => setSelectedStatus(selectedStatus === 'halal' ? 'all' : 'halal')}
           style={{ 
             background: selectedStatus === 'halal' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.02)', 
             border: `1px solid ${selectedStatus === 'halal' ? '#10b981' : 'rgba(16, 185, 129, 0.2)'}`, 
-            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer' 
+            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' 
           }}
         >
           <div style={{ color: '#10b981', fontSize: '20px', marginBottom: '2px' }}>✅</div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>24</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>{dynamicHalalCount}</div>
           <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>حلال</div>
         </div>
 
         <div 
-          onClick={() => setSelectedStatus('differs')}
+          onClick={() => setSelectedStatus(selectedStatus === 'differs' ? 'all' : 'differs')}
           style={{ 
             background: selectedStatus === 'differs' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.02)', 
             border: `1px solid ${selectedStatus === 'differs' ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)'}`, 
-            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer' 
+            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' 
           }}
         >
           <div style={{ color: '#f59e0b', fontSize: '20px', marginBottom: '2px' }}>⚠️</div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>11</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>{dynamicDiffersCount}</div>
           <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>مختلف</div>
         </div>
 
         <div 
-          onClick={() => setSelectedStatus('precaution')}
+          onClick={() => setSelectedStatus(selectedStatus === 'precaution' ? 'all' : 'precaution')}
           style={{ 
             background: selectedStatus === 'precaution' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.02)', 
             border: `1px solid ${selectedStatus === 'precaution' ? '#60a5fa' : 'rgba(59, 130, 246, 0.2)'}`, 
-            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer' 
+            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' 
           }}
         >
           <div style={{ color: '#60a5fa', fontSize: '20px', marginBottom: '2px' }}>🔵</div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#60a5fa' }}>12</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#60a5fa' }}>{dynamicPrecautionCount}</div>
           <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 'bold' }}>يحتاج احتياط</div>
         </div>
 
         <div 
-          onClick={() => setSelectedStatus('doubtful')}
+          onClick={() => setSelectedStatus(selectedStatus === 'doubtful' ? 'all' : 'doubtful')}
           style={{ 
             background: selectedStatus === 'doubtful' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.02)', 
             border: `1px solid ${selectedStatus === 'doubtful' ? '#f87171' : 'rgba(239, 68, 68, 0.2)'}`, 
-            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer' 
+            borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' 
           }}
         >
           <div style={{ color: '#f87171', fontSize: '20px', marginBottom: '2px' }}>❌</div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f87171' }}>5</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f87171' }}>{dynamicDoubtfulCount}</div>
           <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 'bold' }}>مشكوك</div>
         </div>
       </div>
@@ -471,10 +619,10 @@ export default function HalalGuide({ onBack }) {
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {[
             { id: 'all', label: '✦ جميع الأحكام' },
-            { id: 'halal', label: 'حلال' },
-            { id: 'differs', label: 'مختلف فيه' },
-            { id: 'precaution', label: 'يحتاج احتياط' },
-            { id: 'doubtful', label: 'مشكوك فيه' }
+            { id: 'halal', label: `حلال (${dynamicHalalCount})` },
+            { id: 'differs', label: `مختلف فيه (${dynamicDiffersCount})` },
+            { id: 'precaution', label: `يحتاج احتياط (${dynamicPrecautionCount})` },
+            { id: 'doubtful', label: `مشكوك فيه (${dynamicDoubtfulCount})` }
           ].map(s => (
             <button
               key={s.id}
@@ -505,64 +653,70 @@ export default function HalalGuide({ onBack }) {
 
       {/* Asset Cards List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {filteredAssets.map(asset => (
-          <div 
-            key={asset.id}
-            style={{ 
-              background: 'rgba(255,255,255,0.02)', 
-              border: '1px solid rgba(255,255,255,0.06)', 
-              borderRadius: '14px', 
-              padding: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ 
-                background: asset.status === 'halal' ? 'rgba(16,185,129,0.15)' : asset.status === 'differs' ? 'rgba(245,158,11,0.15)' : asset.status === 'precaution' ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.15)',
-                color: asset.status === 'halal' ? '#10b981' : asset.status === 'differs' ? '#f59e0b' : asset.status === 'precaution' ? '#60a5fa' : '#f87171',
-                border: `1px solid ${asset.status === 'halal' ? '#10b981' : asset.status === 'differs' ? '#f59e0b' : asset.status === 'precaution' ? '#60a5fa' : '#f87171'}`,
-                padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold'
-              }}>
-                {asset.statusLabel}
-              </span>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{asset.pair}</div>
-                  <div style={{ fontSize: '10px', color: '#9ca3af' }}>{asset.name}</div>
-                </div>
-                <AssetLogo symbol={asset.pair} fallbackIcon={asset.icon} containerSize={36} size={22} />
-              </div>
-            </div>
-
-            <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', direction: 'rtl' }}>
-              {asset.explanation}
-            </p>
-
-            <button 
-              onClick={() => setActiveModalAsset(asset)}
-              style={{
-                background: 'rgba(168, 85, 247, 0.1)',
-                border: '1px solid rgba(168, 85, 247, 0.3)',
-                color: '#c084fc',
-                borderRadius: '8px',
-                padding: '8px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
+        {filteredAssets.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '30px', color: '#9ca3af', fontSize: '13px' }}>
+            لا توجد أصول مطابقة في هذا الفلتر حالياً. يمكنك البحث عن أي رمز بالذكاء الاصطناعي أعلاه 🔍
+          </div>
+        ) : (
+          filteredAssets.map(asset => (
+            <div 
+              key={asset.id}
+              style={{ 
+                background: 'rgba(255,255,255,0.02)', 
+                border: '1px solid rgba(255,255,255,0.06)', 
+                borderRadius: '14px', 
+                padding: '14px',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
+                flexDirection: 'column',
+                gap: '10px'
               }}
             >
-              <span>تحليل AI شرعي تفصيلي</span>
-              <span>🤖</span>
-            </button>
-          </div>
-        ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ 
+                  background: asset.status === 'halal' ? 'rgba(16,185,129,0.15)' : asset.status === 'differs' ? 'rgba(245,158,11,0.15)' : asset.status === 'precaution' ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: asset.status === 'halal' ? '#10b981' : asset.status === 'differs' ? '#f59e0b' : asset.status === 'precaution' ? '#60a5fa' : '#f87171',
+                  border: `1px solid ${asset.status === 'halal' ? '#10b981' : asset.status === 'differs' ? '#f59e0b' : asset.status === 'precaution' ? '#60a5fa' : '#f87171'}`,
+                  padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold'
+                }}>
+                  {asset.statusLabel}
+                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{asset.pair}</div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>{asset.name}</div>
+                  </div>
+                  <AssetLogo symbol={asset.pair} fallbackIcon={asset.icon} containerSize={36} size={22} />
+                </div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', direction: 'rtl' }}>
+                {asset.explanation}
+              </p>
+
+              <button 
+                onClick={() => setActiveModalAsset(asset)}
+                style={{
+                  background: 'rgba(168, 85, 247, 0.1)',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
+                  color: '#c084fc',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>تحليل AI شرعي تفصيلي</span>
+                <span>🤖</span>
+              </button>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Interactive AI Sharia Breakdown Modal */}
