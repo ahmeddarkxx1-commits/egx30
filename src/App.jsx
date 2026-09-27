@@ -131,8 +131,8 @@ function App() {
         </div>
         <div className="grid-3">
           <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' }}>
-            <span className="card-icon">🔭</span>
-            <div className="card-title">رادار الفرص ✦</div>
+            <span className="card-icon">📡</span>
+            <div className="card-title">ماسح الأسواق ✦</div>
             <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>جديد 🔥</div>
           </div>
           <div className="card" onClick={() => setCurrentView('market_scanner')}>

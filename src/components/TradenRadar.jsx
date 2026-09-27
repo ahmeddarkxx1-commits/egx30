@@ -184,7 +184,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>رادار الفرص اللحظي 🔭</h2>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>ماسح الأسواق اللحظي 📡</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '12px', color: '#10b981', fontSize: '11px', fontWeight: 'bold' }}>
               <span className={isUpdating ? 'spin' : ''}>🟢</span>
               <span>مباشر</span>
