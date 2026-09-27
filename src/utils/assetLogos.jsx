@@ -70,7 +70,14 @@ export const assetLogoMap = {
   // Stocks
   'AAPL': 'https://img.icons8.com/color/96/apple-logo.png',
   'NVDA': 'https://img.icons8.com/color/96/nvidia.png',
-  'COIN': 'https://img.icons8.com/color/96/coinbase.png'
+  'COIN': 'https://img.icons8.com/color/96/coinbase.png',
+  'TSLA': 'https://img.icons8.com/color/96/tesla-logo.png',
+  'MSFT': 'https://img.icons8.com/color/96/microsoft.png',
+  'GOOGL': 'https://img.icons8.com/color/96/google-logo.png',
+  'AMZN': 'https://img.icons8.com/color/96/amazon.png',
+  'META': 'https://img.icons8.com/color/96/meta.png',
+  'AMD': 'https://img.icons8.com/color/96/amd.png',
+  'INTC': 'https://img.icons8.com/color/96/intel.png'
 };
 
 export function AssetLogo({ symbol, fallbackIcon, size = 24, containerSize = 38 }) {
