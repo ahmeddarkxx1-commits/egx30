@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Bot, LineChart, Target, BookOpen, Bell, Coins, BarChart2, Star, Share2, Activity, Zap, Shield, TrendingUp } from 'lucide-react';
+import MarketScanner from './components/MarketScanner';
 import './App.css';
 
 function App() {
   const [tgUser, setTgUser] = useState(null);
+  const [currentView, setCurrentView] = useState('home');
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -13,6 +15,14 @@ function App() {
       }
     }
   }, []);
+
+  if (currentView === 'market_scanner') {
+    return (
+      <div className="app-container">
+        <MarketScanner onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -68,7 +78,7 @@ function App() {
           الأدوات
         </div>
         <div className="grid-3">
-          <div className="card">
+          <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={24} color="#60a5fa" />
             <div className="card-title">Market Scanner</div>
           </div>
