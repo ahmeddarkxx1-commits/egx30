@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, LineChart, Target, BookOpen, Bell, Coins, BarChart2, Star, Share2, Activity, Zap, Shield, TrendingUp } from 'lucide-react';
+import { Bot, BarChart2, Bell, Shield, Activity, Zap } from 'lucide-react';
 import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
@@ -156,10 +156,6 @@ function App() {
             <span className="card-icon">🥇</span>
             <div className="card-title">المعادن الثمينة</div>
           </div>
-          <div className="card">
-            <BookOpen size={24} color="#a78bfa" />
-            <div className="card-title">أكاديمية Traden</div>
-          </div>
           <div className="card" onClick={() => setCurrentView('halal_guide')}>
             <Shield size={24} color="#34d399" />
             <div className="card-title">دليل الحلال</div>
@@ -176,26 +172,9 @@ function App() {
             <Bell size={24} color="#fbbf24" />
             <div className="card-title">تنبيهات السعر</div>
           </div>
-          <div className="card">
-            <span className="card-icon">⚖️</span>
-            <div className="card-title">مقارنة</div>
-          </div>
-          <div className="card">
-            <Star size={24} color="#fbbf24" />
-            <div className="card-title">Premium</div>
-            <div className="badge" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>PRO</div>
-          </div>
-          <div className="card">
-            <span className="card-icon">📝</span>
-            <div className="card-title">التداول التجريبي</div>
-          </div>
-          <div className="card">
-            <Share2 size={24} color="#fb923c" />
-            <div className="card-title">برنامج الإحالة</div>
-            <div className="badge">10%</div>
-          </div>
         </div>
       </section>
+
 
       <section className="chart-container">
         <div className="chart-header">
