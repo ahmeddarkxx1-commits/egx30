@@ -80,21 +80,12 @@ export default function MarketScanner({ onBack }) {
     setLoading(true);
     setAnalysisResult(null);
 
-    // Safely attempt Telegram sendData without crashing if inline button
-    if (window.Telegram && window.Telegram.WebApp) {
+    // Trigger haptic feedback without closing WebApp window
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
       try {
-        if (window.Telegram.WebApp.HapticFeedback) {
-          window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-        }
-        const data = JSON.stringify({ 
-          action: "analyze", 
-          symbol: selectedCoin.pair, 
-          name: selectedCoin.name,
-          timeframe: selectedTimeframe
-        });
-        window.Telegram.WebApp.sendData(data);
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
       } catch (err) {
-        console.log("Telegram sendData skipped in inline keyboard context:", err);
+        console.log("Haptic feedback error:", err);
       }
     }
 

@@ -72,13 +72,12 @@ export default function SignalBot({ onBack, initialSymbol }) {
     setLoading(true);
     setAnalysisResult(null);
 
-    // Safe Telegram sendData check
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+    // Trigger haptic feedback without closing WebApp window
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
       try {
-        const data = JSON.stringify({ action: "analyze", asset: asset, timeframe: timeframe });
-        window.Telegram.WebApp.sendData(data);
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
       } catch (e) {
-        console.log("Telegram sendData not supported on inline keyboard button context", e);
+        console.log("Haptic feedback error:", e);
       }
     }
 
