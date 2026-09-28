@@ -25,12 +25,6 @@ function App() {
   const [showCodeInput, setShowCodeInput] = useState(false);
 
   useEffect(() => {
-    // Check if user previously activated via stored token
-    const storedAuth = localStorage.getItem('traden_user_authorized');
-    if (storedAuth === 'true') {
-      setIsAuthorized(true);
-    }
-
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.expand();
@@ -38,10 +32,20 @@ function App() {
         const u = tg.initDataUnsafe.user;
         setTgUser(u);
         
-        // Auto authorize if user ID is in admin whitelist (e.g. 1914514519)
-        if (WHITELISTED_TELEGRAM_IDS.includes(u.id) || u.id === 1914514519) {
+        const userStorageKey = `traden_user_authorized_${u.id}`;
+        const storedUserAuth = localStorage.getItem(userStorageKey);
+
+        // Check if current user is admin OR previously activated this specific ID
+        if (WHITELISTED_TELEGRAM_IDS.includes(u.id) || u.id === 1914514519 || storedUserAuth === 'true') {
           setIsAuthorized(true);
-          localStorage.setItem('traden_user_authorized', 'true');
+        } else {
+          setIsAuthorized(false);
+        }
+      } else {
+        // Standalone browser without Telegram user context
+        const storedAuth = localStorage.getItem('traden_user_authorized_browser');
+        if (storedAuth === 'true') {
+          setIsAuthorized(true);
         }
       }
     }
@@ -57,7 +61,8 @@ function App() {
 
     if (isValidKey) {
       setIsAuthorized(true);
-      localStorage.setItem('traden_user_authorized', 'true');
+      const userKey = tgUser ? `traden_user_authorized_${tgUser.id}` : 'traden_user_authorized_browser';
+      localStorage.setItem(userKey, 'true');
       setActivationError(false);
     } else {
       setActivationError(true);
