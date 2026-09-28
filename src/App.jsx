@@ -7,6 +7,7 @@ import TradenRadar from './components/TradenRadar';
 import PreciousMetals from './components/PreciousMetals';
 import HalalGuide from './components/HalalGuide';
 import InvestmentBot from './components/InvestmentBot';
+import GoldLiquidityRadar from './components/GoldLiquidityRadar';
 import './App.css';
 
 // Admin / Allowed User IDs or Master Activation Code
@@ -217,6 +218,20 @@ function App() {
     );
   }
 
+  if (currentView === 'gold_liquidity') {
+    return (
+      <div className="app-container">
+        <GoldLiquidityRadar 
+          onBack={() => setCurrentView('home')} 
+          onAnalyzeGold={(symbol) => {
+            if (symbol) setSelectedSymbol(symbol);
+            setCurrentView('signal_bot');
+          }}
+        />
+      </div>
+    );
+  }
+
   if (currentView === 'market_news') {
     return (
       <div className="app-container">
@@ -269,10 +284,15 @@ function App() {
           الأدوات والتحليل
         </div>
         <div className="grid-3">
-          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' }}>
+          <div className="card" onClick={() => setCurrentView('gold_liquidity')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
+            <span className="card-icon">🥇</span>
+            <div className="card-title">سيولة الذهب ✦</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار الجلسات 🔥</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)' }}>
             <span className="card-icon">📡</span>
             <div className="card-title">ماسح الأسواق ✦</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار حي 🔥</div>
+            <div className="badge" style={{ background: '#10b981', color: '#000' }}>رادار حي 🔥</div>
           </div>
           <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={24} color="#60a5fa" />
@@ -289,10 +309,6 @@ function App() {
           <div className="card" onClick={() => setCurrentView('market_news')}>
             <span className="card-icon">📰</span>
             <div className="card-title">الأخبار</div>
-          </div>
-          <div className="card">
-            <Activity size={24} color="#f472b6" />
-            <div className="card-title">مصفوفة الارتباط</div>
           </div>
         </div>
       </section>
