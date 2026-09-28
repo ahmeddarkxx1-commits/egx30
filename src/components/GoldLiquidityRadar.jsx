@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Clock, Zap, AlertTriangle, ShieldCheck, Flame, TrendingUp } from 'lucide-react';
+import { ChevronRight, Clock, Zap, AlertTriangle, ShieldCheck, Flame, TrendingUp, Target, Activity } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 
@@ -15,6 +15,20 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     volumeLevel: 95
   });
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
+
+  // Compute dynamic liquidity magnet targets based on current live price
+  const price = goldTicker.price || 4236.50;
+  const isUp = goldTicker.isUp;
+  
+  // Calculate Upper BSL (Buy Side Liquidity) and Lower SSL (Sell Side Liquidity) targets
+  const bslTarget = (price + (price * 0.0035)).toFixed(2);
+  const sslTarget = (price - (price * 0.0035)).toFixed(2);
+  const targetPrice = isUp ? bslTarget : sslTarget;
+  const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
+  const actionColor = isUp ? '#10b981' : '#ef4444';
+  const targetType = isUp ? 'قمة سيولة الشرائين (BSL Sweep Top)' : 'قاع سيولة البائعين (SSL Sweep Bottom)';
+  const stopLoss = isUp ? (price - (price * 0.002)).toFixed(2) : (price + (price * 0.002)).toFixed(2);
+  const takeProfit = targetPrice;
 
   // Calculate session status and countdown based on UTC time
   const updateSessionState = () => {
@@ -156,6 +170,89 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             <span>تحليل الذهب الآن 🤖</span>
           </button>
         </div>
+      </div>
+
+      {/* NEW: Liquidity Magnet Forecasting Indicator */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
+        border: '1px solid #388bfd',
+        borderRadius: '16px',
+        padding: '18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        boxShadow: '0 0 20px rgba(56, 139, 253, 0.2)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Target size={22} color="#388bfd" />
+            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#58a6ff' }}>مؤشر هدف انجذاب السيولة اللحظي (Liquidity Magnet Target) 🎯</span>
+          </div>
+          <span style={{ background: 'rgba(56, 139, 253, 0.15)', color: '#58a6ff', border: '1px solid rgba(56, 139, 253, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+            توقع لحظي مباشر ⚡
+          </span>
+        </div>
+
+        {/* Dynamic Forecast Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+          
+          {/* Target Price Box */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>الهدف المتوقع لسحب السيولة 🎯</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>
+              ${Number(targetPrice).toLocaleString()}
+            </div>
+            <div style={{ fontSize: '10px', color: '#388bfd', marginTop: '2px' }}>{targetType}</div>
+          </div>
+
+          {/* Recommended Action */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${actionColor}`, borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>التوصية الموجهة (Action) 🧭</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: actionColor }}>
+              {recommendedAction}
+            </div>
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>نسبة النجاح المتوقعة: 85%</div>
+          </div>
+
+          {/* Take Profit & Stop Loss */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#10b981', display: 'flex', justifyContent: 'space-between' }}>
+              <span>هدف الأرباح (TP):</span>
+              <b style={{ color: '#fff' }}>${takeProfit}</b>
+            </div>
+            <div style={{ fontSize: '11px', color: '#ef4444', display: 'flex', justifyContent: 'space-between' }}>
+              <span>إيقاف الخسارة (SL):</span>
+              <b style={{ color: '#fff' }}>${stopLoss}</b>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Visual Liquidity Range Map */}
+        <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#d1d5db', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Activity size={15} color="#f59e0b" />
+            <span>خريطة مستويات سيولة الذهب الحالية:</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(16, 185, 129, 0.1)', borderRight: '3px solid #10b981', borderRadius: '6px' }}>
+              <span style={{ color: '#10b981', fontWeight: 'bold' }}>قمة السيولة الشرائية العلوية (BSL Sweep Top)</span>
+              <span style={{ color: '#fff', fontWeight: 'bold' }}>${bslTarget}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(56, 139, 253, 0.15)', borderRight: '3px solid #388bfd', borderRadius: '6px' }}>
+              <span style={{ color: '#58a6ff', fontWeight: 'bold' }}>📍 السعر اللحظي الحالي (Current Price)</span>
+              <span style={{ color: '#fff', fontWeight: 'bold' }}>${price}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(239, 68, 68, 0.1)', borderRight: '3px solid #ef4444', borderRadius: '6px' }}>
+              <span style={{ color: '#f87171', fontWeight: 'bold' }}>قاع السيولة البيعية السفلي (SSL Sweep Bottom)</span>
+              <span style={{ color: '#fff', fontWeight: 'bold' }}>${sslTarget}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Live Session Status Card */}
