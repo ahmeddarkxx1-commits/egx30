@@ -157,8 +157,21 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     slPct = tpPct * 0.45;
   }
 
-  // 3. RSI & Confluence Analysis with Protection against False Sweeps
-  let rsi = Math.min(88, Math.max(18, 50.0 + (change24h * 3.2)));
+  // 3. Asset Sensitivity Scale for Momentum & RSI
+  let sensitivity = 8.0; // Crypto
+  let minTrendThreshold = 0.35; // Crypto min % change to signal BUY/SELL
+  if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
+    sensitivity = 18.0;
+    minTrendThreshold = 0.12; // Gold min % change ($3.00+ move)
+  } else if (pairUpper.includes('EUR') || pairUpper.includes('GBP') || pairUpper.includes('JPY') || assetPair.includes('/')) {
+    sensitivity = 35.0;
+    minTrendThreshold = 0.06; // Forex min % change (6-8 pips move)
+  } else if (pairUpper.includes('US30') || pairUpper.includes('NAS100') || pairUpper.includes('SPX')) {
+    sensitivity = 15.0;
+    minTrendThreshold = 0.15; // Indices
+  }
+
+  let rsi = Math.min(88, Math.max(18, 50.0 + (change24h * sensitivity)));
 
   let score = 55;
   let macroBias = "NEUTRAL";
@@ -176,43 +189,45 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     signalColor = "#f59e0b";
     cardBg = "rgba(245, 158, 11, 0.1)";
     rsiText = `${rsi.toFixed(1)} (سيولة تجميع ضعيفة)`;
-    trendText = `تحليل إطار ${timeframe}: الذهب يتداول حالياً داخل نطاق الجلسة الآسيوية الضيق. يُنصح بالانتظار لحين افتتاح بورصة لندن (07:00 UTC) لتفادي الانعكاسات وسحب السيولة (Liquidity Sweeps).`;
-  } else if (rsi >= 44 && rsi <= 56 && Math.abs(change24h) < 0.25) {
-    // Stagnation / Chop Zone Protection on 15m / short timeframes
+    trendText = `تحليل إطار ${timeframe}: الذهب يتداول حالياً داخل نطاق الجلسة الآسيوية الضيق. يُنصح بالانتظار لحين افتتاح بورصة لندن (07:00 UTC) لتفادي الانعكاسات وسحب السيولة.`;
+  } else if (Math.abs(change24h) < minTrendThreshold) {
+    // Truly flat / Stagnation Zone
     score = 55;
     macroBias = "NEUTRAL";
     signalText = "تذبذب وسكون عرضي 🟡 (CHOP ZONE)";
     signalColor = "#f59e0b";
     cardBg = "rgba(245, 158, 11, 0.08)";
-    rsiText = `${rsi.toFixed(1)} (نطاق تجميع وسكون)`;
-    trendText = `تحليل إطار ${timeframe}: السعر يمر بمرحلة تجميع وتذبذب عرضي دون اتجاه حقيقي على إطار ${timeframe}. الدخول في هذه المنطقة غير آمن ويُنصح بانتظار خروج فوليوم حقيقي.`;
-  } else if (rsi <= 40 && change24h < 0) {
-    // Oversold Support Area: High risk of bounce back! Avoid issuing "STRONG SELL" at bottom!
-    score = 68;
-    macroBias = "NEUTRAL_BULLISH";
-    signalText = "منطقة دعم / ارتداد متوقع 🟡 (BOUNCE WATCH)";
-    signalColor = "#eab308";
-    cardBg = "rgba(234, 179, 8, 0.1)";
-    rsiText = `${rsi.toFixed(1)} (منطقة تشبع بيعي قرب الدعم)`;
-    trendText = `تحليل إطار ${timeframe}: السعر يتواجد حالياً في منطقة تشبع بيعي (RSI Oversold) بالقرب من قيعان الدعم. ينصح بعدم البيع لتفادي ارتداد السعر السريع.`;
-  } else if (rsi >= 60 && change24h > 0.15) {
-    // High Confluence Strong Buy
-    score = isPeakSession ? 92 : 82;
+    rsiText = `${rsi.toFixed(1)} (سكون وتجميع في النطاق)`;
+    trendText = `تحليل إطار ${timeframe}: السعر يمر بمرحلة تجميع وتذبذب عرضي دون اتجاه حقيقي على ${assetPair}. الدخول في هذه المنطقة غير آمن ويُنصح بانتظار خروج فوليوم حقيقي.`;
+  } else if (change24h >= minTrendThreshold) {
+    // Bullish Trend (BUY)
+    score = isPeakSession ? 90 : 84;
     macroBias = "BULLISH";
     signalText = "شراء مؤكد 🟢 (BUY)";
     signalColor = "#10b981";
     cardBg = "rgba(16, 185, 129, 0.08)";
-    rsiText = `${rsi.toFixed(1)} (زخم شرائي صاعد قوي)`;
+    rsiText = `${rsi.toFixed(1)} (زخم شرائي صاعد)`;
     trendText = `تحليل إطار ${timeframe}: اختراق هيكلي صاعد (BOS) وتوافق المتوسطات المتحركة EMA 20/50 مع تدفق سيولة إيجابية على ${assetPair}.`;
-  } else if (rsi <= 43 && change24h < -0.20) {
-    // High Confluence Strong Sell (only if RSI is in healthy trend zone and change is clearly negative)
-    score = isPeakSession ? 90 : 80;
-    macroBias = "BEARISH";
-    signalText = "بيع مؤكد 🔴 (SELL)";
-    signalColor = "#f87171";
-    cardBg = "rgba(248, 113, 113, 0.08)";
-    rsiText = `${rsi.toFixed(1)} (اتجاه هابط مؤكد)`;
-    trendText = `تحليل إطار ${timeframe}: كسر هابط لقمم وبنية السوق مع تقاطع سلبي للمتوسطات ونمو السيولة البيعية على ${assetPair}.`;
+  } else if (change24h <= -minTrendThreshold) {
+    if (rsi <= 35) {
+      // Oversold Support Area: High risk of bounce back! Avoid issuing "STRONG SELL" at bottom!
+      score = 68;
+      macroBias = "NEUTRAL_BULLISH";
+      signalText = "منطقة دعم / ارتداد متوقع 🟡 (BOUNCE WATCH)";
+      signalColor = "#eab308";
+      cardBg = "rgba(234, 179, 8, 0.1)";
+      rsiText = `${rsi.toFixed(1)} (منطقة تشبع بيعي قرب الدعم)`;
+      trendText = `تحليل إطار ${timeframe}: السعر يتواجد حالياً في منطقة تشبع بيعي (RSI Oversold) بالقرب من قيعان الدعم. ينصح بعدم البيع لتفادي ارتداد السعر السريع.`;
+    } else {
+      // Bearish Trend (SELL)
+      score = isPeakSession ? 88 : 82;
+      macroBias = "BEARISH";
+      signalText = "بيع مؤكد 🔴 (SELL)";
+      signalColor = "#f87171";
+      cardBg = "rgba(248, 113, 113, 0.08)";
+      rsiText = `${rsi.toFixed(1)} (اتجاه هابط مؤكد)`;
+      trendText = `تحليل إطار ${timeframe}: كسر هابط لقمم وبنية السوق مع تقاطع سلبي للمتوسطات ونمو السيولة البيعية على ${assetPair}.`;
+    }
   }
 
   // 4. Strict TP/SL Calculation with 1:2 Risk-Reward Ratio
