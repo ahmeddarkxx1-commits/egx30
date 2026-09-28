@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { AssetLogo } from '../utils/assetLogos';
-import { fetchLiveAssetPrice } from '../utils/priceFetcher';
+import { analyzeStudiedTechnicalSignal } from '../utils/priceFetcher';
 
 const allAssets = [
   // Forex Majors
@@ -90,85 +90,12 @@ export default function MarketScanner({ onBack }) {
       }
     }
 
-    const price = await fetchLiveAssetPrice(selectedCoin.pair);
+    const result = await analyzeStudiedTechnicalSignal(selectedCoin.pair, selectedTimeframe);
 
     setTimeout(() => {
       setLoading(false);
-
-      const pairUpper = selectedCoin.pair.toUpperCase();
-      let tpMul = 0.0040;
-      let slMul = 0.0025;
-
-      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
-        tpMul = selectedTimeframe === '1m' ? 4.5 : selectedTimeframe === '15m' ? 12.0 : selectedTimeframe === '1h' ? 25.0 : 60.0;
-        slMul = selectedTimeframe === '1m' ? 2.5 : selectedTimeframe === '15m' ? 7.0 : selectedTimeframe === '1h' ? 14.0 : 35.0;
-      } else if (pairUpper.includes('BTC')) {
-        tpMul = selectedTimeframe === '1m' ? 180.0 : selectedTimeframe === '15m' ? 450.0 : selectedTimeframe === '1h' ? 1200.0 : 3500.0;
-        slMul = selectedTimeframe === '1m' ? 90.0 : selectedTimeframe === '15m' ? 220.0 : selectedTimeframe === '1h' ? 650.0 : 1800.0;
-      } else if (pairUpper.includes('US30')) {
-        tpMul = selectedTimeframe === '1m' ? 60.0 : selectedTimeframe === '15m' ? 150.0 : selectedTimeframe === '1h' ? 350.0 : 800.0;
-        slMul = selectedTimeframe === '1m' ? 35.0 : selectedTimeframe === '15m' ? 80.0 : selectedTimeframe === '1h' ? 180.0 : 420.0;
-      } else {
-        tpMul = selectedTimeframe === '1m' ? price * 0.0007 : selectedTimeframe === '15m' ? price * 0.0019 : selectedTimeframe === '1h' ? price * 0.0048 : price * 0.0120;
-        slMul = selectedTimeframe === '1m' ? price * 0.00035 : selectedTimeframe === '15m' ? price * 0.00095 : selectedTimeframe === '1h' ? price * 0.0024 : price * 0.0060;
-      }
-
-      // Hash to determine BUY / SELL / WAIT deterministically for each pair + timeframe
-      const str = selectedCoin.pair + selectedTimeframe;
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-      }
-      const mod = Math.abs(hash) % 100;
-
-      let signalText = 'شراء قوي 🟢 (BUY)';
-      let signalColor = '#10b981';
-      let cardBg = 'rgba(16, 185, 129, 0.08)';
-      let scoreText = `${82 + (mod % 16)}/100`;
-      let rsiText = `${(56 + (mod % 18)).toFixed(1)} (زخم صاعد)`;
-      let trendText = `تحليل إطار ${selectedTimeframe}: توافق المتوسطات مع اختراق صاعد مدعوم بدخول سيولة.`;
-      let tp1Val = price + tpMul;
-      let slVal = price - slMul;
-
-      if (mod >= 35 && mod < 70) {
-        // SELL Signal
-        signalText = 'بيع قوي 🔴 (SELL)';
-        signalColor = '#f87171';
-        cardBg = 'rgba(248, 113, 113, 0.08)';
-        scoreText = `${80 + (mod % 17)}/100`;
-        rsiText = `${(32 - (mod % 12)).toFixed(1)} (تشبع شرائي - كسر هابط)`;
-        trendText = `تحليل إطار ${selectedTimeframe}: كسر مستوى دعم محوري مع تقاطع سلبي للمتوسطات.`;
-        tp1Val = price - tpMul;
-        slVal = price + slMul;
-      } else if (mod >= 70) {
-        // WAIT Signal
-        signalText = 'انتظار وتحديد اتجاه ⚪ (WAIT)';
-        signalColor = '#f59e0b';
-        cardBg = 'rgba(245, 158, 11, 0.08)';
-        scoreText = `${52 + (mod % 12)}/100`;
-        rsiText = `${(48 + (mod % 6)).toFixed(1)} (منطقة محايدة)`;
-        trendText = `تحليل إطار ${selectedTimeframe}: حركة عرضية تجميعية - يُفضل الانتظار لحين كسر النطاق.`;
-        tp1Val = price + (tpMul * 0.5);
-        slVal = price - (slMul * 0.5);
-      }
-
-      const formatP = (val) => price > 100 ? Number(val.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2 }) : val.toFixed(4);
-
-      setAnalysisResult({
-        pair: selectedCoin.pair,
-        timeframe: selectedTimeframe,
-        signal: signalText,
-        signalColor: signalColor,
-        cardBg: cardBg,
-        score: scoreText,
-        entry: formatP(price),
-        tp1: formatP(tp1Val),
-        sl: formatP(slVal),
-        rsi: rsiText,
-        trend: trendText
-      });
-    }, 600);
+      setAnalysisResult(result);
+    }, 400);
   };
 
   return (

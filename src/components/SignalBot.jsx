@@ -82,87 +82,12 @@ export default function SignalBot({ onBack, initialSymbol }) {
       }
     }
 
-    const price = await fetchLiveAssetPrice(asset);
+    const result = await analyzeStudiedTechnicalSignal(asset, timeframe);
 
     setTimeout(() => {
       setLoading(false);
-
-      const pairUpper = asset.toUpperCase();
-      let tpMul = 0.0040;
-      let slMul = 0.0025;
-
-      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
-        tpMul = timeframe === '1m' ? 4.5 : timeframe === '15m' ? 12.0 : timeframe === '1h' ? 25.0 : 60.0;
-        slMul = timeframe === '1m' ? 2.5 : timeframe === '15m' ? 7.0 : timeframe === '1h' ? 14.0 : 35.0;
-      } else if (pairUpper.includes('BTC')) {
-        tpMul = timeframe === '1m' ? 180.0 : timeframe === '15m' ? 450.0 : timeframe === '1h' ? 1200.0 : 3500.0;
-        slMul = timeframe === '1m' ? 90.0 : timeframe === '15m' ? 220.0 : timeframe === '1h' ? 650.0 : 1800.0;
-      } else if (pairUpper.includes('SOL')) {
-        tpMul = timeframe === '1m' ? 1.2 : timeframe === '15m' ? 3.5 : timeframe === '1h' ? 8.0 : 20.0;
-        slMul = timeframe === '1m' ? 0.6 : timeframe === '15m' ? 1.8 : timeframe === '1h' ? 4.0 : 10.0;
-      } else if (pairUpper.includes('US30')) {
-        tpMul = timeframe === '1m' ? 60.0 : timeframe === '15m' ? 150.0 : timeframe === '1h' ? 350.0 : 800.0;
-        slMul = timeframe === '1m' ? 35.0 : timeframe === '15m' ? 80.0 : timeframe === '1h' ? 180.0 : 420.0;
-      } else {
-        tpMul = timeframe === '1m' ? price * 0.0007 : timeframe === '15m' ? price * 0.0019 : timeframe === '1h' ? price * 0.0048 : price * 0.0120;
-        slMul = timeframe === '1m' ? price * 0.00035 : timeframe === '15m' ? price * 0.00095 : timeframe === '1h' ? price * 0.0024 : price * 0.0060;
-      }
-
-      // Hash calculation to determine BUY / SELL / WAIT deterministically
-      const str = asset + timeframe;
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-      }
-      const mod = Math.abs(hash) % 100;
-
-      let signalText = 'شراء قوي 🟢 (BUY)';
-      let signalColor = '#10b981';
-      let cardBg = 'rgba(16, 185, 129, 0.08)';
-      let scoreText = `${82 + (mod % 16)}/100`;
-      let rsiText = `${(56 + (mod % 18)).toFixed(1)} (زخم صاعد)`;
-      let trendText = `تحليل إطار ${timeframe}: اختراق صاعد مدعوم بدخول سيولة ومؤشر ماكد صاعد على ${asset}.`;
-      let tp1Val = price + tpMul;
-      let slVal = price - slMul;
-
-      if (mod >= 35 && mod < 70) {
-        signalText = 'بيع قوي 🔴 (SELL)';
-        signalColor = '#f87171';
-        cardBg = 'rgba(248, 113, 113, 0.08)';
-        scoreText = `${80 + (mod % 17)}/100`;
-        rsiText = `${(32 - (mod % 12)).toFixed(1)} (تشبع شرائي - كسر هابط)`;
-        trendText = `تحليل إطار ${timeframe}: كسر مستوى دعم محوري مع تقاطع سلبي للمتوسطات المتحركة على ${asset}.`;
-        tp1Val = price - tpMul;
-        slVal = price + tpMul;
-      } else if (mod >= 70) {
-        signalText = 'انتظار وتحديد اتجاه ⚪ (WAIT)';
-        signalColor = '#f59e0b';
-        cardBg = 'rgba(245, 158, 11, 0.08)';
-        scoreText = `${52 + (mod % 12)}/100`;
-        rsiText = `${(48 + (mod % 6)).toFixed(1)} (منطقة محايدة)`;
-        trendText = `تحليل إطار ${timeframe}: حركة عرضية تجميعية على ${asset} - يُفضل الانتظار لحين كسر النطاق.`;
-        tp1Val = price + (tpMul * 0.5);
-        slVal = price - (slMul * 0.5);
-      }
-
-      const formatP = (val) => price > 100 ? Number(val.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2 }) : val.toFixed(4);
-
-      setAnalysisResult({
-        asset,
-        timeframe,
-        signal: signalText,
-        signalColor: signalColor,
-        cardBg: cardBg,
-        score: scoreText,
-        entry: formatP(price),
-        tp1: formatP(tp1Val),
-        tp2: formatP(tp1Val * 1.005),
-        sl: formatP(slVal),
-        rsi: rsiText,
-        trend: trendText
-      });
-    }, 600);
+      setAnalysisResult(result);
+    }, 400);
   };
 
   return (
