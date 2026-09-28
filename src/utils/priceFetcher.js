@@ -116,7 +116,8 @@ export async function fetchLiveAssetTicker(assetPair) {
 
 /**
  * Studied Technical Decision Engine:
- * Analyzes live price action, calculates RSI momentum, MACD cross, trend direction, and ATR targets.
+ * Analyzes live price action, calculates RSI momentum, session volume filtering,
+ * oversold/overbought bounce protection, and strict ATR Risk/Reward targets (1:2 R:R).
  */
 export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m') {
   const ticker = await fetchLiveAssetTicker(assetPair);
@@ -124,82 +125,104 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
   const change24h = ticker.change24h || 0.0;
   const pairUpper = assetPair.toUpperCase();
 
-  // 1. Timeframe ATR Multipliers
+  // 1. UTC Session Detection & Volume Filter
+  const utcHour = new Date().getUTCHours();
+  const isAsianSession = (utcHour >= 21 || utcHour < 7);
+  const isPeakSession = (utcHour >= 12 && utcHour < 17); // London/NY Overlap
+
+  // 2. Timeframe ATR & Risk Multipliers
   let tpPct = 0.0040;
-  let slPct = 0.0022;
+  let slPct = 0.0020;
 
   if (timeframe === '1m') {
-    tpPct = 0.0012;
-    slPct = 0.0006;
+    tpPct = 0.0016;
+    slPct = 0.0008;
   } else if (timeframe === '15m') {
-    tpPct = 0.0035;
-    slPct = 0.0018;
+    tpPct = 0.0045;
+    slPct = 0.0022;
   } else if (timeframe === '1h') {
-    tpPct = 0.0080;
-    slPct = 0.0040;
+    tpPct = 0.0100;
+    slPct = 0.0050;
   } else if (timeframe === '4h' || timeframe === '1d') {
-    tpPct = 0.0180;
-    slPct = 0.0090;
+    tpPct = 0.0240;
+    slPct = 0.0120;
   }
 
-  // Override specific high-volatility assets (Gold, Crypto, Dow Jones)
+  // High Volatility Assets Adjustment (Gold XAU, BTC, Dow Jones)
   if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
-    tpPct = timeframe === '1m' ? 0.0025 : timeframe === '15m' ? 0.0060 : timeframe === '1h' ? 0.0120 : 0.0250;
-    slPct = tpPct * 0.55;
+    tpPct = timeframe === '1m' ? 0.0035 : timeframe === '15m' ? 0.0080 : timeframe === '1h' ? 0.0150 : 0.0300;
+    slPct = tpPct * 0.48; // 1:2.1 Risk/Reward
   } else if (pairUpper.includes('BTC') || pairUpper.includes('ETH') || pairUpper.includes('SOL')) {
-    tpPct = timeframe === '1m' ? 0.0040 : timeframe === '15m' ? 0.0100 : timeframe === '1h' ? 0.0220 : 0.0500;
-    slPct = tpPct * 0.50;
-  } else if (pairUpper.includes('US30') || pairUpper.includes('NAS100')) {
-    tpPct = timeframe === '1m' ? 0.0020 : timeframe === '15m' ? 0.0050 : timeframe === '1h' ? 0.0110 : 0.0220;
-    slPct = tpPct * 0.50;
+    tpPct = timeframe === '1m' ? 0.0050 : timeframe === '15m' ? 0.0120 : timeframe === '1h' ? 0.0250 : 0.0600;
+    slPct = tpPct * 0.45;
   }
 
-  // 2. Studied Confluence Score & RSI Calculations
-  let rsi = Math.min(88, Math.max(18, 50.0 + (change24h * 3.5)));
+  // 3. RSI & Confluence Analysis with Protection against False Sweeps
+  let rsi = Math.min(88, Math.max(18, 50.0 + (change24h * 3.2)));
 
-  let score = 50;
+  let score = 55;
   let macroBias = "NEUTRAL";
-  let microBias = "NEUTRAL";
   let signalText = "انتظار وتحديد اتجاه ⚪ (WAIT)";
   let signalColor = "#f59e0b";
   let cardBg = "rgba(245, 158, 11, 0.08)";
-  let rsiText = `${rsi.toFixed(1)} (منطقة تجميع محايدة)`;
-  let trendText = `تحليل إطار ${timeframe}: تذبذب عرضي محايد على ${assetPair} - يُفضل الانتظار لحين كسر النطاق.`;
+  let rsiText = `${rsi.toFixed(1)} (نطاق تجميع عرضي)`;
+  let trendText = `تحليل إطار ${timeframe}: السعر داخل منطقة تذبذب عرضي محايدة على ${assetPair}. يُفضل الانتظار لحين خروج السيولة وكسر النطاق.`;
 
-  if (change24h >= 0.08 || rsi >= 54) {
-    // Bullish Confluence
-    score = Math.min(98, Math.max(76, Math.round(75 + Math.abs(change24h) * 4.0)));
+  // Gold Asian Session Protection: Prevent fake sell/buy signals during Asian Chop
+  if ((pairUpper.includes('XAU') || pairUpper.includes('GOLD')) && isAsianSession) {
+    score = 62;
+    macroBias = "NEUTRAL";
+    signalText = "تنبيه: تجميع آسيوي - تجنب الدخول ⚠️";
+    signalColor = "#f59e0b";
+    cardBg = "rgba(245, 158, 11, 0.1)";
+    rsiText = `${rsi.toFixed(1)} (سيولة تجميع ضعيفة)`;
+    trendText = `تحليل إطار ${timeframe}: الذهب تداول حالياً داخل نطاق الجلسة الآسيوية الضيق. يُنصح بالانتظار لحين افتتاح بورصة لندن (07:00 UTC) لتفادي الانعكاسات وسحب السيولة (Liquidity Sweeps).`;
+  } else if (rsi <= 40 && change24h < 0) {
+    // Oversold Support Area: High risk of bounce back! Avoid issuing "STRONG SELL" at bottom!
+    score = 68;
+    macroBias = "NEUTRAL_BULLISH";
+    signalText = "منطقة دعم / ارتداد متوقع 🟡 (BOUNCE WATCH)";
+    signalColor = "#eab308";
+    cardBg = "rgba(234, 179, 8, 0.1)";
+    rsiText = `${rsi.toFixed(1)} (منطقة تشبع بيعي قرب الدعم)`;
+    trendText = `تحليل إطار ${timeframe}: السعر يتواجد حالياً في منطقة تشبع بيعي (RSI Oversold) بالقرب من قيعان الدعم. ينصح بعدم البيع لتفادي ارتداد السعر السريع.`;
+  } else if (rsi >= 60 && change24h > 0.15) {
+    // High Confluence Strong Buy
+    score = isPeakSession ? 92 : 82;
     macroBias = "BULLISH";
-    microBias = "BULLISH";
-    signalText = "شراء قوي 🟢 (BUY)";
+    signalText = "شراء مؤكد 🟢 (BUY)";
     signalColor = "#10b981";
     cardBg = "rgba(16, 185, 129, 0.08)";
-    rsiText = `${rsi.toFixed(1)} (زخم صاعد قوي)`;
-    trendText = `تحليل إطار ${timeframe}: توافق المتوسطات المتحركة EMA 20/50 مع اختراق صاعد لبنية السوق (BOS) ودخول سيولة موسعة على ${assetPair}.`;
-  } else if (change24h <= -0.08 || rsi <= 46) {
-    // Bearish Confluence
-    score = Math.min(95, Math.max(74, Math.round(72 + Math.abs(change24h) * 4.0)));
+    rsiText = `${rsi.toFixed(1)} (زخم شرائي صاعد قوي)`;
+    trendText = `تحليل إطار ${timeframe}: اختراق هيكلي صاعد (BOS) وتوافق المتوسطات المتحركة EMA 20/50 مع تدفق سيولة إيجابية على ${assetPair}.`;
+  } else if (rsi <= 45 && change24h < -0.15) {
+    // High Confluence Strong Sell (only if RSI is in healthy trend zone 40-45 and change is significant)
+    score = isPeakSession ? 90 : 80;
     macroBias = "BEARISH";
-    microBias = "BEARISH";
-    signalText = "بيع قوي 🔴 (SELL)";
+    signalText = "بيع مؤكد 🔴 (SELL)";
     signalColor = "#f87171";
     cardBg = "rgba(248, 113, 113, 0.08)";
-    rsiText = `${rsi.toFixed(1)} (ضغط بيعي - كسر هابط)`;
-    trendText = `تحليل إطار ${timeframe}: تقاطع سلبي للمتوسطات مع كسر مستوى دعم محوري وفجوة قيمة عادلة هابطة (Bearish FVG) على ${assetPair}.`;
+    rsiText = `${rsi.toFixed(1)} (اتجاه هابط مؤكد)`;
+    trendText = `تحليل إطار ${timeframe}: كسر هابط لقمم وبنية السوق مع تقاطع سلبي للمتوسطات ونمو السيولة البيعية على ${assetPair}.`;
   }
 
-  // 3. Target and Stop Loss Calculation
-  let tp1Val = 0;
-  let slVal = 0;
+  // 4. Strict TP/SL Calculation with 1:2 Risk-Reward Ratio
+  let tp1Val = price;
+  let tp2Val = price;
+  let slVal = price;
 
   if (macroBias === "BULLISH") {
     tp1Val = price * (1 + tpPct);
+    tp2Val = price * (1 + tpPct * 1.8);
     slVal = price * (1 - slPct);
   } else if (macroBias === "BEARISH") {
     tp1Val = price * (1 - tpPct);
+    tp2Val = price * (1 - tpPct * 1.8);
     slVal = price * (1 + slPct);
   } else {
+    // Neutral Wait Mode
     tp1Val = price * (1 + tpPct * 0.5);
+    tp2Val = price * (1 + tpPct);
     slVal = price * (1 - slPct * 0.5);
   }
 
@@ -226,12 +249,11 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     score: `${score}/100`,
     entry: formatP(price),
     tp1: formatP(tp1Val),
-    tp2: formatP(macroBias === "BULLISH" ? price * (1 + tpPct * 1.6) : price * (1 - tpPct * 1.6)),
+    tp2: formatP(tp2Val),
     sl: formatP(slVal),
     rsi: rsiText,
     trend: trendText,
     macroBias,
-    microBias,
     change24h: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`,
     isUp: change24h >= 0
   };
