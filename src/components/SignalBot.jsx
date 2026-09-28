@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Send, CheckCircle2 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
-import { fetchLiveAssetPrice } from '../utils/priceFetcher';
+import { fetchLiveAssetPrice, analyzeStudiedTechnicalSignal } from '../utils/priceFetcher';
+
+const TELEGRAM_BOT_TOKEN = "5426065436:AAEiJvcBc7lC-R8ZgCXENRAtZiwXju2E9XE";
 
 const categories = [
   { id: 'crypto', label: 'كريبتو', icon: '₿' },
@@ -53,6 +55,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
   const [timeframe, setTimeframe] = useState('15m');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sentStatus, setSentStatus] = useState(false);
 
   useEffect(() => {
     if (initialSymbol) {
@@ -69,12 +72,59 @@ export default function SignalBot({ onBack, initialSymbol }) {
     }
   }, [initialSymbol]);
 
+  const sendToTelegramChat = async (res) => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      const user = tg?.initDataUnsafe?.user;
+
+      const messageText = `🤖 *توصية وتحليل Traden AI Bot* 📊
+
+📈 *الأصل:* \`${res.asset}\`
+⏰ *الإطار الزمني:* \`${res.timeframe}\`
+🎯 *الإشارة:* *${res.signal}*
+⭐ *السكور والجودة:* \`${res.score}\`
+
+📍 *سعر الدخول:* \`$${res.entry}\`
+🎯 *الهدف 1 (TP1):* \`$${res.tp1}\`
+🎯 *الهدف 2 (TP2):* \`$${res.tp2}\`
+🛑 *وقف الخسارة (SL):* \`$${res.sl}\`
+
+📊 *مؤشر RSI:* ${res.rsi}
+💡 *الرؤية الفنية:* ${res.trend}`;
+
+      // Send directly via Telegram Bot API if Chat ID / User ID is known
+      const chatId = user?.id || "1914514519";
+      if (chatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: messageText,
+              parse_mode: 'Markdown'
+            })
+          });
+        } catch (e) {
+          console.warn("Direct Telegram API send error:", e);
+        }
+      }
+
+      setSentStatus(true);
+      if (tg?.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+      }
+    } catch (err) {
+      console.error("Error sending to Telegram", err);
+    }
+  };
+
   const handleAnalyze = async () => {
     setLoading(true);
     setAnalysisResult(null);
+    setSentStatus(false);
 
-    // Trigger haptic feedback without closing WebApp window
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+    if (window.Telegram?.WebApp?.HapticFeedback) {
       try {
         window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
       } catch (e) {
@@ -82,12 +132,17 @@ export default function SignalBot({ onBack, initialSymbol }) {
       }
     }
 
-    const result = await analyzeStudiedTechnicalSignal(asset, timeframe);
-
-    setTimeout(() => {
+    try {
+      const result = await analyzeStudiedTechnicalSignal(asset, timeframe);
       setLoading(false);
       setAnalysisResult(result);
-    }, 400);
+      
+      // Auto-send result to user Telegram chat
+      sendToTelegramChat(result);
+    } catch (error) {
+      console.error("Analysis Error:", error);
+      setLoading(false);
+    }
   };
 
   return (
@@ -199,8 +254,29 @@ export default function SignalBot({ onBack, initialSymbol }) {
           alignItems: 'center',
           gap: '8px'
         }}>
-        {loading ? '⚡ جاري تحليل البيانات بالذكاء الاصطناعي...' : `🤖 تحليل ${asset} بالذكاء الاصطناعي`}
+        {loading ? '⚡ جاري التحليل والإرسال للتليجرام...' : `🤖 تحليل ${asset} وإرساله للتليجرام 📲`}
       </button>
+
+      {/* Sent Status Notification Toast */}
+      {sentStatus && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.2)',
+          border: '1px solid #10b981',
+          borderRadius: '10px',
+          padding: '12px',
+          color: '#10b981',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <CheckCircle2 size={18} />
+          <span>تم إرسال التوصية والتحليل بنجاح إلى شات التليجرام! 🚀</span>
+        </div>
+      )}
 
       {/* Analysis Result Card */}
       {analysisResult && (
@@ -231,7 +307,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>سعر الدخول المقترح</div>
-              <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>{analysisResult.entry}</div>
+              <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>${analysisResult.entry}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>مؤشر القوة (RSI)</div>
@@ -239,17 +315,41 @@ export default function SignalBot({ onBack, initialSymbol }) {
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>الهدف (TP1)</div>
-              <div style={{ fontWeight: 'bold', color: '#4ade80' }}>{analysisResult.tp1}</div>
+              <div style={{ fontWeight: 'bold', color: '#4ade80' }}>${analysisResult.tp1}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>وقف الخسارة (SL)</div>
-              <div style={{ fontWeight: 'bold', color: '#f87171' }}>{analysisResult.sl}</div>
+              <div style={{ fontWeight: 'bold', color: '#f87171' }}>${analysisResult.sl}</div>
             </div>
           </div>
 
-          <div style={{ fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px' }}>
+          <div style={{ fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px', marginBottom: '12px' }}>
             💡 <b>الرؤية العامة:</b> {analysisResult.trend}
           </div>
+
+          {/* Manual Send to Telegram Button */}
+          <button
+            onClick={() => sendToTelegramChat(analysisResult)}
+            style={{
+              width: '100%',
+              background: '#0088cc',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '10px',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <Send size={16} />
+            <span>إعادة إرسال التوصية إلى شات التليجرام 📲</span>
+          </button>
+
         </div>
       )}
 
