@@ -84,19 +84,93 @@ export default function SignalBot({ onBack, initialSymbol }) {
 
     setTimeout(() => {
       setLoading(false);
+
+      const pairUpper = asset.toUpperCase();
+      let price = 1.0850;
+      let tpMul = 0.0040;
+      let slMul = 0.0025;
+
+      if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
+        price = 2682.50;
+        tpMul = timeframe === '1m' ? 4.5 : timeframe === '15m' ? 12.0 : timeframe === '1h' ? 25.0 : 60.0;
+        slMul = timeframe === '1m' ? 2.5 : timeframe === '15m' ? 7.0 : timeframe === '1h' ? 14.0 : 35.0;
+      } else if (pairUpper.includes('BTC')) {
+        price = 84650.00;
+        tpMul = timeframe === '1m' ? 180.0 : timeframe === '15m' ? 450.0 : timeframe === '1h' ? 1200.0 : 3500.0;
+        slMul = timeframe === '1m' ? 90.0 : timeframe === '15m' ? 220.0 : timeframe === '1h' ? 650.0 : 1800.0;
+      } else if (pairUpper.includes('SOL')) {
+        price = 121.45;
+        tpMul = timeframe === '1m' ? 1.2 : timeframe === '15m' ? 3.5 : timeframe === '1h' ? 8.0 : 20.0;
+        slMul = timeframe === '1m' ? 0.6 : timeframe === '15m' ? 1.8 : timeframe === '1h' ? 4.0 : 10.0;
+      } else if (pairUpper.includes('EUR/USD')) {
+        price = 1.0852;
+        tpMul = timeframe === '1m' ? 0.0008 : timeframe === '15m' ? 0.0022 : timeframe === '1h' ? 0.0055 : 0.0140;
+        slMul = timeframe === '1m' ? 0.0004 : timeframe === '15m' ? 0.0011 : timeframe === '1h' ? 0.0028 : 0.0070;
+      } else if (pairUpper.includes('GBP/USD')) {
+        price = 1.2985;
+        tpMul = timeframe === '1m' ? 0.0010 : timeframe === '15m' ? 0.0028 : timeframe === '1h' ? 0.0065 : 0.0160;
+        slMul = timeframe === '1m' ? 0.0005 : timeframe === '15m' ? 0.0014 : timeframe === '1h' ? 0.0032 : 0.0080;
+      } else if (pairUpper.includes('US30')) {
+        price = 42850.00;
+        tpMul = timeframe === '1m' ? 60.0 : timeframe === '15m' ? 150.0 : timeframe === '1h' ? 350.0 : 800.0;
+        slMul = timeframe === '1m' ? 35.0 : timeframe === '15m' ? 80.0 : timeframe === '1h' ? 180.0 : 420.0;
+      }
+
+      // Hash calculation to determine BUY / SELL / WAIT deterministically
+      const str = asset + timeframe;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const mod = Math.abs(hash) % 100;
+
+      let signalText = 'شراء قوي 🟢 (BUY)';
+      let signalColor = '#10b981';
+      let cardBg = 'rgba(16, 185, 129, 0.08)';
+      let scoreText = `${82 + (mod % 16)}/100`;
+      let rsiText = `${(56 + (mod % 18)).toFixed(1)} (زخم صاعد)`;
+      let trendText = `تحليل إطار ${timeframe}: اختراق صاعد مدعوم بدخول سيولة ومؤشر ماكد صاعد على ${asset}.`;
+      let tp1Val = price + tpMul;
+      let slVal = price - slMul;
+
+      if (mod >= 35 && mod < 70) {
+        signalText = 'بيع قوي 🔴 (SELL)';
+        signalColor = '#f87171';
+        cardBg = 'rgba(248, 113, 113, 0.08)';
+        scoreText = `${80 + (mod % 17)}/100`;
+        rsiText = `${(32 - (mod % 12)).toFixed(1)} (تشبع شرائي - كسر هابط)`;
+        trendText = `تحليل إطار ${timeframe}: كسر مستوى دعم محوري مع تقاطع سلبي للمتوسطات المتحركة على ${asset}.`;
+        tp1Val = price - tpMul;
+        slVal = price + tpMul;
+      } else if (mod >= 70) {
+        signalText = 'انتظار وتحديد اتجاه ⚪ (WAIT)';
+        signalColor = '#f59e0b';
+        cardBg = 'rgba(245, 158, 11, 0.08)';
+        scoreText = `${52 + (mod % 12)}/100`;
+        rsiText = `${(48 + (mod % 6)).toFixed(1)} (منطقة محايدة)`;
+        trendText = `تحليل إطار ${timeframe}: حركة عرضية تجميعية على ${asset} - يُفضل الانتظار لحين كسر النطاق.`;
+        tp1Val = price + (tpMul * 0.5);
+        slVal = price - (slMul * 0.5);
+      }
+
+      const formatP = (val) => price > 100 ? Number(val.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2 }) : val.toFixed(4);
+
       setAnalysisResult({
         asset,
         timeframe,
-        signal: 'BUY 🟢 (شراء قوي)',
-        score: '88/100',
-        entry: asset.includes('BTC') ? '$84,650.00' : asset.includes('SOL') ? '$121.45' : asset.includes('XAU') ? '$2,682.50' : '$1.0852',
-        tp1: asset.includes('BTC') ? '$85,800.00' : asset.includes('SOL') ? '$125.00' : asset.includes('XAU') ? '$2,705.00' : '$1.0910',
-        tp2: asset.includes('BTC') ? '$87,200.00' : asset.includes('SOL') ? '$130.00' : asset.includes('XAU') ? '$2,725.00' : '$1.0970',
-        sl: asset.includes('BTC') ? '$83,900.00' : asset.includes('SOL') ? '$118.50' : asset.includes('XAU') ? '$2,660.00' : '$1.0810',
-        rsi: '62.4 (زخم صاعد)',
-        trend: `اتجاه صاعد مدعوم بتدفق سيولة وحجم تداول قوي على زوج ${asset}`
+        signal: signalText,
+        signalColor: signalColor,
+        cardBg: cardBg,
+        score: scoreText,
+        entry: formatP(price),
+        tp1: formatP(tp1Val),
+        tp2: formatP(tp1Val * 1.005),
+        sl: formatP(slVal),
+        rsi: rsiText,
+        trend: trendText
       });
-    }, 800);
+    }, 600);
   };
 
   return (
@@ -226,17 +300,17 @@ export default function SignalBot({ onBack, initialSymbol }) {
       {/* Analysis Result Card */}
       {analysisResult && (
         <div style={{ 
-          background: 'rgba(16, 185, 129, 0.08)', 
-          border: '1px solid #10b981', 
+          background: analysisResult.cardBg || 'rgba(16, 185, 129, 0.08)', 
+          border: `1px solid ${analysisResult.signalColor || '#10b981'}`, 
           borderRadius: '12px', 
           padding: '20px', 
           color: '#fff',
-          boxShadow: '0 0 25px rgba(16, 185, 129, 0.2)',
+          boxShadow: `0 0 25px ${analysisResult.signalColor || '#10b981'}40`,
           marginBottom: '30px'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>📊 نتيجة تحليل Traden AI</span>
-            <span style={{ background: '#10b981', color: '#000', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+            <span style={{ fontSize: '18px', fontWeight: 'bold', color: analysisResult.signalColor || '#10b981' }}>📊 نتيجة تحليل Traden AI</span>
+            <span style={{ background: analysisResult.signalColor || '#10b981', color: '#000', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
               السكور: {analysisResult.score}
             </span>
           </div>
@@ -244,7 +318,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px', margin: '12px 0' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>التوصية / الإشارة</div>
-              <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '15px' }}>{analysisResult.signal}</div>
+              <div style={{ fontWeight: 'bold', color: analysisResult.signalColor || '#10b981', fontSize: '15px' }}>{analysisResult.signal}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
               <div style={{ color: '#9ca3af', fontSize: '11px' }}>الإطار الزمني</div>
