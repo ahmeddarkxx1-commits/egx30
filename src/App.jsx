@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bot, BarChart2, Bell, Shield, Activity, Zap, Lock, Key, CheckCircle, Send, Sparkles } from 'lucide-react';
+import { fetchLiveAssetTicker } from './utils/priceFetcher';
 import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
@@ -13,6 +14,148 @@ import './App.css';
 // Admin / Allowed User IDs or Master Activation Code
 const MASTER_VIP_CODE = 'TRADEN2026';
 const WHITELISTED_TELEGRAM_IDS = [1914514519, 12345678, 87654321]; // Admin Telegram ID added!
+
+function LiveMarketWidget({ onOpenBot }) {
+  const [activeAsset, setActiveAsset] = useState('BTC/USDT');
+  const [tickerData, setTickerData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async (symbol) => {
+    setLoading(true);
+    try {
+      const data = await fetchLiveAssetTicker(symbol);
+      setTickerData(data);
+    } catch (e) {
+      console.error('Failed fetching live ticker for widget:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData(activeAsset);
+    const interval = setInterval(() => loadData(activeAsset), 10000);
+    return () => clearInterval(interval);
+  }, [activeAsset]);
+
+  const priceFormatted = tickerData?.price 
+    ? (tickerData.price >= 1000 ? '$' + tickerData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$' + tickerData.price)
+    : '...';
+
+  const changeVal = tickerData?.change24h || 0;
+  const isUp = changeVal >= 0;
+  const highVal = tickerData?.high24h ? '$' + tickerData.high24h.toLocaleString() : (tickerData?.price ? '$' + (tickerData.price * 1.012).toFixed(2) : '...');
+  const lowVal = tickerData?.low24h ? '$' + tickerData.low24h.toLocaleString() : (tickerData?.price ? '$' + (tickerData.price * 0.988).toFixed(2) : '...');
+  
+  const trendText = changeVal > 0.15 ? 'صاعد 📈' : changeVal < -0.15 ? 'هابط 📉' : 'عرضي ⚖️';
+  const trendColor = changeVal > 0.15 ? '#10b981' : changeVal < -0.15 ? '#ef4444' : '#f59e0b';
+
+  return (
+    <section className="chart-container" style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
+      
+      {/* Asset Switcher Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #21262d', paddingBottom: '10px' }}>
+        {[
+          { symbol: 'BTC/USDT', label: '₿ البيتكوين' },
+          { symbol: 'XAU/USD', label: '🥇 الذهب' },
+          { symbol: 'EUR/USD', label: '💶 اليورو' },
+        ].map(item => (
+          <button
+            key={item.symbol}
+            onClick={() => setActiveAsset(item.symbol)}
+            style={{
+              background: activeAsset === item.symbol ? '#1f6beb' : '#21262d',
+              color: '#fff',
+              border: activeAsset === item.symbol ? '1px solid #388bfd' : '1px solid #30363d',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Header */}
+      <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div className="price" style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#f0f6fc' }}>
+            {loading && !tickerData ? 'جاري التحميل...' : priceFormatted}
+          </div>
+          <div className="price-sub" style={{ fontSize: '0.85rem', color: '#8b949e', marginTop: '2px' }}>
+            {activeAsset} · أسعار لحظية (Live 24h)
+          </div>
+        </div>
+        <div 
+          className={isUp ? "trend-up" : "trend-down"}
+          style={{
+            background: isUp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            color: isUp ? '#3fb950' : '#f85149',
+            border: `1px solid ${isUp ? '#2ea043' : '#f85149'}`,
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
+          }}
+        >
+          {isUp ? '▲ +' : '▼ '}{changeVal.toFixed(2)}%
+        </div>
+      </div>
+      
+      {/* Dynamic Sparkline Wave SVG */}
+      <div style={{ height: '60px', width: '100%', margin: '15px 0', position: 'relative' }}>
+         <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%', stroke: isUp ? '#10b981' : '#ef4444', strokeWidth: 2, fill: 'none' }}>
+            <path d={isUp ? "M0,16 Q20,14 40,8 T70,10 T100,2" : "M0,4 Q20,6 40,12 T70,10 T100,18"} />
+         </svg>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="chart-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>أدنى 24h</div>
+          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#c9d1d9', marginTop: '2px' }}>{lowVal}</div>
+        </div>
+        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>أعلى 24h</div>
+          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#c9d1d9', marginTop: '2px' }}>{highVal}</div>
+        </div>
+        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>الاتجاه</div>
+          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: trendColor, marginTop: '2px' }}>{trendText}</div>
+        </div>
+      </div>
+
+      {/* Action Button */}
+      <button
+        onClick={() => onOpenBot(activeAsset)}
+        style={{
+          width: '100%',
+          marginTop: '15px',
+          background: 'linear-gradient(135deg, #1f6beb 0%, #238636 100%)',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '10px',
+          padding: '12px',
+          fontWeight: 'bold',
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          boxShadow: '0 4px 12px rgba(31, 107, 235, 0.3)'
+        }}
+      >
+        <span>🤖 تحليل وتوليد صفقات لـ {activeAsset}</span>
+      </button>
+
+    </section>
+  );
+}
 
 function App() {
   const [tgUser, setTgUser] = useState(null);
@@ -314,37 +457,12 @@ function App() {
       </section>
 
 
-      <section className="chart-container">
-        <div className="chart-header">
-          <div>
-            <div className="price">$84,580</div>
-            <div className="price-sub">Bitcoin · 48h ₿</div>
-          </div>
-          <div className="trend-up">▲ 0.61%</div>
-        </div>
-        
-        {/* Simple mock chart line */}
-        <div style={{ height: '60px', width: '100%', borderBottom: '1px solid #1f2937', position: 'relative' }}>
-           <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%', stroke: '#10b981', strokeWidth: 2, fill: 'none' }}>
-              <path d="M0,15 Q10,10 20,12 T40,8 T60,10 T80,5 T100,2" />
-           </svg>
-        </div>
-
-        <div className="chart-stats">
-          <div className="stat-box">
-            <div className="stat-title">أدنى 48h</div>
-            <div className="stat-val">$83,861</div>
-          </div>
-          <div className="stat-box">
-            <div className="stat-title">أعلى 48h</div>
-            <div className="stat-val">$84,992</div>
-          </div>
-          <div className="stat-box">
-            <div className="stat-title">الاتجاه</div>
-            <div className="stat-val" style={{ color: '#10b981' }}>صاعد 📈</div>
-          </div>
-        </div>
-      </section>
+      <LiveMarketWidget 
+        onOpenBot={(symbol) => {
+          if (symbol) setSelectedSymbol(symbol);
+          setCurrentView('signal_bot');
+        }} 
+      />
 
     </div>
   );
