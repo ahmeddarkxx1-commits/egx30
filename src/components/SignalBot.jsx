@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import { fetchLiveAssetPrice } from '../utils/priceFetcher';
 
 const categories = [
   { id: 'crypto', label: 'كريبتو', icon: '₿' },
@@ -68,7 +69,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
     }
   }, [initialSymbol]);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     setLoading(true);
     setAnalysisResult(null);
 
@@ -81,38 +82,30 @@ export default function SignalBot({ onBack, initialSymbol }) {
       }
     }
 
+    const price = await fetchLiveAssetPrice(asset);
+
     setTimeout(() => {
       setLoading(false);
 
       const pairUpper = asset.toUpperCase();
-      let price = 1.0850;
       let tpMul = 0.0040;
       let slMul = 0.0025;
 
       if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
-        price = 2682.50;
         tpMul = timeframe === '1m' ? 4.5 : timeframe === '15m' ? 12.0 : timeframe === '1h' ? 25.0 : 60.0;
         slMul = timeframe === '1m' ? 2.5 : timeframe === '15m' ? 7.0 : timeframe === '1h' ? 14.0 : 35.0;
       } else if (pairUpper.includes('BTC')) {
-        price = 84650.00;
         tpMul = timeframe === '1m' ? 180.0 : timeframe === '15m' ? 450.0 : timeframe === '1h' ? 1200.0 : 3500.0;
         slMul = timeframe === '1m' ? 90.0 : timeframe === '15m' ? 220.0 : timeframe === '1h' ? 650.0 : 1800.0;
       } else if (pairUpper.includes('SOL')) {
-        price = 121.45;
         tpMul = timeframe === '1m' ? 1.2 : timeframe === '15m' ? 3.5 : timeframe === '1h' ? 8.0 : 20.0;
         slMul = timeframe === '1m' ? 0.6 : timeframe === '15m' ? 1.8 : timeframe === '1h' ? 4.0 : 10.0;
-      } else if (pairUpper.includes('EUR/USD')) {
-        price = 1.0852;
-        tpMul = timeframe === '1m' ? 0.0008 : timeframe === '15m' ? 0.0022 : timeframe === '1h' ? 0.0055 : 0.0140;
-        slMul = timeframe === '1m' ? 0.0004 : timeframe === '15m' ? 0.0011 : timeframe === '1h' ? 0.0028 : 0.0070;
-      } else if (pairUpper.includes('GBP/USD')) {
-        price = 1.2985;
-        tpMul = timeframe === '1m' ? 0.0010 : timeframe === '15m' ? 0.0028 : timeframe === '1h' ? 0.0065 : 0.0160;
-        slMul = timeframe === '1m' ? 0.0005 : timeframe === '15m' ? 0.0014 : timeframe === '1h' ? 0.0032 : 0.0080;
       } else if (pairUpper.includes('US30')) {
-        price = 42850.00;
         tpMul = timeframe === '1m' ? 60.0 : timeframe === '15m' ? 150.0 : timeframe === '1h' ? 350.0 : 800.0;
         slMul = timeframe === '1m' ? 35.0 : timeframe === '15m' ? 80.0 : timeframe === '1h' ? 180.0 : 420.0;
+      } else {
+        tpMul = timeframe === '1m' ? price * 0.0007 : timeframe === '15m' ? price * 0.0019 : timeframe === '1h' ? price * 0.0048 : price * 0.0120;
+        slMul = timeframe === '1m' ? price * 0.00035 : timeframe === '15m' ? price * 0.00095 : timeframe === '1h' ? price * 0.0024 : price * 0.0060;
       }
 
       // Hash calculation to determine BUY / SELL / WAIT deterministically
