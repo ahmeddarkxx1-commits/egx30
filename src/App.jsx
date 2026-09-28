@@ -111,8 +111,8 @@ function App() {
         <div className="grid-2">
           <div className="card" onClick={() => setCurrentView('signal_bot')}>
             <span className="card-icon">📡</span>
-            <div className="card-title">Traden Bot</div>
-            <div className="card-desc">إشارات BUY/SELL بالذكاء</div>
+            <div className="card-title">Traden Bot (بوت التوصيات) 🤖</div>
+            <div className="card-desc">توليد أهداف الصفقات (TP/SL) وإرسالها للتليجرام</div>
           </div>
           <div className="card" onClick={() => setCurrentView('investment_bot')} style={{ cursor: 'pointer' }}>
             <span className="card-icon">🌱</span>
@@ -125,17 +125,17 @@ function App() {
       <section>
         <div className="section-title">
           <Zap size={18} />
-          الأدوات
+          الأدوات والتحليل
         </div>
         <div className="grid-3">
           <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)' }}>
             <span className="card-icon">📡</span>
             <div className="card-title">ماسح الأسواق ✦</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>جديد 🔥</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار حي 🔥</div>
           </div>
           <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={24} color="#60a5fa" />
-            <div className="card-title">Market Scanner</div>
+            <div className="card-title">فاحص المؤشرات 📊</div>
           </div>
           <div className="card" onClick={() => setCurrentView('precious_metals')}>
             <span className="card-icon">🥇</span>
