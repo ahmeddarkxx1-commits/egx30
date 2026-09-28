@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Link2 } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 
 const categories = [
@@ -188,18 +188,6 @@ export default function SignalBot({ onBack, initialSymbol }) {
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
           <ChevronRight size={28} />
         </button>
-      </div>
-
-      {/* Premium Connect Banner */}
-      <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link2 color="#f59e0b" size={24} />
-          <div>
-            <div style={{ fontWeight: 'bold', color: '#f59e0b' }}>ربط منصة التداول — Premium</div>
-            <div style={{ fontSize: '11px', color: '#9ca3af' }}>BingX · Binance · Bybit · MEXC</div>
-          </div>
-        </div>
-        <button style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer' }}>ربط ←</button>
       </div>
 
       {/* Step 1: Category */}
