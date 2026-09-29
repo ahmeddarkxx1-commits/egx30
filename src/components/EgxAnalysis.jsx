@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, Search, Zap, TrendingUp, ShieldAlert, Award, DollarSign } from 'lucide-react';
 import { egxCategories, egxStocksList, analyzeEgxStockWithGlobalMacro } from '../utils/egxFetcher';
 import TradingViewWidget from './TradingViewWidget';
+import RasadAnalysisCard from './RasadAnalysisCard';
 
 export default function EgxAnalysis({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -257,84 +258,8 @@ export default function EgxAnalysis({ onBack }) {
         {loading ? '⚡ جاري ربط أبعاد السوق العالمي والسلع بالأصل...' : `🤖 تحليل Traden الشامل لـ (${selectedStock.code})`}
       </button>
 
-      {/* Analysis Output */}
-      {analysisResult && (
-        <div style={{
-          background: 'rgba(22, 27, 34, 0.95)',
-          border: `1px solid ${analysisResult.signalColor}`,
-          borderRadius: '14px',
-          padding: '16px',
-          boxShadow: `0 0 25px ${analysisResult.signalColor}30`,
-          marginBottom: '24px'
-        }}>
-          {/* Header Result */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#f59e0b' }}>
-                {analysisResult.icon} {analysisResult.name}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>
-                الكود: {analysisResult.code} | {analysisResult.sector}
-              </div>
-            </div>
-            <div style={{ background: analysisResult.signalColor, color: '#000', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-              السكور: {analysisResult.score}
-            </div>
-          </div>
-
-          {/* Grid Metrics */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.8rem', marginBottom: '14px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '0.7rem' }}>التوصية والإشارة</div>
-              <div style={{ fontWeight: 'bold', color: analysisResult.signalColor, fontSize: '0.88rem' }}>{analysisResult.signal}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '0.7rem' }}>نطاق الدخول الشامل</div>
-              <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>{analysisResult.entry}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '0.7rem' }}>الهدف الأول (TP1)</div>
-              <div style={{ fontWeight: 'bold', color: '#4ade80' }}>{analysisResult.tp1}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '0.7rem' }}>وقف الخسارة (SL)</div>
-              <div style={{ fontWeight: 'bold', color: '#f87171' }}>{analysisResult.sl}</div>
-            </div>
-          </div>
-
-          {/* Capital Distribution Breakdown */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: '10px',
-            padding: '12px',
-            marginBottom: '14px'
-          }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#10b981', marginBottom: '6px' }}>
-              🛡️ إدارة المحفظة والكميات لرأس مالك ({Number(analysisResult.capitalEgp).toLocaleString()} ج.م):
-            </div>
-            <div style={{ fontSize: '0.76rem', color: '#cbd5e1', lineHeight: '1.6' }}>
-              • <b>الكمية الموصى بشرائها:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{Number(analysisResult.recommendedShares).toLocaleString()} {analysisResult.code === 'AZG' ? 'جرام ذهب 24' : analysisResult.code === 'SILVER_EGP' ? 'جرام فضة 999' : 'سهم'}</span><br/>
-              • <b>قيمة السيولة المستثمرة بالصفقة:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{Number(analysisResult.totalInvestmentAmount).toLocaleString()} ج.م</span><br/>
-              • <b>أقصى خسارة محسوبة عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-{Number(analysisResult.maxRiskAmount).toLocaleString()} ج.م</span> (مخاطرة آمنة 5%)<br/>
-              • <b>الربح المتوقع بالجنيه عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+{Number(analysisResult.expectedProfitTp1).toLocaleString()} ج.م</span> (+8.5%)<br/>
-              • <b>الربح المتوقع بالجنيه عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>+{Number(analysisResult.expectedProfitTp2).toLocaleString()} ج.م</span> (+16.8%)
-            </div>
-          </div>
-
-          {/* Full Multi-Dimensional AI Report */}
-          <div style={{
-            fontSize: '0.78rem',
-            color: '#cbd5e1',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            paddingTop: '12px',
-            lineHeight: '1.6',
-            whiteSpace: 'pre-line'
-          }}>
-            {analysisResult.fullReport}
-          </div>
-        </div>
-      )}
+      {/* Analysis Output Card */}
+      {analysisResult && <RasadAnalysisCard data={analysisResult} />}
 
       {/* Dynamic Interactive Chart Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px' }}>

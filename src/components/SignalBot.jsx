@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Send, CheckCircle2 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import RasadAnalysisCard from './RasadAnalysisCard';
 import { fetchLiveAssetPrice, analyzeStudiedTechnicalSignal } from '../utils/priceFetcher';
 
 const TELEGRAM_BOT_TOKEN = "5426065436:AAEiJvcBc7lC-R8ZgCXENRAtZiwXju2E9XE";
@@ -336,97 +337,10 @@ export default function SignalBot({ onBack, initialSymbol }) {
 
       {/* Analysis Result Card */}
       {analysisResult && (
-        <div style={{ 
-          background: analysisResult.cardBg || 'rgba(16, 185, 129, 0.08)', 
-          border: `1px solid ${analysisResult.signalColor || '#10b981'}`, 
-          borderRadius: '12px', 
-          padding: '20px', 
-          color: '#fff',
-          boxShadow: `0 0 25px ${analysisResult.signalColor || '#10b981'}40`,
-          marginBottom: '30px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: analysisResult.signalColor || '#10b981' }}>📊 نتيجة تحليل Traden AI</span>
-            <span style={{ background: analysisResult.signalColor || '#10b981', color: '#000', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-              السكور: {analysisResult.score}
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px', margin: '12px 0' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>التوصية / الإشارة</div>
-              <div style={{ fontWeight: 'bold', color: analysisResult.signalColor || '#10b981', fontSize: '15px' }}>{analysisResult.signal}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>الإطار الزمني</div>
-              <div style={{ fontWeight: 'bold' }}>{analysisResult.timeframe}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>سعر الدخول المقترح</div>
-              <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>${analysisResult.entry}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>مؤشر القوة (RSI)</div>
-              <div style={{ fontWeight: 'bold' }}>{analysisResult.rsi}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>الهدف (TP1)</div>
-              <div style={{ fontWeight: 'bold', color: '#4ade80' }}>${analysisResult.tp1}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>وقف الخسارة (SL)</div>
-              <div style={{ fontWeight: 'bold', color: '#f87171' }}>${analysisResult.sl}</div>
-            </div>
-          </div>
-
-          <div style={{ fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px', marginBottom: '12px' }}>
-            💡 <b>الرؤية العامة:</b> {analysisResult.trend}
-          </div>
-
-          {/* Account Lot Size & Risk Calculator Guide */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            borderRadius: '10px',
-            padding: '12px',
-            marginTop: '12px',
-            marginBottom: '15px'
-          }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px' }}>
-              🛡️ إدارة المخاطر المحسوبة لـ رأس مالك (${analysisResult.capital || 100}):
-            </div>
-            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
-              • <b>حجم اللوت الدقيق الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{analysisResult.recommendedLot || '0.01 Micro'}</span><br/>
-              • <b>أقصى خسارة بالدولار عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{analysisResult.riskDollar || '-$2.50'}</span> (فقط 2.5% مخاطرة)<br/>
-              • <b>الربح المتوقع بالدولار عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{analysisResult.tp1Dollar || '+$6.00'}</span> (+6.0% أرباح)<br/>
-              • <b>الربح المتوقع بالدولار عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{analysisResult.tp2Dollar || '+$12.00'}</span> (+12.0% أرباح)
-            </div>
-          </div>
-
-          {/* Manual Send to Telegram Button */}
-          <button
-            onClick={() => sendToTelegramChat(analysisResult)}
-            style={{
-              width: '100%',
-              background: '#0088cc',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '10px',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
-          >
-            <Send size={16} />
-            <span>إعادة إرسال التوصية إلى شات التليجرام 📲</span>
-          </button>
-
-        </div>
+        <RasadAnalysisCard 
+          data={analysisResult} 
+          onSendToTelegram={(resData) => sendToTelegramChat(resData)} 
+        />
       )}
 
     </div>
