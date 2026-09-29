@@ -6,6 +6,7 @@ export const egxStocksList = [
     name: 'البنك التجاري الدولي (CIB)',
     sector: 'البنوك والخدمات المالية',
     icon: '🏦',
+    tvSymbol: 'EGX:COMI',
     gdrSymbol: 'CBKD.L',
     gdrCorrelated: true,
     priceEst: 84.50,
@@ -18,6 +19,7 @@ export const egxStocksList = [
     name: 'مجموعة إي إف جي القابضة (هيرميس)',
     sector: 'الخدمات المالية والاستثمار',
     icon: '📊',
+    tvSymbol: 'EGX:HRHO',
     gdrSymbol: 'HRHO.L',
     gdrCorrelated: true,
     priceEst: 22.80,
@@ -30,6 +32,7 @@ export const egxStocksList = [
     name: 'السويدي إليكتريك',
     sector: 'الخدمات الصناعية والكابلات',
     icon: '⚡',
+    tvSymbol: 'EGX:SWDY',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 48.20,
@@ -42,6 +45,7 @@ export const egxStocksList = [
     name: 'الإسكندرية للزيوت المعدنية (أموك)',
     sector: 'الطاقة والبترول',
     icon: '🛢️',
+    tvSymbol: 'EGX:AMOC',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 9.60,
@@ -54,6 +58,7 @@ export const egxStocksList = [
     name: 'القابضة المصرية الكويتية',
     sector: 'الاستثمار المباشر والأسمدة',
     icon: '🇰🇼',
+    tvSymbol: 'EGX:EKHO',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 42.00,
@@ -66,6 +71,7 @@ export const egxStocksList = [
     name: 'حديد عز',
     sector: 'الصلب والمعادن',
     icon: '🏗️',
+    tvSymbol: 'EGX:ESRS',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 92.50,
@@ -78,6 +84,7 @@ export const egxStocksList = [
     name: 'مجموعة طلعت مصطفى القابضة',
     sector: 'التطوير العقاري والفندقي',
     icon: '🏢',
+    tvSymbol: 'EGX:TMGH',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 64.00,
@@ -90,6 +97,7 @@ export const egxStocksList = [
     name: 'مصر لإنتاج السماد (موبكو MOPCO)',
     sector: 'البتروكيماويات والأسمدة',
     icon: '🌾',
+    tvSymbol: 'EGX:MFPC',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 46.50,
@@ -102,6 +110,7 @@ export const egxStocksList = [
     name: 'إيسترن كومباني (الشرقية للدخان)',
     sector: 'السلع الاستهلاكية',
     icon: '🚬',
+    tvSymbol: 'EGX:EAST',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 27.40,
@@ -114,6 +123,7 @@ export const egxStocksList = [
     name: 'أوراسكوم كونستراكشون',
     sector: 'الإنشاءات والبنية التحتية',
     icon: '🌉',
+    tvSymbol: 'EGX:ORAS',
     gdrSymbol: null,
     gdrCorrelated: false,
     priceEst: 245.00,
@@ -208,7 +218,7 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, capitalEgp = 500
 • **إجمالي السيولة المخصصة للصفقة:** **${Number(totalInvestmentAmount).toLocaleString()} ج.م** (تقريباً ${((totalInvestmentAmount / capital) * 100).toFixed(1)}% من المحفظة)
 • **أقصى خسارة محسوبة عند الستوب SL:** **-${Number(maxRiskAmount).toLocaleString()} ج.م** (مخاطرة آمنة 5%)
 • **الربح المتوقع بالجنيه عند الهدف الأول TP1:** **+${Number(expectedProfitTp1).toLocaleString()} ج.م** (+8.5%)
-• **الربح المتوقع بالجنيه عند الهدف الثاني TP2:** **+${Number(expectedProfitTp2).toLocaleString()} ج.م** (+16.8%)
+• **الربح المتوقع بالجنيه عند Target TP2:** **+${Number(expectedProfitTp2).toLocaleString()} ج.م** (+16.8%)
 `;
 
   return {
@@ -216,6 +226,7 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, capitalEgp = 500
     name: stock.name,
     sector: stock.sector,
     icon: stock.icon,
+    tvSymbol: stock.tvSymbol,
     entry: `${entryPrice} ج.م`,
     tp1: `${tp1} ج.م`,
     tp2: `${tp2} ج.م`,

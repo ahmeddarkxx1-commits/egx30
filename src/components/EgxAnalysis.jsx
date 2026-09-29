@@ -5,9 +5,15 @@ import TradingViewWidget from './TradingViewWidget';
 
 export default function EgxAnalysis({ onBack }) {
   const [selectedStock, setSelectedStock] = useState(egxStocksList[0]);
+  const [chartSymbol, setChartSymbol] = useState(egxStocksList[0].tvSymbol);
   const [capitalEgp, setCapitalEgp] = useState(50000);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  // Sync chart symbol when selectedStock changes
+  useEffect(() => {
+    setChartSymbol(selectedStock.tvSymbol || `EGX:${selectedStock.code}`);
+  }, [selectedStock]);
 
   const handleAnalyze = async () => {
     setLoading(true);
@@ -279,12 +285,64 @@ export default function EgxAnalysis({ onBack }) {
         </div>
       )}
 
-      {/* Chart Box */}
+      {/* Dynamic Interactive Chart Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px' }}>
-        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
-          📈 المخطط التفاعلي للسلع والملاذات المتقاطعة مع السهم:
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#f59e0b' }}>
+            📈 مخطط السهم المباشر ({selectedStock.code}):
+          </div>
+
+          {/* Chart Switcher Buttons */}
+          <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
+            <button
+              onClick={() => setChartSymbol(selectedStock.tvSymbol || `EGX:${selectedStock.code}`)}
+              style={{
+                background: chartSymbol === (selectedStock.tvSymbol || `EGX:${selectedStock.code}`) ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+                color: chartSymbol === (selectedStock.tvSymbol || `EGX:${selectedStock.code}`) ? '#000' : '#9ca3af',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              🇪🇬 {selectedStock.code}
+            </button>
+            <button
+              onClick={() => setChartSymbol('OANDA:XAUUSD')}
+              style={{
+                background: chartSymbol === 'OANDA:XAUUSD' ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+                color: chartSymbol === 'OANDA:XAUUSD' ? '#000' : '#9ca3af',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              🥇 الذهب
+            </button>
+            <button
+              onClick={() => setChartSymbol('TVC:USOIL')}
+              style={{
+                background: chartSymbol === 'TVC:USOIL' ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+                color: chartSymbol === 'TVC:USOIL' ? '#000' : '#9ca3af',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              🛢️ النفط
+            </button>
+          </div>
         </div>
-        <TradingViewWidget symbol={selectedStock.code === 'COMI' ? 'OANDA:XAUUSD' : selectedStock.code === 'AMOC' ? 'TVC:USOIL' : 'BINANCE:BTCUSDT'} height={400} timeframe="1d" />
+
+        <TradingViewWidget symbol={chartSymbol} height={420} timeframe="1d" />
       </div>
     </div>
   );
