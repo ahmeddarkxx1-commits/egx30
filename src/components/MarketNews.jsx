@@ -20,18 +20,18 @@ const translateHeadlineToArabic = (text = '', category = 'FOREX') => {
 
   const lower = text.toLowerCase();
   
-  // Custom smart phrase mapping
-  if (lower.includes('oil') && (lower.includes('iran') || lower.includes('bounce') || lower.includes('prices'))) {
-    return 'أسعار النفط الخام تتفاعل بقوة وسط الأحداث الجيوسياسية وعناوين الطاقة العالمية';
+  // Custom smart phrase mapping for geopolitics, wars & disasters
+  if (lower.includes('oil') && (lower.includes('iran') || lower.includes('bounce') || lower.includes('prices') || lower.includes('strait'))) {
+    return 'أسعار النفط الخام تتفاعل بقوة وسط التطورات الجيوسياسية والعناوين الإيرانية ومخاوف التوريد';
+  }
+  if (lower.includes('trump') || lower.includes('gas prices') || lower.includes('war') || lower.includes('military')) {
+    return 'تصريحات عسكرية وجيوسياسية تؤثر على تحركات أسعار الطاقة والأسواق العالمية';
   }
   if (lower.includes('rba') || (lower.includes('rate hike') && lower.includes('expected'))) {
     return 'ترقب قرار أسعار الفائدة وتحديثات البنك المركزي والأسواق المالية المرتقبة';
   }
   if (lower.includes('goldman sachs') || lower.includes('treasury fund')) {
     return 'جولدمان ساكس يعزز استثماراته المؤسسية في الأصول الرقمية وصناديق الخزانة';
-  }
-  if (lower.includes('trump') || lower.includes('gas prices') || lower.includes('war')) {
-    return 'تصريحات جيوسياسية تؤثر على تحركات أسعار النفط والغاز في الأسواق العالمية';
   }
   if (lower.includes('fed') || lower.includes('powell') || lower.includes('fomc')) {
     return `تحديثات الفيدرالي الأمريكي المؤثرة على حركة الدولار والأسواق: ${text.slice(0, 70)}...`;
@@ -60,6 +60,7 @@ const translateHeadlineToArabic = (text = '', category = 'FOREX') => {
     translated = translated.replace(reg, t.ar);
   });
 
+  if (category === 'WARS') return `⚔️ تطورات الحروب والأزمات الجيوسياسية: ${translated}`;
   if (category === 'GOLD') return `تحركات أسعار الذهب XAU: ${translated}`;
   if (category === 'FED') return `تطورات الفيدرالي والدولار: ${translated}`;
   if (category === 'FOREX') return `تحديثات سوق العملات الأجنبية: ${translated}`;
@@ -111,9 +112,30 @@ export default function MarketNews({ onBack }) {
     return `منذ ${diffDays} أيام`;
   };
 
-  // Helper to categorize news into GOLD, FED, FOREX, CRYPTO
+  // Helper to categorize news into WARS, GOLD, FED, FOREX, CRYPTO
   const categorizeItem = (title = '', desc = '') => {
     const text = (title + ' ' + desc).toLowerCase();
+    
+    // Check for Geopolitical conflicts, military news, energy crises & natural disasters
+    if (
+      text.includes('war') || text.includes('conflict') || text.includes('military') || 
+      text.includes('strike') || text.includes('attack') || text.includes('missile') || 
+      text.includes('iran') || text.includes('russia') || text.includes('ukraine') || 
+      text.includes('israel') || text.includes('sanction') || text.includes('geopolit') || 
+      text.includes('disaster') || text.includes('earthquake') || text.includes('hurricane') || 
+      text.includes('strait') || text.includes('red sea') || text.includes('houthi') ||
+      text.includes('حرب') || text.includes('صراع') || text.includes('عسكري') || 
+      text.includes('هجوم') || text.includes('صواريخ') || text.includes('عقوبات') || 
+      text.includes('زلزال') || text.includes('إعصار') || text.includes('كارثة')
+    ) {
+      return { 
+        category: 'WARS', 
+        tags: ['XAU (الذهب 🥇)', 'WTI (النفط 🛢️)', 'USD (الدولار 💵)', 'ملاذ آمن 🛡️'], 
+        defaultImpact: 'bearish', 
+        defaultImpactLabel: 'أزمة جيوسياسية 🔥' 
+      };
+    }
+
     if (text.includes('gold') || text.includes('xau') || text.includes('ذهب') || text.includes('bullion') || text.includes('metal')) {
       return { category: 'GOLD', tags: ['XAU', 'الذهب', 'معادن'], defaultImpact: 'bullish', defaultImpactLabel: 'إيجابي 🚀' };
     }
@@ -137,13 +159,21 @@ export default function MarketNews({ onBack }) {
       descAr = translateHeadlineToArabic(rawDesc, catInfo.category);
     }
 
-    const aiAnalysisText = `تحليل الذكاء الاصطناعي اللحظي: الخبر يؤثر مباشرة على مستويات السيولة والتداول لـ ${catInfo.tags.join('/')}. يُنصح بمتابعة مستويات الدعم والمقاومة اللحظية قبل الدخول.`;
+    let aiAnalysisText = `تحليل الذكاء الاصطناعي اللحظي: الخبر يؤثر مباشرة على مستويات السيولة والتداول لـ ${catInfo.tags.join('/')}. يُنصح بمتابعة مستويات الدعم والمقاومة اللحظية قبل الدخول.`;
+
+    if (catInfo.category === 'WARS') {
+      aiAnalysisText = `⚔️ **تحليل تأثير الحروب والأزمات والكوارث على أزواج التداول:**\n` +
+        `• **الذهب (XAU/USD):** صعود صريح كملاذ آمن قيادي في حالات التحوط ضد مخاطر الحروب والأزمات.\n` +
+        `• **النفط (WTI/BRENT):** ارتفاعات حادة بسبب المخاوف من انقطاع خطوط التوريد والملاحة البحرية.\n` +
+        `• **الدولار (USD) والفرنك (CHF):** ملاذات آمنة قوية تعزز قيمتها مقابل العملات الأخرى.\n` +
+        `• **المؤشرات (US30 / NAS100):** هبوط وتراجع مؤقت نتيجة انخفاض شهية المخاطرة لدى المستثمرين.`;
+    }
 
     const parsedDate = parseUtcDate(item.pubDate);
 
     return {
       id: item.guid || item.link || ('rss-' + Math.random()),
-      source: item.author || (catInfo.category === 'CRYPTO' ? 'CoinTelegraph / CoinDesk' : 'ForexLive / Reuters'),
+      source: item.author || (catInfo.category === 'CRYPTO' ? 'CoinTelegraph / CoinDesk' : 'Reuters / ForexLive Geopolitics'),
       title: titleAr,
       description: descAr,
       category: catInfo.category,
@@ -174,7 +204,7 @@ export default function MarketNews({ onBack }) {
       };
       setLivePrices(updatedPrices);
 
-      // 2. Fetch Multi-source Live RSS News with timestamp cache-buster
+      // 2. Fetch Multi-source Live RSS News with timestamp cache-buster (including Geopolitics & Conflict news)
       const cacheBust = Date.now();
       const rssUrls = [
         `https://api.rss2json.com/v1/api.json?rss_url=https://www.forexlive.com/feed/news&t=${cacheBust}`,
@@ -192,14 +222,30 @@ export default function MarketNews({ onBack }) {
         }
       });
 
-      // 3. Create Live Ticker Alerts dynamically based on actual current market prices
+      // 3. Create Live War/Geopolitical Ticker Alert & Live Market Alerts dynamically
       const currentTimeIso = new Date().toISOString();
       const liveMarketAlerts = [
         {
+          id: `live-ticker-geopolitics-${cacheBust}`,
+          source: 'Traden Geopolitical & Risk Radar',
+          title: '⚔️ رادار الأزمات الجيوسياسية والكوارث: متابعة تأثر الذهب والنفط والعملات بالأحداث العالمية الحالية',
+          description: 'تتأثر أزواج التداول والملاذات الآمنة (الذهب XAU/USD والنفط WTI/BRENT والدولار USD) بشكل مباشر ومباشر عند تصاعد الحروب أو الكوارث.',
+          category: 'WARS',
+          pubDate: currentTimeIso,
+          impact: 'bearish',
+          impactLabel: 'أزمة جيوسياسية 🔥',
+          tags: ['XAU (الذهب 🥇)', 'WTI (النفط 🛢️)', 'USD (الدولار 💵)', 'ملاذ آمن 🛡️'],
+          aiAnalysis: `⚔️ **تحليل تأثير الحروب والكوارث والأزمات على الأزواج:**\n` +
+            `• **الذهب (XAU/USD):** قفزات وملاذ آمن قيادي للتحوط.\n` +
+            `• **النفط (WTI/BRENT):** ارتفاعات سريعة بسبب خطوط التوريد والملاحة.\n` +
+            `• **الدولار (USD) والفرنك (CHF):** قوة كملاذ آمن للمستثمرين.\n` +
+            `• **المؤشرات (US30 / NAS100):** هبوط نتيجة انخفاض شهية المخاطرة.`
+        },
+        {
           id: `live-ticker-gold-${cacheBust}`,
           source: 'Traden Live Spot Ticker',
-          title: `تحديث لحظي لأسعار الذهب XAU/USD عند $${updatedPrices.gold || '2,695.40'} مع متابعة تدفقات السيولة`,
-          description: 'تتحرك أسعار الذهب الفورية بتداول مكثف مع ترقب بيانات التضخم ومؤشرات الفائدة العالمية.',
+          title: `تحديث لحظي لأسعار الذهب XAU/USD عند $${updatedPrices.gold || '2,695.40'} مع متابعة تدفقات السيولة والملاذ الآمن`,
+          description: 'تتحرك أسعار الذهب الفورية بتداول مكثف مع ترقب التطورات الجيوسياسية وقرارات الفائدة.',
           category: 'GOLD',
           pubDate: currentTimeIso,
           impact: 'bullish',
@@ -276,7 +322,7 @@ export default function MarketNews({ onBack }) {
       }}>
         <div>
           <h2 style={{ color: '#58a6ff', margin: 0, fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📰</span> الأخبار اللحظية (Live News)
+            <span>📰</span> الأخبار اللحظية ورادار الأزمات (Live News)
           </h2>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 1.5s infinite' }}></span>
@@ -349,6 +395,7 @@ export default function MarketNews({ onBack }) {
       }}>
         {[
           { id: 'ALL', label: '🌐 الكل' },
+          { id: 'WARS', label: '⚔️ الحروب والأزمات 🔥' },
           { id: 'GOLD', label: '🥇 الذهب' },
           { id: 'CRYPTO', label: '🪙 كريبتو' },
           { id: 'FED', label: '🏛️ الفيدرالي' },
@@ -358,15 +405,18 @@ export default function MarketNews({ onBack }) {
             key={tab.id}
             onClick={() => setFilter(tab.id)}
             style={{
-              background: filter === tab.id ? '#1f6beb' : '#21262d',
+              background: filter === tab.id 
+                ? (tab.id === 'WARS' ? 'linear-gradient(90deg, #dc2626, #b91c1c)' : '#1f6beb') 
+                : '#21262d',
               color: '#ffffff',
-              border: filter === tab.id ? '1px solid #388bfd' : '1px solid #30363d',
+              border: filter === tab.id ? (tab.id === 'WARS' ? '1px solid #ef4444' : '1px solid #388bfd') : '1px solid #30363d',
               borderRadius: '16px',
               padding: '5px 12px',
               fontSize: '0.8rem',
               fontWeight: 'bold',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              boxShadow: filter === tab.id && tab.id === 'WARS' ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
             }}
           >
             {tab.label}
@@ -385,8 +435,8 @@ export default function MarketNews({ onBack }) {
             <div
               key={item.id}
               style={{
-                background: '#161b22',
-                border: '1px solid #30363d',
+                background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.05)' : '#161b22',
+                border: item.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #30363d',
                 borderRadius: '10px',
                 padding: '14px',
                 display: 'flex',
@@ -397,7 +447,7 @@ export default function MarketNews({ onBack }) {
             >
               {/* Header Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', color: '#58a6ff', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '0.78rem', color: item.category === 'WARS' ? '#f87171' : '#58a6ff', fontWeight: 'bold' }}>
                   {item.source}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#10b981', background: '#0d1117', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
@@ -422,15 +472,15 @@ export default function MarketNews({ onBack }) {
                 borderTop: '1px solid #21262d',
                 paddingTop: '8px'
               }}>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{
                     fontSize: '0.72rem',
                     padding: '2px 6px',
                     borderRadius: '6px',
                     fontWeight: 'bold',
-                    background: item.impact === 'bullish' ? 'rgba(46, 160, 67, 0.15)' : item.impact === 'bearish' ? 'rgba(248, 81, 73, 0.15)' : 'rgba(139, 148, 158, 0.15)',
-                    color: item.impact === 'bullish' ? '#3fb950' : item.impact === 'bearish' ? '#f85149' : '#8b949e',
-                    border: '1px solid ' + (item.impact === 'bullish' ? '#2ea043' : item.impact === 'bearish' ? '#f85149' : '#30363d')
+                    background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.2)' : (item.impact === 'bullish' ? 'rgba(46, 160, 67, 0.15)' : 'rgba(248, 81, 73, 0.15)'),
+                    color: item.category === 'WARS' ? '#f87171' : (item.impact === 'bullish' ? '#3fb950' : '#f85149'),
+                    border: '1px solid ' + (item.category === 'WARS' ? '#ef4444' : (item.impact === 'bullish' ? '#2ea043' : '#f85149'))
                   }}>
                     {item.impactLabel}
                   </span>
@@ -445,17 +495,18 @@ export default function MarketNews({ onBack }) {
                 <button
                   onClick={() => setSelectedNews(item)}
                   style={{
-                    background: '#21262d',
-                    color: '#58a6ff',
-                    border: '1px solid #30363d',
+                    background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.2)' : '#21262d',
+                    color: item.category === 'WARS' ? '#f87171' : '#58a6ff',
+                    border: item.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #30363d',
                     borderRadius: '6px',
                     padding: '4px 10px',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  🤖 تحليل AI
+                  🤖 تحليل تأثير الأزواج
                 </button>
               </div>
             </div>
@@ -468,7 +519,7 @@ export default function MarketNews({ onBack }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
+          background: 'rgba(0,0,0,0.85)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -477,29 +528,30 @@ export default function MarketNews({ onBack }) {
         }}>
           <div style={{
             background: '#161b22',
-            border: '1px solid #30363d',
+            border: selectedNews.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.6)' : '1px solid #30363d',
             borderRadius: '14px',
-            maxWidth: '480px',
+            maxWidth: '500px',
             width: '100%',
             padding: '18px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            boxShadow: selectedNews.category === 'WARS' ? '0 0 25px rgba(239, 68, 68, 0.3)' : '0 8px 24px rgba(0,0,0,0.4)',
             direction: 'rtl'
           }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#58a6ff', fontSize: '1.15rem' }}>
-              🤖 تحليل الذكاء الاصطناعي للخبر
+            <h3 style={{ margin: '0 0 10px 0', color: selectedNews.category === 'WARS' ? '#f87171' : '#58a6ff', fontSize: '1.15rem' }}>
+              {selectedNews.category === 'WARS' ? '⚔️ تحليل تأثير الحروب والأزمات على الأزواج' : '🤖 تحليل الذكاء الاصطناعي للخبر'}
             </h3>
             <p style={{ fontSize: '0.88rem', fontWeight: 'bold', color: '#f0f6fc', marginBottom: '12px' }}>
               {selectedNews.title}
             </p>
             <div style={{
               background: '#0d1117',
-              border: '1px solid #30363d',
+              border: selectedNews.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #30363d',
               borderRadius: '8px',
               padding: '12px',
-              color: '#7ee787',
+              color: selectedNews.category === 'WARS' ? '#fca5a5' : '#7ee787',
               fontSize: '0.85rem',
               lineHeight: '1.6',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              whiteSpace: 'pre-line'
             }}>
               {selectedNews.aiAnalysis}
             </div>
@@ -507,7 +559,7 @@ export default function MarketNews({ onBack }) {
               onClick={() => setSelectedNews(null)}
               style={{
                 width: '100%',
-                background: '#238636',
+                background: selectedNews.category === 'WARS' ? '#dc2626' : '#238636',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
