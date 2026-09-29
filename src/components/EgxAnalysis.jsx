@@ -339,8 +339,32 @@ export default function EgxAnalysis({ onBack }) {
       {/* Dynamic Interactive Chart Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#f59e0b' }}>
-            📈 مخطط الشارت المباشر ({selectedStock.code}):
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#f59e0b' }}>
+              📈 مخطط الشارت المباشر ({selectedStock.code}):
+            </span>
+            <a
+              href={`https://ar.tradingview.com/chart/?symbol=${encodeURIComponent(chartSymbol)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'rgba(59, 130, 246, 0.15)',
+                color: '#60a5fa',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '0.72rem',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              title="فتح الشارت في متصفح TradingView للشاشة الكبيرة"
+            >
+              <span>🖥️ فتح في TradingView ↗</span>
+            </a>
           </div>
 
           {/* Chart Switcher Buttons */}
