@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import RasadAnalysisCard from './RasadAnalysisCard';
 import { AssetLogo } from '../utils/assetLogos';
 import { analyzeStudiedTechnicalSignal } from '../utils/priceFetcher';
 
@@ -290,70 +291,7 @@ export default function MarketScanner({ onBack }) {
         {loading ? '⚡ جاري فحص وتحليل العملة بالذكاء الاصطناعي...' : `🤖 تحليل Traden الشامل (${selectedCoin.pair})`}
       </button>
 
-      {analysisResult && (
-        <div style={{ 
-          background: analysisResult.cardBg, 
-          border: `1px solid ${analysisResult.signalColor}`, 
-          borderRadius: '12px', 
-          padding: '20px', 
-          color: '#fff',
-          boxShadow: `0 0 25px ${analysisResult.signalColor}40`,
-          marginTop: '8px',
-          marginBottom: '24px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: analysisResult.signalColor }}>📊 تحليل الذكاء الاصطناعي لـ {analysisResult.pair}</span>
-            <span style={{ background: analysisResult.signalColor, color: '#000', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-              السكور: {analysisResult.score}
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px', margin: '12px 0' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>التوصية / الإشارة</div>
-              <div style={{ fontWeight: 'bold', color: analysisResult.signalColor, fontSize: '15px' }}>{analysisResult.signal}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>سعر السوق الفوري</div>
-              <div style={{ fontWeight: 'bold', color: '#38bdf8' }}>{analysisResult.entry}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>هدف الربح (TP)</div>
-              <div style={{ fontWeight: 'bold', color: '#4ade80' }}>{analysisResult.tp1}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-              <div style={{ color: '#9ca3af', fontSize: '11px' }}>وقف الخسارة (SL)</div>
-              <div style={{ fontWeight: 'bold', color: '#f87171' }}>{analysisResult.sl}</div>
-            </div>
-          </div>
-
-          {/* Personalized Lot Size & Risk Breakdown */}
-          {analysisResult.capital && (
-            <div style={{
-              background: 'rgba(0, 0, 0, 0.4)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              borderRadius: '10px',
-              padding: '12px',
-              marginTop: '12px',
-              marginBottom: '10px'
-            }}>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px' }}>
-                🛡️ إدارة المخاطر المحسوبة لـ رأس مالك (${analysisResult.capital}):
-              </div>
-              <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                • <b>حجم اللوت الدقيق الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{analysisResult.recommendedLot}</span><br/>
-                • <b>أقصى خسارة بالدولار عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{analysisResult.riskDollar}</span> (فقط 2.5% مخاطرة)<br/>
-                • <b>الربح المتوقع بالدولار عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{analysisResult.tp1Dollar}</span> (+6.0% أرباح)<br/>
-                • <b>الربح المتوقع بالدولار عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{analysisResult.tp2Dollar}</span> (+12.0% أرباح)
-              </div>
-            </div>
-          )}
-
-          <div style={{ fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px' }}>
-            💡 <b>قراءة الفحص:</b> {analysisResult.trend}
-          </div>
-        </div>
-      )}
+      {analysisResult && <RasadAnalysisCard data={analysisResult} />}
     </div>
   );
 }
