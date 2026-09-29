@@ -327,6 +327,25 @@ export default function SignalBot({ onBack, initialSymbol }) {
             💡 <b>الرؤية العامة:</b> {analysisResult.trend}
           </div>
 
+          {/* Account Lot Size & Risk Calculator Guide */}
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.35)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '10px',
+            padding: '12px',
+            marginTop: '12px',
+            marginBottom: '15px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🛡️ دليل اللوت والمخاطرة (لحساب $100 فأكثر)</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.5' }}>
+              • <b>حجم اللوت الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>0.01 Micro Lot</span> (أصغر عقد في المنصة).<br/>
+              • <b>مخاطرة الحساب المتوقعة عند الستوب:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-$2.50 إلى -$3.50</span> (فقط 2.5% من حساب الـ 100$).<br/>
+              • <b>الربح المستهدف عند الهدف (TP1):</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+$6.00 إلى +$9.00</span> (+6% إلى +9% نمو للمحفظة).
+            </div>
+          </div>
+
           {/* Manual Send to Telegram Button */}
           <button
             onClick={() => sendToTelegramChat(analysisResult)}
