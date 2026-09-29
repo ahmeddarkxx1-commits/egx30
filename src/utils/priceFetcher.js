@@ -119,11 +119,12 @@ export async function fetchLiveAssetTicker(assetPair) {
  * Analyzes live price action, calculates RSI momentum, session volume filtering,
  * oversold/overbought bounce protection, and strict ATR Risk/Reward targets (1:2 R:R).
  */
-export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m') {
+export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m', userCapital = 100) {
   const ticker = await fetchLiveAssetTicker(assetPair);
   const price = ticker.price;
   const change24h = ticker.change24h || 0.0;
   const pairUpper = assetPair.toUpperCase();
+  const capitalNum = Math.max(10, parseFloat(userCapital) || 100);
 
   // 1. UTC Session Detection & Volume Filter
   const utcHour = new Date().getUTCHours();
@@ -250,6 +251,17 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     slVal = price * (1 - slPct * 0.5);
   }
 
+  // 5. Tailored Capital Lot Size & Risk/Reward Dollar Metrics
+  const dollarRisk = (capitalNum * 0.025).toFixed(2);
+  const dollarTp1 = (capitalNum * 0.060).toFixed(2);
+  const dollarTp2 = (capitalNum * 0.120).toFixed(2);
+
+  let lotSize = "0.01 Micro";
+  const rawLot = (capitalNum * 0.025) / 250;
+  if (rawLot > 0.015) {
+    lotSize = `${rawLot.toFixed(2)} Lot`;
+  }
+
   // Format Price Helper
   const formatP = (val) => {
     if (price >= 1000) {
@@ -265,6 +277,11 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     pair: assetPair,
     asset: assetPair,
     timeframe,
+    capital: capitalNum,
+    recommendedLot: lotSize,
+    riskDollar: `-$${dollarRisk}`,
+    tp1Dollar: `+$${dollarTp1}`,
+    tp2Dollar: `+$${dollarTp2}`,
     price: formatP(price),
     rawPrice: price,
     signal: signalText,

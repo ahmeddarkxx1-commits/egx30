@@ -59,6 +59,7 @@ export default function MarketScanner({ onBack }) {
   const [activeCategory, setActiveCategory] = useState('forex');
   const [selectedCoin, setSelectedCoin] = useState(allAssets[0]);
   const [selectedTimeframe, setSelectedTimeframe] = useState('1h');
+  const [capital, setCapital] = useState(100);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
@@ -90,7 +91,7 @@ export default function MarketScanner({ onBack }) {
       }
     }
 
-    const result = await analyzeStudiedTechnicalSignal(selectedCoin.pair, selectedTimeframe);
+    const result = await analyzeStudiedTechnicalSignal(selectedCoin.pair, selectedTimeframe, capital);
 
     setTimeout(() => {
       setLoading(false);
@@ -216,6 +217,55 @@ export default function MarketScanner({ onBack }) {
         <TradingViewWidget symbol={selectedCoin.symbol} height={550} timeframe={selectedTimeframe} />
       </div>
 
+      {/* Capital Input & Lot Calculator Box */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '14px', marginTop: '4px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+          💰 أدخل قيمة رأس مالك لتحليل دقيق للّوت والربح والخسارة:
+        </div>
+        
+        {/* Quick Chips */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', overflowX: 'auto' }}>
+          {[100, 250, 500, 1000, 2500, 5000].map(amt => (
+            <button
+              key={amt}
+              onClick={() => setCapital(amt)}
+              style={{
+                background: capital === Number(amt) ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+                color: capital === Number(amt) ? '#000' : '#9ca3af',
+                border: capital === Number(amt) ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '16px',
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              ${amt}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom Input */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '6px 12px' }}>
+          <span style={{ color: '#7ee787', fontWeight: 'bold', fontSize: '14px' }}>$</span>
+          <input
+            type="number"
+            value={capital}
+            onChange={(e) => setCapital(e.target.value)}
+            placeholder="أدخل رأس مالك المخصص..."
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+          />
+        </div>
+      </div>
+
       <button 
         onClick={handleAnalyze}
         disabled={loading}
@@ -234,7 +284,7 @@ export default function MarketScanner({ onBack }) {
           justifyContent: 'center',
           alignItems: 'center',
           gap: '8px',
-          marginTop: '8px'
+          marginTop: '4px'
         }}>
         {loading ? '⚡ جاري فحص وتحليل العملة بالذكاء الاصطناعي...' : `🤖 تحليل Traden الشامل (${selectedCoin.pair})`}
       </button>
@@ -275,6 +325,28 @@ export default function MarketScanner({ onBack }) {
               <div style={{ fontWeight: 'bold', color: '#f87171' }}>{analysisResult.sl}</div>
             </div>
           </div>
+
+          {/* Personalized Lot Size & Risk Breakdown */}
+          {analysisResult.capital && (
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '10px',
+              padding: '12px',
+              marginTop: '12px',
+              marginBottom: '10px'
+            }}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px' }}>
+                🛡️ إدارة المخاطر المحسوبة لـ رأس مالك (${analysisResult.capital}):
+              </div>
+              <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                • <b>حجم اللوت الدقيق الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{analysisResult.recommendedLot}</span><br/>
+                • <b>أقصى خسارة بالدولار عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{analysisResult.riskDollar}</span> (فقط 2.5% مخاطرة)<br/>
+                • <b>الربح المتوقع بالدولار عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{analysisResult.tp1Dollar}</span> (+6.0% أرباح)<br/>
+                • <b>الربح المتوقع بالدولار عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{analysisResult.tp2Dollar}</span> (+12.0% أرباح)
+              </div>
+            </div>
+          )}
 
           <div style={{ fontSize: '12px', color: '#cbd5e1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px' }}>
             💡 <b>قراءة الفحص:</b> {analysisResult.trend}

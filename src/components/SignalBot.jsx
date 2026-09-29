@@ -53,6 +53,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
   const [category, setCategory] = useState('crypto');
   const [asset, setAsset] = useState('BTC/USDT');
   const [timeframe, setTimeframe] = useState('15m');
+  const [capital, setCapital] = useState(100);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sentStatus, setSentStatus] = useState(false);
@@ -89,10 +90,11 @@ export default function SignalBot({ onBack, initialSymbol }) {
 🎯 *الهدف 2 (TP2):* \`$${res.tp2}\`
 🛑 *وقف الخسارة (SL):* \`$${res.sl}\`
 
-🛡️ *حاسبة اللوت وإدارة رأس المال ($100):*
-• اللوت الموصى به: \`0.01 Micro Lot\` (أصغر عقد)
-• الخسارة عند الستوب: \`-$2.50 ~ -$3.50\` (فقط 2.5% من الحساب)
-• الربح المتوقع عند TP1: \`+$6.00 ~ +$9.00\` (+6% ~ +9% أرباح)
+🛡️ *إدارة المخاطر المحسوبة لرأس مالك ($${res.capital || 100}):*
+• اللوت الموصى به: \`${res.recommendedLot || '0.01 Micro'}\`
+• الخسارة عند الستوب: \`${res.riskDollar || '-$2.50'}\` (فقط 2.5% مخاطرة)
+• الربح المتوقع عند TP1: \`${res.tp1Dollar || '+$6.00'}\` (+6.0% أرباح)
+• الربح المتوقع عند TP2: \`${res.tp2Dollar || '+$12.00'}\` (+12.0% أرباح)
 
 📊 *مؤشر RSI:* ${res.rsi}
 💡 *الرؤية الفنية:* ${res.trend}`;
@@ -138,7 +140,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
     }
 
     try {
-      const result = await analyzeStudiedTechnicalSignal(asset, timeframe);
+      const result = await analyzeStudiedTechnicalSignal(asset, timeframe, capital);
       setLoading(false);
       setAnalysisResult(result);
       
@@ -239,21 +241,52 @@ export default function SignalBot({ onBack, initialSymbol }) {
         </div>
       </div>
 
-      {/* Permanent Lot Size & Risk Guide */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
-        border: '1px solid rgba(245, 158, 11, 0.3)',
-        borderRadius: '12px',
-        padding: '14px',
-        margin: '4px 0'
-      }}>
-        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>🛡️ دليل حاسبة اللوت وإدارة رأس المال (الحسابات الصغيرة $100)</span>
+      {/* Capital Input & Lot Calculator Box */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '14px', margin: '4px 0' }}>
+        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+          💰 أدخل رأس مالك للحساب لحساب اللوت والمخاطرة والربح بدقة:
         </div>
-        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
-          • <b>حجم اللوت الآمن:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>0.01 Micro Lot</span> (افتح أصفغر حجم عقد في منصتك).<br/>
-          • <b>خسارة الحساب عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-$2.50 ~ -$3.50</span> (فقط 2.5% مخاطرة من حساب الـ 100$).<br/>
-          • <b>الربح المتوقع عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+$6.00 ~ +$9.00</span> (+6% ~ +9% أرباح صافية لحسابك).
+        
+        {/* Quick Chips */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', overflowX: 'auto' }}>
+          {[100, 250, 500, 1000, 2500, 5000].map(amt => (
+            <button
+              key={amt}
+              onClick={() => setCapital(amt)}
+              style={{
+                background: capital === Number(amt) ? '#f59e0b' : 'rgba(255,255,255,0.05)',
+                color: capital === Number(amt) ? '#000' : '#9ca3af',
+                border: capital === Number(amt) ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '16px',
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              ${amt}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom Input */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '6px 12px' }}>
+          <span style={{ color: '#7ee787', fontWeight: 'bold', fontSize: '14px' }}>$</span>
+          <input
+            type="number"
+            value={capital}
+            onChange={(e) => setCapital(e.target.value)}
+            placeholder="أدخل رأس مالك المخصص..."
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+          />
         </div>
       </div>
 
@@ -359,13 +392,14 @@ export default function SignalBot({ onBack, initialSymbol }) {
             marginTop: '12px',
             marginBottom: '15px'
           }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🛡️ دليل اللوت والمخاطرة (لحساب $100 فأكثر)</span>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '6px' }}>
+              🛡️ إدارة المخاطر المحسوبة لـ رأس مالك (${analysisResult.capital || 100}):
             </div>
-            <div style={{ fontSize: '11px', color: '#9ca3af', lineHeight: '1.5' }}>
-              • <b>حجم اللوت الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>0.01 Micro Lot</span> (أصغر عقد في المنصة).<br/>
-              • <b>مخاطرة الحساب المتوقعة عند الستوب:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-$2.50 إلى -$3.50</span> (فقط 2.5% من حساب الـ 100$).<br/>
-              • <b>الربح المستهدف عند الهدف (TP1):</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+$6.00 إلى +$9.00</span> (+6% إلى +9% نمو للمحفظة).
+            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              • <b>حجم اللوت الدقيق الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{analysisResult.recommendedLot || '0.01 Micro'}</span><br/>
+              • <b>أقصى خسارة بالدولار عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{analysisResult.riskDollar || '-$2.50'}</span> (فقط 2.5% مخاطرة)<br/>
+              • <b>الربح المتوقع بالدولار عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{analysisResult.tp1Dollar || '+$6.00'}</span> (+6.0% أرباح)<br/>
+              • <b>الربح المتوقع بالدولار عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{analysisResult.tp2Dollar || '+$12.00'}</span> (+12.0% أرباح)
             </div>
           </div>
 
