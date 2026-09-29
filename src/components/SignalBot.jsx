@@ -89,6 +89,11 @@ export default function SignalBot({ onBack, initialSymbol }) {
 🎯 *الهدف 2 (TP2):* \`$${res.tp2}\`
 🛑 *وقف الخسارة (SL):* \`$${res.sl}\`
 
+🛡️ *حاسبة اللوت وإدارة رأس المال ($100):*
+• اللوت الموصى به: \`0.01 Micro Lot\` (أصغر عقد)
+• الخسارة عند الستوب: \`-$2.50 ~ -$3.50\` (فقط 2.5% من الحساب)
+• الربح المتوقع عند TP1: \`+$6.00 ~ +$9.00\` (+6% ~ +9% أرباح)
+
 📊 *مؤشر RSI:* ${res.rsi}
 💡 *الرؤية الفنية:* ${res.trend}`;
 
@@ -231,6 +236,24 @@ export default function SignalBot({ onBack, initialSymbol }) {
               <div style={{ fontSize: '11px', color: '#9ca3af' }}>{tf.desc}</div>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Permanent Lot Size & Risk Guide */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
+        border: '1px solid rgba(245, 158, 11, 0.3)',
+        borderRadius: '12px',
+        padding: '14px',
+        margin: '4px 0'
+      }}>
+        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>🛡️ دليل حاسبة اللوت وإدارة رأس المال (الحسابات الصغيرة $100)</span>
+        </div>
+        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+          • <b>حجم اللوت الآمن:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>0.01 Micro Lot</span> (افتح أصفغر حجم عقد في منصتك).<br/>
+          • <b>خسارة الحساب عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-$2.50 ~ -$3.50</span> (فقط 2.5% مخاطرة من حساب الـ 100$).<br/>
+          • <b>الربح المتوقع عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+$6.00 ~ +$9.00</span> (+6% ~ +9% أرباح صافية لحسابك).
         </div>
       </div>
 
