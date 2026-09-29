@@ -13,8 +13,14 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     return tf || '60';
   };
 
-  const getTvUrl = (sym) => {
-    return `https://ar.tradingview.com/chart/?symbol=${encodeURIComponent(sym)}`;
+  const handleOpenExternal = (e) => {
+    if (e) e.preventDefault();
+    const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+      window.Telegram.WebApp.openLink(tvUrl);
+    } else {
+      window.open(tvUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   useEffect(() => {
@@ -68,31 +74,29 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
             <span style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>{symbol}</span>
           </div>
           
-          <a
-            href={getTvUrl(symbol)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleOpenExternal}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               color: '#ffffff',
+              border: 'none',
               padding: '6px 14px',
               borderRadius: '6px',
               fontSize: '0.78rem',
               fontWeight: 'bold',
-              textDecoration: 'none',
               boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
               transition: 'all 0.2s ease',
               cursor: 'pointer'
             }}
             onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
             onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-            title={`فتح ${symbol} في موقع TradingView لفتح الشاشة كاملة`}
+            title={`فتح ${symbol} في متصفح الجهاز خارجي بحجم شاشة كاملة`}
           >
             <span>🖥️ فتح في متصفح TradingView ↗</span>
-          </a>
+          </button>
         </div>
       )}
       <div 

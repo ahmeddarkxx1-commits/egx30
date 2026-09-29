@@ -343,10 +343,15 @@ export default function EgxAnalysis({ onBack }) {
             <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#f59e0b' }}>
               📈 مخطط الشارت المباشر ({selectedStock.code}):
             </span>
-            <a
-              href={`https://ar.tradingview.com/chart/?symbol=${encodeURIComponent(chartSymbol)}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => {
+                const url = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(chartSymbol)}`;
+                if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+                  window.Telegram.WebApp.openLink(url);
+                } else {
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -358,13 +363,13 @@ export default function EgxAnalysis({ onBack }) {
                 padding: '3px 8px',
                 fontSize: '0.72rem',
                 fontWeight: 'bold',
-                textDecoration: 'none',
+                cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
               title="فتح الشارت في متصفح TradingView للشاشة الكبيرة"
             >
               <span>🖥️ فتح في TradingView ↗</span>
-            </a>
+            </button>
           </div>
 
           {/* Chart Switcher Buttons */}
