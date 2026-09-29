@@ -214,7 +214,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
 
       {/* Live Chart */}
       <div style={{ marginTop: '4px', marginBottom: '4px' }}>
-        <TradingViewWidget symbol={getSymbol(asset)} timeframe={timeframe} height={550} />
+        <TradingViewWidget symbol={getSymbol(asset)} timeframe={timeframe} height={360} />
       </div>
 
       {/* Step 3: Timeframe */}
