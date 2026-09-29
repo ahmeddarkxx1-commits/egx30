@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap');
 
 :root {
-  --bg-dark: #0d0f14;
-  --bg-card: rgba(255, 255, 255, 0.03);
-  --border-card: rgba(255, 255, 255, 0.08);
+  --bg-dark: #06080d;
+  --bg-card: #0d1117;
+  --border-card: rgba(255, 255, 255, 0.07);
   --gold-glow: #f59e0b;
   --emerald-glow: #10b981;
   --blue-glow: #1f6beb;
   --purple-glow: #a855f7;
-  --text-main: #ffffff;
-  --text-sub: #9ca3af;
+  --text-main: #f0f6fc;
+  --text-sub: #8b949e;
 }
 
 * {
@@ -21,8 +21,8 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #0d0f14;
-  color: #ffffff;
+  background-color: #06080d;
+  color: #f0f6fc;
   overflow-x: hidden;
   direction: rtl;
 }
