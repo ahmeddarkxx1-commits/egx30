@@ -214,7 +214,7 @@ export default function MarketScanner({ onBack }) {
           ))}
         </div>
 
-        <TradingViewWidget symbol={selectedCoin.symbol} height={360} timeframe={selectedTimeframe} />
+        <TradingViewWidget symbol={selectedCoin.symbol} height={550} timeframe={selectedTimeframe} />
       </div>
 
       {/* Capital Input & Lot Calculator Box */}
