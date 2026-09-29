@@ -306,10 +306,33 @@ function App() {
     );
   }
 
+  const renderNav = () => (
+    <div className="sticky-nav">
+      {[
+        { id: 'home', label: '🏠 الرئيسية' },
+        { id: 'signal_bot', label: '🤖 التوصيات' },
+        { id: 'gold_liquidity', label: '🥇 سيولة الذهب' },
+        { id: 'traden_radar', label: '📡 رادار الأسواق' },
+        { id: 'market_scanner', label: '📊 فاحص المؤشرات' },
+        { id: 'investment_bot', label: '🌱 الاستثمار' },
+        { id: 'market_news', label: '📰 الأخبار' },
+      ].map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => setCurrentView(tab.id)}
+          className={`nav-tab ${currentView === tab.id ? 'active' : ''}`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
   // ✅ AUTHORIZED FULL APP VIEW
   if (currentView === 'investment_bot') {
     return (
       <div className="app-container">
+        {renderNav()}
         <InvestmentBot onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -318,6 +341,7 @@ function App() {
   if (currentView === 'halal_guide') {
     return (
       <div className="app-container">
+        {renderNav()}
         <HalalGuide onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -326,6 +350,7 @@ function App() {
   if (currentView === 'precious_metals') {
     return (
       <div className="app-container">
+        {renderNav()}
         <PreciousMetals onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -334,6 +359,7 @@ function App() {
   if (currentView === 'traden_radar') {
     return (
       <div className="app-container">
+        {renderNav()}
         <TradenRadar 
           onBack={() => setCurrentView('home')} 
           onOpenBot={(symbol) => {
@@ -348,6 +374,7 @@ function App() {
   if (currentView === 'market_scanner') {
     return (
       <div className="app-container">
+        {renderNav()}
         <MarketScanner onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -356,6 +383,7 @@ function App() {
   if (currentView === 'signal_bot') {
     return (
       <div className="app-container">
+        {renderNav()}
         <SignalBot initialSymbol={selectedSymbol} onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -364,6 +392,7 @@ function App() {
   if (currentView === 'gold_liquidity') {
     return (
       <div className="app-container">
+        {renderNav()}
         <GoldLiquidityRadar 
           onBack={() => setCurrentView('home')} 
           onAnalyzeGold={(symbol) => {
@@ -378,6 +407,7 @@ function App() {
   if (currentView === 'market_news') {
     return (
       <div className="app-container">
+        {renderNav()}
         <MarketNews onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -385,78 +415,22 @@ function App() {
 
   return (
     <div className="app-container">
-      
-      <header className="header">
-        <div className="header-title">
+      {renderNav()}
+
+      {/* Header */}
+      <header className="header" style={{ padding: '8px 12px', gap: '2px', marginBottom: '2px' }}>
+        <div className="header-title" style={{ fontSize: '18px' }}>
           تداول أذكى <span>مع Traden AI ✦</span>
         </div>
-        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-          إشارات ذكية · تحليل فني · فتح صفقات مباشر
-        </div>
-        
         {tgUser && (
-          <div style={{ fontSize: '13px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-            <CheckCircle size={14} />
+          <div style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <CheckCircle size={12} />
             <span>حساب مفعل: {tgUser.first_name}</span>
           </div>
         )}
       </header>
 
-      <section>
-        <div className="section-title">
-          <Bot size={18} />
-          البوتات الذكية
-        </div>
-        <div className="grid-2">
-          <div className="card" onClick={() => setCurrentView('signal_bot')}>
-            <span className="card-icon">📡</span>
-            <div className="card-title">Traden Bot (بوت التوصيات) 🤖</div>
-            <div className="card-desc">توليد أهداف الصفقات (TP/SL) وإرسالها للتليجرام</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('investment_bot')} style={{ cursor: 'pointer' }}>
-            <span className="card-icon">🌱</span>
-            <div className="card-title">بوت الاستثمار الذكي ✦</div>
-            <div className="card-desc">أفضل أصول للاحتفاظ والدخل السلبي (HODL & DCA)</div>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="section-title">
-          <Zap size={18} />
-          الأدوات والتحليل
-        </div>
-        <div className="grid-3">
-          <div className="card" onClick={() => setCurrentView('gold_liquidity')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
-            <span className="card-icon">🥇</span>
-            <div className="card-title">سيولة الذهب ✦</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار الجلسات 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)' }}>
-            <span className="card-icon">📡</span>
-            <div className="card-title">ماسح الأسواق ✦</div>
-            <div className="badge" style={{ background: '#10b981', color: '#000' }}>رادار حي 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('market_scanner')}>
-            <BarChart2 size={24} color="#60a5fa" />
-            <div className="card-title">فاحص المؤشرات 📊</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('precious_metals')}>
-            <span className="card-icon">🥇</span>
-            <div className="card-title">المعادن الثمينة</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('halal_guide')}>
-            <Shield size={24} color="#34d399" />
-            <div className="card-title">دليل الحلال</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('market_news')}>
-            <span className="card-icon">📰</span>
-            <div className="card-title">الأخبار</div>
-          </div>
-        </div>
-      </section>
-
-
+      {/* 1. Live Market Widget at TOP for zero scrolling! */}
       <LiveMarketWidget 
         onOpenBot={(symbol) => {
           if (symbol) setSelectedSymbol(symbol);
@@ -464,8 +438,46 @@ function App() {
         }} 
       />
 
+      {/* 2. Compact Grid Tools */}
+      <section>
+        <div className="section-title" style={{ marginBottom: '6px', fontSize: '13px' }}>
+          <Zap size={16} />
+          الأدوات والبوتات الذكية
+        </div>
+        <div className="grid-3" style={{ gap: '8px' }}>
+          <div className="card" onClick={() => setCurrentView('signal_bot')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
+            <span className="card-icon">🤖</span>
+            <div className="card-title">بوت التوصيات</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>إشارات 🔥</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('gold_liquidity')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
+            <span className="card-icon">🥇</span>
+            <div className="card-title">سيولة الذهب</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار 🔥</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)' }}>
+            <span className="card-icon">📡</span>
+            <div className="card-title">رادار الأسواق</div>
+            <div className="badge" style={{ background: '#10b981', color: '#000' }}>حي 🔥</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('market_scanner')}>
+            <BarChart2 size={20} color="#60a5fa" />
+            <div className="card-title">فاحص المؤشرات</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('investment_bot')}>
+            <span className="card-icon">🌱</span>
+            <div className="card-title">بوت الاستثمار</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('market_news')}>
+            <span className="card-icon">📰</span>
+            <div className="card-title">الأخبار اللحظية</div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
 
 export default App;
+
