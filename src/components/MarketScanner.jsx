@@ -108,7 +108,8 @@ export default function MarketScanner({ onBack }) {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+      {/* Compact Quick Pair Pills */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
         {[
           { id: 'forex', label: 'فوركس 💶' },
           { id: 'metals', label: 'معادن ونفط 🥇' },
@@ -123,10 +124,10 @@ export default function MarketScanner({ onBack }) {
               background: activeCategory === cat.id ? '#f59e0b' : 'rgba(255,255,255,0.05)',
               color: activeCategory === cat.id ? '#000' : '#fff',
               border: 'none',
-              padding: '8px 14px',
-              borderRadius: '20px',
+              padding: '6px 12px',
+              borderRadius: '16px',
               fontWeight: 'bold',
-              fontSize: '13px',
+              fontSize: '12px',
               cursor: 'pointer',
               whiteSpace: 'nowrap'
             }}
@@ -137,7 +138,7 @@ export default function MarketScanner({ onBack }) {
       </div>
 
       <div style={{ position: 'relative' }}>
-        <Search size={20} color="#9ca3af" style={{ position: 'absolute', right: '12px', top: '12px' }} />
+        <Search size={16} color="#9ca3af" style={{ position: 'absolute', right: '10px', top: '10px' }} />
         <input 
           type="text" 
           placeholder="ابحث عن أي زوج... مثال: EUR/USD, XAU/USD, BTC"
@@ -145,52 +146,52 @@ export default function MarketScanner({ onBack }) {
           onChange={(e) => setSearch(e.target.value)}
           style={{ 
             width: '100%', 
-            padding: '12px 40px 12px 12px', 
+            padding: '8px 34px 8px 10px', 
             borderRadius: '8px', 
             background: 'rgba(255,255,255,0.05)', 
             border: '1px solid rgba(255,255,255,0.1)', 
             color: '#fff',
             outline: 'none',
-            fontSize: '14px'
+            fontSize: '13px'
           }} 
         />
       </div>
 
-      <div className="grid-2" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+      {/* Compact Pair Badges */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '120px', overflowY: 'auto', paddingRight: '2px' }}>
         {filteredCoins.map((coin, i) => (
-          <div 
+          <button 
             key={i} 
             onClick={() => { setSelectedCoin(coin); setAnalysisResult(null); }}
             style={{ 
-              background: selectedCoin.pair === coin.pair ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255,255,255,0.03)', 
-              border: `1px solid ${selectedCoin.pair === coin.pair ? '#f59e0b' : 'rgba(255,255,255,0.08)'}`,
+              background: selectedCoin.pair === coin.pair ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.04)', 
+              border: `1px solid ${selectedCoin.pair === coin.pair ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+              color: selectedCoin.pair === coin.pair ? '#f59e0b' : '#fff',
               borderRadius: '8px',
-              padding: '12px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              padding: '6px 10px',
+              fontSize: '12px',
+              fontWeight: 'bold',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
           >
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{coin.pair}</div>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>{coin.name}</div>
-            </div>
-            <AssetLogo symbol={coin.pair} fallbackIcon={coin.icon} containerSize={32} size={20} />
-          </div>
+            <span>{coin.pair}</span>
+            <span style={{ fontSize: '10px', opacity: 0.7 }}>{coin.icon}</span>
+          </button>
         ))}
       </div>
 
-      <div style={{ marginTop: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#f59e0b' }}>
+      <div style={{ marginTop: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#f59e0b' }}>
             {selectedCoin.pair}
           </div>
-          <div style={{ fontSize: '12px', color: '#9ca3af' }}>مخطط تفاعلي</div>
+          <div style={{ fontSize: '11px', color: '#9ca3af' }}>مخطط تفاعلي</div>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
           {timeframes.map(tf => (
             <button
               key={tf.id}
@@ -200,10 +201,10 @@ export default function MarketScanner({ onBack }) {
                 background: selectedTimeframe === tf.id ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
                 color: selectedTimeframe === tf.id ? '#f59e0b' : '#9ca3af',
                 border: `1px solid ${selectedTimeframe === tf.id ? '#f59e0b' : 'rgba(255,255,255,0.08)'}`,
-                padding: '8px 4px',
-                borderRadius: '8px',
+                padding: '6px 4px',
+                borderRadius: '6px',
                 fontWeight: 'bold',
-                fontSize: '12px',
+                fontSize: '11px',
                 cursor: 'pointer',
                 textAlign: 'center',
                 whiteSpace: 'nowrap'
@@ -214,7 +215,7 @@ export default function MarketScanner({ onBack }) {
           ))}
         </div>
 
-        <TradingViewWidget symbol={selectedCoin.symbol} height={550} timeframe={selectedTimeframe} />
+        <TradingViewWidget symbol={selectedCoin.symbol} height={420} timeframe={selectedTimeframe} />
       </div>
 
       {/* Capital Input & Lot Calculator Box */}
