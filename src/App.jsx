@@ -9,6 +9,7 @@ import PreciousMetals from './components/PreciousMetals';
 import HalalGuide from './components/HalalGuide';
 import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
+import EgxAnalysis from './components/EgxAnalysis';
 import './App.css';
 
 // Admin / Allowed User IDs or Master Activation Code
@@ -310,6 +311,7 @@ function App() {
     <div className="sticky-nav">
       {[
         { id: 'home', label: '🏠 الرئيسية' },
+        { id: 'egx_stocks', label: '🇪🇬 البورصة المصرية' },
         { id: 'signal_bot', label: '🤖 التوصيات' },
         { id: 'gold_liquidity', label: '🥇 سيولة الذهب' },
         { id: 'traden_radar', label: '📡 رادار الأسواق' },
@@ -404,6 +406,15 @@ function App() {
     );
   }
 
+  if (currentView === 'egx_stocks') {
+    return (
+      <div className="app-container">
+        {renderNav()}
+        <EgxAnalysis onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
   if (currentView === 'market_news') {
     return (
       <div className="app-container">
@@ -445,6 +456,11 @@ function App() {
           الأدوات والبوتات الذكية
         </div>
         <div className="grid-3" style={{ gap: '8px' }}>
+          <div className="card" onClick={() => setCurrentView('egx_stocks')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
+            <span className="card-icon">🇪🇬</span>
+            <div className="card-title">البورصة المصرية</div>
+            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>تحليل مدمج 🔥</div>
+          </div>
           <div className="card" onClick={() => setCurrentView('signal_bot')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
             <span className="card-icon">🤖</span>
             <div className="card-title">بوت التوصيات</div>
@@ -463,10 +479,6 @@ function App() {
           <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={20} color="#60a5fa" />
             <div className="card-title">فاحص المؤشرات</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('investment_bot')}>
-            <span className="card-icon">🌱</span>
-            <div className="card-title">بوت الاستثمار</div>
           </div>
           <div className="card" onClick={() => setCurrentView('market_news')}>
             <span className="card-icon">📰</span>
