@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Send, ChevronDown, ChevronUp, Shield, Target, Activity, Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { CheckCircle2, Send, ChevronDown, ChevronUp, Shield, Target, Activity, Zap, Copy, Check } from 'lucide-react';
+import { AssetLogo } from '../utils/assetLogos';
 
 export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const [showFullReport, setShowFullReport] = useState(false);
+  const [copyToast, setCopyToast] = useState('');
 
   if (!data) return null;
 
-  // Extract / calculate defaults
+  // Extract Symbol & Asset Name
+  const assetSymbol = (data.pair || data.symbol || data.code || data.asset || 'EUR/USD').trim();
+  const assetName = data.name || assetSymbol;
+
+  // Extract Signal type & colors
   const isSell = (data.signal || '').includes('بيع') || (data.signal || '').includes('SELL') || data.signalType === 'SELL';
   const isBuy = (data.signal || '').includes('شراء') || (data.signal || '').includes('BUY') || data.signalType === 'BUY';
   
@@ -40,7 +46,31 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const dxy = data.dxy || '101.209';
   const us10y = data.us10y || '5.24%';
   const vix = data.vix || '16.07';
-  const fearScore = data.fearScore || 73;
+
+  // 1-Click Copy Helper for SL & TP
+  const handleCopy = (label, value) => {
+    if (!value) return;
+    // Extract clean decimal numbers e.g. "1.3321" or "46.00"
+    const cleaned = value.toString().replace(/[^0-9.]/g, '').trim() || value.toString().trim();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cleaned);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = cleaned;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+    }
+
+    setCopyToast(`تم نسخ ${label}: ${cleaned} 📋`);
+    setTimeout(() => setCopyToast(''), 2200);
+  };
 
   return (
     <div style={{
@@ -52,10 +82,36 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
       boxShadow: `0 8px 30px ${signalColor}25`,
       marginBottom: '24px',
       direction: 'rtl',
-      fontFamily: 'Cairo, sans-serif'
+      fontFamily: 'Cairo, sans-serif',
+      position: 'relative'
     }}>
       
-      {/* 1. Header Card: Signal Badge + Symbol + Time */}
+      {/* Toast Notification when Copied */}
+      {copyToast && (
+        <div style={{
+          position: 'absolute',
+          top: '-14px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#10b981',
+          color: '#000000',
+          padding: '6px 16px',
+          borderRadius: '20px',
+          fontWeight: 'bold',
+          fontSize: '0.78rem',
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          whiteSpace: 'nowrap'
+        }}>
+          <CheckCircle2 size={14} />
+          <span>{copyToast}</span>
+        </div>
+      )}
+
+      {/* 1. Header Card: Signal Badge + Symbol + Real Logo + Time */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         
         {/* Signal Badge */}
@@ -75,15 +131,19 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
           {signalLabel}
         </div>
 
-        {/* Symbol Info */}
-        <div style={{ textAlign: 'left' }}>
-          <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-            <span>{data.icon || '📊'}</span>
-            <span>{data.code || data.symbol || 'ASSET'}</span>
+        {/* Real Symbol Info & Logo */}
+        <div style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div>
+            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+              <span>{assetSymbol}</span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+              {data.timeframe || '1h'} · {data.timestamp || nowTime}
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-            {data.timeframe || '1 ساعة'} · {data.timestamp || nowTime}
-          </div>
+
+          {/* Real Logo Component */}
+          <AssetLogo symbol={assetSymbol} fallbackIcon={data.icon || '📊'} size={24} containerSize={36} />
         </div>
 
       </div>
@@ -107,12 +167,33 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         )}
       </div>
 
-      {/* 3. Sparkline SVG Wave */}
-      <div style={{ height: '45px', width: '100%', marginBottom: '14px' }}>
-        <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%', stroke: signalColor, strokeWidth: 2.5, fill: 'none' }}>
-          <path d={isSell 
-            ? "M0,4 Q15,2 30,12 T60,6 T80,18 T100,16" 
-            : "M0,16 Q15,18 30,8 T60,14 T80,2 T100,4"} 
+      {/* 3. Live Synchronized Sparkline Wave SVG */}
+      <div style={{ height: '48px', width: '100%', marginBottom: '14px', position: 'relative', overflow: 'hidden' }}>
+        <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+          <defs>
+            <linearGradient id={`sparkline-grad-${assetSymbol}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={signalColor} stopOpacity="0.4" />
+              <stop offset="100%" stopColor={signalColor} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Fill Area */}
+          <path 
+            d={isSell 
+              ? "M0,4 Q25,2 50,12 T75,6 T100,18 L100,20 L0,20 Z" 
+              : "M0,16 Q25,18 50,8 T75,14 T100,2 L100,20 L0,20 Z"} 
+            fill={`url(#sparkline-grad-${assetSymbol})`} 
+          />
+
+          {/* Animated Wave Path */}
+          <path 
+            d={isSell 
+              ? "M0,4 Q25,2 50,12 T75,6 T100,18" 
+              : "M0,16 Q25,18 50,8 T75,14 T100,2"} 
+            stroke={signalColor} 
+            strokeWidth="2.8" 
+            fill="none" 
+            strokeLinecap="round"
           />
         </svg>
       </div>
@@ -138,46 +219,82 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       </div>
 
-      {/* 5. Side-by-Side TP & SL Boxes */}
+      {/* 5. Click-to-Copy TP & SL Boxes */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
         
-        {/* SL Box (Left side in RTL) */}
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.08)',
-          border: '1px solid rgba(239, 68, 68, 0.25)',
-          borderRadius: '12px',
-          padding: '12px',
-          textAlign: 'center'
-        }}>
+        {/* SL Box (Left side in RTL) - Clickable to Copy */}
+        <div 
+          onClick={() => handleCopy('وقف الخسارة SL', data.sl)}
+          style={{
+            background: 'rgba(239, 68, 68, 0.09)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '14px',
+            padding: '12px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            userSelect: 'none'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.borderColor = '#ef4444';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          }}
+          title="اضغط لنسخ سعر الستوب SL فوراً"
+        >
           <div style={{ fontSize: '0.72rem', color: '#fca5a5', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px' }}>
             <Shield size={13} color="#f87171" />
             <span>وقف الخسارة SL</span>
+            <Copy size={11} color="#fca5a5" style={{ opacity: 0.7 }} />
           </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#f87171', margin: '2px 0' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#f87171', margin: '2px 0' }}>
             {data.sl || '---'}
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#fca5a5', opacity: 0.9 }}>
-            {data.slChange || '-5.00%'}
+          <div style={{ fontSize: '0.68rem', color: '#fca5a5', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+            <span>{data.slChange || '-5.00%'}</span>
+            <span>· (اضغط للنسخ 📋)</span>
           </div>
         </div>
 
-        {/* TP Box (Right side in RTL) */}
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.08)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          borderRadius: '12px',
-          padding: '12px',
-          textAlign: 'center'
-        }}>
+        {/* TP Box (Right side in RTL) - Clickable to Copy */}
+        <div 
+          onClick={() => handleCopy('هدف الربح TP', data.tp1)}
+          style={{
+            background: 'rgba(16, 185, 129, 0.09)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '14px',
+            padding: '12px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            userSelect: 'none'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.borderColor = '#10b981';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          }}
+          title="اضغط لنسخ سعر الهدف TP فوراً"
+        >
           <div style={{ fontSize: '0.72rem', color: '#86efac', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px' }}>
             <Target size={13} color="#4ade80" />
             <span>هدف الربح TP</span>
+            <Copy size={11} color="#86efac" style={{ opacity: 0.7 }} />
           </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#4ade80', margin: '2px 0' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#4ade80', margin: '2px 0' }}>
             {data.tp1 || '---'}
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#86efac', opacity: 0.9 }}>
-            {data.tp1Change || '+8.50%'}
+          <div style={{ fontSize: '0.68rem', color: '#86efac', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+            <span>{data.tp1Change || '+8.50%'}</span>
+            <span>· (اضغط للنسخ 📋)</span>
           </div>
         </div>
 
@@ -213,7 +330,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>%BB</div>
+            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>BB%</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>{pctBb}</div>
           </div>
 
@@ -270,45 +387,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       </div>
 
-      {/* 8. External & Macro Data Section */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
-        
-        {/* Fear & Greed */}
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '4px' }}>
-            <span style={{ color: '#4ade80', fontWeight: 'bold' }}>Greed {fearScore}</span>
-            <span style={{ color: '#cbd5e1', fontWeight: 'bold' }}>😱 الخوف والطمع</span>
-          </div>
-          <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
-            <div style={{ width: `${fearScore}%`, height: '100%', background: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)', borderRadius: '6px' }}></div>
-          </div>
-        </div>
-
-        {/* Global Macro Stats */}
-        <div style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          🌐 المؤشرات الكلية
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', textAlign: 'center' }}>
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>DXY الدولار</div>
-            <div style={{ fontSize: '0.76rem', fontWeight: 'bold', color: '#f8fafc', marginTop: '1px' }}>{dxy}</div>
-            <div style={{ fontSize: '0.6rem', color: '#4ade80' }}>0.00%+</div>
-          </div>
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>10Y السندات</div>
-            <div style={{ fontSize: '0.76rem', fontWeight: 'bold', color: '#f8fafc', marginTop: '1px' }}>{us10y}</div>
-            <div style={{ fontSize: '0.6rem', color: '#4ade80' }}>0.00%+</div>
-          </div>
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>VIX الخوف</div>
-            <div style={{ fontSize: '0.76rem', fontWeight: 'bold', color: '#f8fafc', marginTop: '1px' }}>{vix}</div>
-            <div style={{ fontSize: '0.6rem', color: '#4ade80' }}>0.00%+</div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* 9. Portfolio & Capital Management Box (جميع الإضافات السابقة) */}
+      {/* 8. Portfolio & Capital Management Box */}
       <div style={{
         background: 'rgba(0, 0, 0, 0.45)',
         border: '1px solid rgba(16, 185, 129, 0.3)',
@@ -356,7 +435,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       </div>
 
-      {/* 10. AI Full Report Accordion */}
+      {/* 9. AI Full Report Accordion */}
       {data.fullReport && (
         <div style={{ marginTop: '10px' }}>
           <button
@@ -398,7 +477,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       )}
 
-      {/* 11. Optional Telegram Send Button */}
+      {/* 10. Optional Telegram Send Button */}
       {onSendToTelegram && (
         <button
           onClick={() => onSendToTelegram(data)}
