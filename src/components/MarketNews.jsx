@@ -204,12 +204,13 @@ export default function MarketNews({ onBack }) {
       };
       setLivePrices(updatedPrices);
 
-      // 2. Fetch Multi-source Live RSS News with timestamp cache-buster (including Geopolitics & Conflict news)
+      // 2. Fetch Multi-source Live RSS News with timestamp cache-buster
       const cacheBust = Date.now();
       const rssUrls = [
         `https://api.rss2json.com/v1/api.json?rss_url=https://www.forexlive.com/feed/news&t=${cacheBust}`,
         `https://api.rss2json.com/v1/api.json?rss_url=https://cointelegraph.com/rss&t=${cacheBust}`,
-        `https://api.rss2json.com/v1/api.json?rss_url=https://www.coindesk.com/arc/outboundfeeds/rss/&t=${cacheBust}`
+        `https://api.rss2json.com/v1/api.json?rss_url=https://www.coindesk.com/arc/outboundfeeds/rss/&t=${cacheBust}`,
+        `https://api.rss2json.com/v1/api.json?rss_url=https://feeds.finance.yahoo.com/rss/2.0/headline?s=GC=F&t=${cacheBust}`
       ];
 
       let fetchedNewsItems = [];
@@ -217,68 +218,22 @@ export default function MarketNews({ onBack }) {
 
       rssResults.forEach(res => {
         if (res.status === 'fulfilled' && res.value?.items && Array.isArray(res.value.items)) {
-          const items = res.value.items.slice(0, 6).map(formatRssNewsItem);
+          const items = res.value.items.slice(0, 10).map(formatRssNewsItem);
           fetchedNewsItems.push(...items);
         }
       });
 
-      // 3. Create Live War/Geopolitical Ticker Alert & Live Market Alerts dynamically
-      const currentTimeIso = new Date().toISOString();
-      const liveMarketAlerts = [
-        {
-          id: `live-ticker-geopolitics-${cacheBust}`,
-          source: 'Traden Geopolitical & Risk Radar',
-          title: '⚔️ رادار الأزمات الجيوسياسية والكوارث: متابعة تأثر الذهب والنفط والعملات بالأحداث العالمية الحالية',
-          description: 'تتأثر أزواج التداول والملاذات الآمنة (الذهب XAU/USD والنفط WTI/BRENT والدولار USD) بشكل مباشر ومباشر عند تصاعد الحروب أو الكوارث.',
-          category: 'WARS',
-          pubDate: currentTimeIso,
-          impact: 'bearish',
-          impactLabel: 'أزمة جيوسياسية 🔥',
-          tags: ['XAU (الذهب 🥇)', 'WTI (النفط 🛢️)', 'USD (الدولار 💵)', 'ملاذ آمن 🛡️'],
-          aiAnalysis: `⚔️ **تحليل تأثير الحروب والكوارث والأزمات على الأزواج:**\n` +
-            `• **الذهب (XAU/USD):** قفزات وملاذ آمن قيادي للتحوط.\n` +
-            `• **النفط (WTI/BRENT):** ارتفاعات سريعة بسبب خطوط التوريد والملاحة.\n` +
-            `• **الدولار (USD) والفرنك (CHF):** قوة كملاذ آمن للمستثمرين.\n` +
-            `• **المؤشرات (US30 / NAS100):** هبوط نتيجة انخفاض شهية المخاطرة.`
-        },
-        {
-          id: `live-ticker-gold-${cacheBust}`,
-          source: 'Traden Live Spot Ticker',
-          title: `تحديث لحظي لأسعار الذهب XAU/USD عند $${updatedPrices.gold || '2,695.40'} مع متابعة تدفقات السيولة والملاذ الآمن`,
-          description: 'تتحرك أسعار الذهب الفورية بتداول مكثف مع ترقب التطورات الجيوسياسية وقرارات الفائدة.',
-          category: 'GOLD',
-          pubDate: currentTimeIso,
-          impact: 'bullish',
-          impactLabel: 'إيجابي 🚀',
-          tags: ['XAU', 'الذهب', 'سيولة'],
-          aiAnalysis: 'تحليل الذكاء الاصطناعي: زخم الذهب مستقر فوق مناطق الدعم الرئيسية، يفضل ترقب اختراق المقاومة التالية.'
-        },
-        {
-          id: `live-ticker-btc-${cacheBust}`,
-          source: 'Binance Live Feed',
-          title: `تحديث البيتكوين BTC اللحظي عند $${updatedPrices.btc || '83,414'} وسط تدفقات الأصول الرقمية`,
-          description: 'تواصل حركة البيتكوين الاستجابة لمستويات الدعم اللحظية مع ارتفاع أحجام التداول.',
-          category: 'CRYPTO',
-          pubDate: currentTimeIso,
-          impact: 'bullish',
-          impactLabel: 'إيجابي 🚀',
-          tags: ['BTC', 'CRYPTO', 'بيتكوين'],
-          aiAnalysis: 'تحليل الذكاء الاصطناعي: الاتجاه العام للبيتكوين إيجابي مع استقرار مؤشر القوة النسبية RSI.'
-        }
-      ];
-
-      // Merge and remove duplicates
-      const allNews = [...liveMarketAlerts, ...fetchedNewsItems];
+      // Filter duplicates by title
       const uniqueNews = [];
       const seenTitles = new Set();
-      for (const item of allNews) {
-        if (!seenTitles.has(item.title)) {
+      for (const item of fetchedNewsItems) {
+        if (item.title && !seenTitles.has(item.title)) {
           seenTitles.add(item.title);
           uniqueNews.push(item);
         }
       }
 
-      // Sort by newest pubDate first
+      // Sort strictly by newest pubDate first
       uniqueNews.sort((a, b) => parseUtcDate(b.pubDate) - parseUtcDate(a.pubDate));
 
       setNews(uniqueNews);
