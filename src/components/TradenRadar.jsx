@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, RefreshCw } from 'lucide-react';
 import { AssetLogo } from '../utils/assetLogos';
+import TradingViewSparkline from './TradingViewSparkline';
 
 const initialRadarAssets = [
   // Crypto
@@ -152,29 +153,17 @@ export default function TradenRadar({ onBack, onOpenBot }) {
   const topBuy = [...assets].filter(a => a.signalType === 'buy').sort((a,b) => b.score - a.score).slice(0, 3);
   const topSell = [...assets].filter(a => a.signalType === 'sell').sort((a,b) => a.score - b.score).slice(0, 3);
 
-  const renderSparkline = (points, isUp) => {
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const range = max - min || 1;
-    const width = 60;
-    const height = 24;
-
-    const pathData = points.map((p, i) => {
-      const x = (i / (points.length - 1)) * width;
-      const y = height - ((p - min) / range) * (height - 4) - 2;
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
-
+  const renderSparkline = (points, isUp, pair = 'asset') => {
     return (
-      <svg width={width} height={height} style={{ overflow: 'visible' }}>
-        <path 
-          d={pathData} 
-          fill="none" 
-          stroke={isUp ? '#10b981' : '#f87171'} 
-          strokeWidth="2"
-          strokeLinecap="round" 
-        />
-      </svg>
+      <TradingViewSparkline
+        data={points}
+        isUp={isUp}
+        width="64px"
+        height={26}
+        id={`radar-${pair}`}
+        seed={pair}
+        strokeWidth={2}
+      />
     );
   };
 
@@ -401,7 +390,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              {renderSparkline(asset.sparkline, asset.isUp)}
+              {renderSparkline(asset.sparkline, asset.isUp, asset.pair)}
             </div>
           </div>
         ))}

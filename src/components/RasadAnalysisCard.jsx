@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Send, ChevronDown, ChevronUp, Shield, Target, Activity, Zap, Copy, Check } from 'lucide-react';
 import { AssetLogo } from '../utils/assetLogos';
+import TradingViewSparkline from './TradingViewSparkline';
 
 export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const [showFullReport, setShowFullReport] = useState(false);
@@ -167,35 +168,16 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         )}
       </div>
 
-      {/* 3. Live Synchronized Sparkline Wave SVG */}
-      <div style={{ height: '48px', width: '100%', marginBottom: '14px', position: 'relative', overflow: 'hidden' }}>
-        <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-          <defs>
-            <linearGradient id={`sparkline-grad-${assetSymbol}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={signalColor} stopOpacity="0.4" />
-              <stop offset="100%" stopColor={signalColor} stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Fill Area */}
-          <path 
-            d={isSell 
-              ? "M0,4 Q25,2 50,12 T75,6 T100,18 L100,20 L0,20 Z" 
-              : "M0,16 Q25,18 50,8 T75,14 T100,2 L100,20 L0,20 Z"} 
-            fill={`url(#sparkline-grad-${assetSymbol})`} 
-          />
-
-          {/* Animated Wave Path */}
-          <path 
-            d={isSell 
-              ? "M0,4 Q25,2 50,12 T75,6 T100,18" 
-              : "M0,16 Q25,18 50,8 T75,14 T100,2"} 
-            stroke={signalColor} 
-            strokeWidth="2.8" 
-            fill="none" 
-            strokeLinecap="round"
-          />
-        </svg>
+      {/* 3. Live Synchronized Sparkline Wave SVG (TradingView Style) */}
+      <div style={{ height: '52px', width: '100%', marginBottom: '14px' }}>
+        <TradingViewSparkline
+          isUp={!isSell}
+          height={52}
+          id={`rasad-${assetSymbol}`}
+          seed={assetSymbol}
+          data={data.sparkline || null}
+          strokeWidth={2.4}
+        />
       </div>
 
       {/* 4. Confidence Level & Score Bar */}

@@ -10,6 +10,7 @@ import HalalGuide from './components/HalalGuide';
 import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
 import EgxAnalysis from './components/EgxAnalysis';
+import TradingViewSparkline from './components/TradingViewSparkline';
 import './App.css';
 
 // Admin / Allowed User IDs or Master Activation Code
@@ -107,11 +108,15 @@ function LiveMarketWidget({ onOpenBot }) {
         </div>
       </div>
       
-      {/* Dynamic Sparkline Wave SVG */}
-      <div style={{ height: '60px', width: '100%', margin: '15px 0', position: 'relative' }}>
-         <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%', stroke: isUp ? '#10b981' : '#ef4444', strokeWidth: 2, fill: 'none' }}>
-            <path d={isUp ? "M0,16 Q20,14 40,8 T70,10 T100,2" : "M0,4 Q20,6 40,12 T70,10 T100,18"} />
-         </svg>
+      {/* Dynamic Sparkline Wave SVG (TradingView Style) */}
+      <div style={{ height: '65px', width: '100%', margin: '12px 0 16px 0' }}>
+        <TradingViewSparkline
+          isUp={isUp}
+          height={65}
+          id={`home-widget-${activeAsset}`}
+          seed={activeAsset}
+          strokeWidth={2.4}
+        />
       </div>
 
       {/* Stats Cards */}
