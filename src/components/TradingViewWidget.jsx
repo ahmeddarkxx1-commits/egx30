@@ -13,9 +13,29 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     return tf || '60';
   };
 
+  const formatTvSymbol = (s) => {
+    if (!s) return 'BINANCE:BTCUSDT';
+    if (s.includes(':')) return s;
+    const clean = s.toUpperCase().replace('/', '').trim();
+    if (clean === 'WTI' || clean === 'USOIL') return 'TVC:USOIL';
+    if (clean === 'BRENT' || clean === 'UKOIL') return 'TVC:UKOIL';
+    if (clean.includes('XAU') || clean.includes('GOLD')) return `OANDA:${clean}`;
+    if (clean.includes('XAG')) return `OANDA:${clean}`;
+    if (clean.includes('US30')) return `GLOBALPRIME:US30`;
+    if (clean.includes('NAS100')) return `GLOBALPRIME:NAS100`;
+    if (clean.includes('SPX500') || clean === 'SPX') return `GLOBALPRIME:SPX500`;
+    if (['AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD', 'INTC', 'COIN', 'PLTR'].includes(clean)) return `NASDAQ:${clean}`;
+    if (clean.includes('USDT') || clean.includes('BTC') || clean.includes('ETH') || clean.includes('SOL') || clean.includes('BNB') || clean.includes('XRP') || clean.includes('ADA') || clean.includes('AVAX') || clean.includes('SUI') || clean.includes('NEAR') || clean.includes('DOGE')) {
+      return `BINANCE:${clean.includes('USDT') ? clean : clean + 'USDT'}`;
+    }
+    return `FX:${clean}`;
+  };
+
+  const formattedSymbol = formatTvSymbol(symbol);
+
   const handleOpenExternal = (e) => {
     if (e) e.preventDefault();
-    const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
+    const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(formattedSymbol)}`;
     if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
       window.Telegram.WebApp.openLink(tvUrl);
     } else {
@@ -40,7 +60,7 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
         "autosize": false,
         "width": "100%",
         "height": "${height}",
-        "symbol": "${symbol}",
+        "symbol": "${formattedSymbol}",
         "interval": "${tvInterval}",
         "timezone": "Etc/UTC",
         "theme": "dark",
