@@ -12,6 +12,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [recentTicks, setRecentTicks] = useState([]);
   const [wsConnected, setWsConnected] = useState(false);
   const wsRef = useRef(null);
+  const [priceHistory, setPriceHistory] = useState([]);
+  const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
   const [sessionInfo, setSessionInfo] = useState({
     title: 'تداخل لندن ونيويورك (Peak Overlap)',
     status: 'peak',
@@ -23,8 +25,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
 
   // 1-Min Scalping Liquidity Magnet Target System
-  const price = goldTicker.price || 4236.50;
-  let isUp = goldTicker.isUp;
+  const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
+  let isUp = goldTicker ? goldTicker.isUp : false;
   if (signalMode === 'buy') isUp = true;
   if (signalMode === 'sell') isUp = false;
   
@@ -126,9 +128,6 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
       timeStr: `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
     });
   };
-
-  const [priceHistory, setPriceHistory] = useState([]);
-  const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
 
   useEffect(() => {
     // Initial & 500ms backup polling to guarantee zero lag even if WS pauses
