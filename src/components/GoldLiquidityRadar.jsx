@@ -6,7 +6,7 @@ import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [goldTicker, setGoldTicker] = useState({ price: 4236.50, change24h: -1.02, isUp: false });
   const [currentTimeUTC, setCurrentTimeUTC] = useState(new Date().toUTCString().slice(17, 25));
-  const [selectedTimeframe, setSelectedTimeframe] = useState('15m');
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1m');
   const [activeStudies, setActiveStudies] = useState(['STD;RSI', 'STD;EMA', 'STD;Volume']);
   const [sessionInfo, setSessionInfo] = useState({
     title: 'تداخل لندن ونيويورك (Peak Overlap)',
@@ -18,19 +18,29 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   });
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
 
-  // Compute dynamic liquidity magnet targets based on current live price
+  // 1-Min Scalping Liquidity Magnet Target System
   const price = goldTicker.price || 4236.50;
   const isUp = goldTicker.isUp;
   
   // Calculate Upper BSL (Buy Side Liquidity) and Lower SSL (Sell Side Liquidity) targets
-  const bslTarget = (price + (price * 0.0035)).toFixed(2);
-  const sslTarget = (price - (price * 0.0035)).toFixed(2);
+  const bslTarget = Number((price + (price * 0.0028)).toFixed(2));
+  const sslTarget = Number((price - (price * 0.0028)).toFixed(2));
   const targetPrice = isUp ? bslTarget : sslTarget;
+  const nextReboundTarget = isUp ? (price - (price * 0.0035)).toFixed(2) : (price + (price * 0.0035)).toFixed(2);
+  
   const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
+  const oppositeAction = isUp ? 'بيع 🔴 (SELL)' : 'شراء 🟢 (BUY)';
   const actionColor = isUp ? '#10b981' : '#ef4444';
-  const targetType = isUp ? 'قمة سيولة الشرائين (BSL Sweep Top)' : 'قاع سيولة البائعين (SSL Sweep Bottom)';
-  const stopLoss = isUp ? (price - (price * 0.002)).toFixed(2) : (price + (price * 0.002)).toFixed(2);
+  const oppositeColor = isUp ? '#ef4444' : '#10b981';
+  const arrowSymbol = isUp ? '⬆️' : '⬇️';
+  const targetType = isUp ? 'قمة سيولة الشراء (BSL High)' : 'قاع سيولة البيع (SSL Low)';
+  const stopLoss = isUp ? (price - (price * 0.0015)).toFixed(2) : (price + (price * 0.0015)).toFixed(2);
   const takeProfit = targetPrice;
+
+  // Calculate live 1-min progress to target
+  const diffFromTarget = Math.abs(targetPrice - price);
+  const progressPercent = Math.min(94, Math.max(25, Math.round(100 - (diffFromTarget / (price * 0.0028) * 100))));
+  const isTargetHit = diffFromTarget < 0.60;
 
   // Calculate session status and countdown based on UTC time
   const updateSessionState = () => {
@@ -310,82 +320,149 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           </span>
         </div>
 
-        {/* NEW: Liquidity Magnet Forecasting Indicator - Placed Right Above Chart */}
+        {/* NEW: 1-Min Scalping Liquidity Arrow Target & Rotation System */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-          border: '2px solid #388bfd',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          border: `2px solid ${actionColor}`,
           borderRadius: '16px',
           padding: '18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          boxShadow: '0 0 25px rgba(56, 139, 253, 0.3)'
+          boxShadow: `0 0 30px ${actionColor}30`,
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          {/* Header Bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Target size={24} color="#f59e0b" />
-              <span style={{ fontSize: '17px', fontWeight: 'bold', color: '#f0f6fc' }}>🎯 مؤشر اتجاه وهدف انجذاب السيولة (Liquidity Magnet)</span>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#f0f6fc' }}>🎯 مؤشر سهم السيولة الانجذابي (1-Min Scalper Arrow)</span>
             </div>
             <span style={{ background: actionColor + '25', color: actionColor, border: '1px solid ' + actionColor, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-              {recommendedAction}
+              فريم 1 دقيقة ⚡
             </span>
           </div>
 
-          {/* Forecast Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
-            
-            {/* Target Price Box */}
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>🎯 المكان المتوقع للسيولة</div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#f59e0b' }}>
-                ${Number(targetPrice).toLocaleString()}
+          {/* Dynamic Scalping Target Banner with Arrow */}
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: `1px solid ${actionColor}60`,
+            borderRadius: '14px',
+            padding: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              {/* Pulsing Arrow Box */}
+              <div style={{
+                fontSize: '36px',
+                width: '60px',
+                height: '60px',
+                borderRadius: '14px',
+                background: `${actionColor}20`,
+                border: `2px solid ${actionColor}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 0 20px ${actionColor}50`
+              }}>
+                {arrowSymbol}
               </div>
-              <div style={{ fontSize: '10px', color: '#58a6ff', marginTop: '2px' }}>{targetType}</div>
+
+              <div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>سهم اتجاه السيولة الحالية:</span>
+                  <b style={{ color: actionColor }}>{isUp ? 'سهم صاعد ⬆️ (إلى قمة السيولة)' : 'سهم هابط ⬇️ (إلى قاع السيولة)'}</b>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff', marginTop: '2px' }}>
+                  السيولة تتجه إلى: <span style={{ color: actionColor }}>${Number(targetPrice).toLocaleString()}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#d1d5db', marginTop: '2px' }}>
+                  الهدف التراكمي التالي بعد الكسر: <b style={{ color: '#f59e0b' }}>${nextReboundTarget}</b>
+                </div>
+              </div>
             </div>
 
-            {/* Recommended Action Box */}
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid ' + actionColor, borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>🧭 قرار التداول الموصى به</div>
-              <div style={{ fontSize: '19px', fontWeight: 'bold', color: actionColor }}>
+            <div style={{ textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '14px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>الصفقة المقترحة</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: actionColor, marginTop: '2px' }}>
                 {recommendedAction}
               </div>
-              <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>احتمالية الوصول: 85%</div>
+            </div>
+          </div>
+
+          {/* Progress Bar towards Target */}
+          <div style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🎯 تقدم السعر نحو هدف السيولة ($</span>
+                <b style={{ color: '#fff' }}>{targetPrice}</b>
+                <span>):</span>
+              </span>
+              <b style={{ color: actionColor }}>{progressPercent}%</b>
+            </div>
+            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                background: `linear-gradient(90deg, ${actionColor}80 0%, ${actionColor} 100%)`,
+                transition: 'width 0.4s ease',
+                boxShadow: `0 0 10px ${actionColor}`
+              }}></div>
+            </div>
+          </div>
+
+          {/* Step-by-Step Scalping Strategy Instructions (إستراتيجية تدوير السيولة) */}
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '12px',
+            padding: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Zap size={16} />
+              <span>تعليمات تدوير الصفقات اللحظية (1-Min Scalping Execution):</span>
             </div>
 
-            {/* Take Profit & Stop Loss */}
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
-              <div style={{ fontSize: '11px', color: '#10b981', display: 'flex', justifyContent: 'space-between' }}>
-                <span>🎯 هدف الأرباح (TP):</span>
-                <b style={{ color: '#fff', fontSize: '12px' }}>${takeProfit}</b>
+            <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.7', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div>
+                <b>1. الدخول الحجمي الحالي:</b> التداول في اتجاه السهم <b>{recommendedAction}</b> نحو المستوى <b>${targetPrice}</b>.
               </div>
-              <div style={{ fontSize: '11px', color: '#ef4444', display: 'flex', justifyContent: 'space-between' }}>
-                <span>🛑 إيقاف الخسارة (SL):</span>
-                <b style={{ color: '#fff', fontSize: '12px' }}>${stopLoss}</b>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 10px', borderRadius: '8px', borderRight: `4px solid ${oppositeColor}` }}>
+                <b>2. عند وصول السعر للهدف (${targetPrice}):</b>
+                <div style={{ color: '#fbbf24', marginTop: '2px', fontWeight: 'bold' }}>
+                  📌 اغلق صفقات {recommendedAction} على ربح فوراً 💰 ثم اضغط {oppositeAction} لاقتناص موجة الانعكاس التالية!
+                </div>
               </div>
             </div>
-
           </div>
 
           {/* Visual Chart Level Indicator Strip */}
           <div style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '12px' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#8b949e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Activity size={15} color="#388bfd" />
-              <span>مستويات خطوط السيولة على شارت الذهب اللحظي:</span>
+              <span>مستويات السيولة اللحظية على الشارت (Live Levels):</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: 'rgba(16, 185, 129, 0.12)', borderRight: '4px solid #10b981', borderRadius: '6px' }}>
-                <span style={{ color: '#10b981', fontWeight: 'bold' }}>🟢 قمة السيولة الشرائية العلوية (BSL Sweep Top)</span>
+                <span style={{ color: '#10b981', fontWeight: 'bold' }}>🟢 قمة السيولة الشرائية (BSL Sweep Level)</span>
                 <span style={{ color: '#fff', fontWeight: 'bold' }}>${bslTarget}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: 'rgba(56, 139, 253, 0.18)', borderRight: '4px solid #388bfd', borderRadius: '6px' }}>
-                <span style={{ color: '#58a6ff', fontWeight: 'bold' }}>📍 السعر الحالي اللحظي على الشارت (Current Price)</span>
+                <span style={{ color: '#58a6ff', fontWeight: 'bold' }}>📍 السعر الحالي المباشر (Current Price)</span>
                 <span style={{ color: '#fff', fontWeight: 'bold' }}>${price}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: 'rgba(239, 68, 68, 0.12)', borderRight: '4px solid #ef4444', borderRadius: '6px' }}>
-                <span style={{ color: '#f87171', fontWeight: 'bold' }}>🔴 قاع السيولة البيعية السفلى (SSL Sweep Bottom)</span>
+                <span style={{ color: '#f87171', fontWeight: 'bold' }}>🔴 قاع السيولة البيعية (SSL Sweep Level)</span>
                 <span style={{ color: '#fff', fontWeight: 'bold' }}>${sslTarget}</span>
               </div>
             </div>
