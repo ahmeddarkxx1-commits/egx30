@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Clock, Zap, AlertTriangle, ShieldCheck, Flame, TrendingUp, Target, Activity } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
@@ -9,6 +9,9 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m');
   const [activeStudies, setActiveStudies] = useState([]);
   const [showAdvancedIndicators, setShowAdvancedIndicators] = useState(false);
+  const [recentTicks, setRecentTicks] = useState([]);
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef(null);
   const [sessionInfo, setSessionInfo] = useState({
     title: 'تداخل لندن ونيويورك (Peak Overlap)',
     status: 'peak',
@@ -21,7 +24,9 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
   // 1-Min Scalping Liquidity Magnet Target System
   const price = goldTicker.price || 4236.50;
-  const isUp = goldTicker.isUp;
+  let isUp = goldTicker.isUp;
+  if (signalMode === 'buy') isUp = true;
+  if (signalMode === 'sell') isUp = false;
   
   // Calculate Upper BSL (Buy Side Liquidity) and Lower SSL (Sell Side Liquidity) targets
   const bslTarget = Number((price + (price * 0.0028)).toFixed(2));
@@ -122,19 +127,90 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     });
   };
 
+  const [priceHistory, setPriceHistory] = useState([]);
+  const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
+
   useEffect(() => {
+    // Initial & 500ms backup polling to guarantee zero lag even if WS pauses
     const loadGold = async () => {
       const ticker = await fetchLiveAssetTicker('XAU/USD');
-      setGoldTicker(ticker);
+      if (ticker && ticker.price) {
+        const newPrice = ticker.price;
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+        setPriceHistory(h => {
+          const updated = [...h.slice(-19), newPrice];
+          const avg = updated.reduce((a, b) => a + b, 0) / updated.length;
+          const isUpTrend = newPrice >= avg;
+
+          setGoldTicker(prev => {
+            if (prev.price === newPrice && prev.isUp !== undefined) return prev;
+            setRecentTicks(ticks => [
+              { price: newPrice.toFixed(2), isUp: isUpTrend, time: timeStr },
+              ...ticks.slice(0, 5)
+            ]);
+            return { price: newPrice, change24h: ticker.change24h || prev.change24h || 0, isUp: isUpTrend };
+          });
+          return updated;
+        });
+      }
     };
+
     loadGold();
     updateSessionState();
 
-    const interval = setInterval(() => {
-      loadGold();
-      updateSessionState();
-    }, 1000);
-    return () => clearInterval(interval);
+    // Clock updates every second, price polling every 500ms
+    const clockInterval = setInterval(() => updateSessionState(), 1000);
+    const pollInterval = setInterval(() => loadGold(), 500);
+
+    // === Binance WebSocket: Real-time PAXGUSDT ticks (no rate limit, ~100ms latency) ===
+    const connectWs = () => {
+      const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@aggTrade');
+      wsRef.current = ws;
+
+      ws.onopen = () => setWsConnected(true);
+      ws.onclose = () => {
+        setWsConnected(false);
+        setTimeout(() => connectWs(), 2000);
+      };
+      ws.onerror = () => ws.close();
+
+      ws.onmessage = (evt) => {
+        try {
+          const d = JSON.parse(evt.data);
+          if (!d.p) return;
+          const newPrice = parseFloat(d.p);
+          const now = new Date();
+          const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+          setPriceHistory(h => {
+            const updated = [...h.slice(-19), newPrice];
+            const avg = updated.reduce((a, b) => a + b, 0) / updated.length;
+            const isUpTrend = newPrice >= avg;
+
+            setGoldTicker(prev => {
+              const change24h = prev.change24h || 0;
+              setRecentTicks(ticks => [
+                { price: newPrice.toFixed(2), isUp: isUpTrend, time: timeStr },
+                ...ticks.slice(0, 5)
+              ]);
+              return { price: newPrice, change24h, isUp: isUpTrend };
+            });
+
+            return updated;
+          });
+        } catch (e) { /* ignore parse errors */ }
+      };
+    };
+
+    connectWs();
+
+    return () => {
+      clearInterval(clockInterval);
+      clearInterval(pollInterval);
+      if (wsRef.current) wsRef.current.close();
+    };
   }, []);
 
   return (
@@ -475,42 +551,117 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
         {/* ULTRA-FAST LIVE SCALPER SIGNAL DASHBOARD (رادار الإشارة السريعة والمباشرة) */}
         <div style={{
-          background: `linear-gradient(135deg, ${actionColor}20 0%, rgba(15, 23, 42, 0.95) 100%)`,
+          background: `linear-gradient(135deg, ${actionColor}20 0%, rgba(15, 23, 42, 0.98) 100%)`,
           border: `2px solid ${actionColor}`,
           borderRadius: '16px',
           padding: '16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
-          boxShadow: `0 0 30px ${actionColor}40`
+          gap: '10px',
+          boxShadow: `0 0 35px ${actionColor}50`
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Header: Title + Controls + WS Status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={20} color={actionColor} />
-              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>⚡ إشـارة تداول السيولة الفورية (Instant Scalp Signal)</span>
+              <Zap size={22} color={actionColor} />
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>⚡ إشـارة السيولة الفورية (Live Signal)</span>
             </div>
-            <span style={{ background: '#10b98125', color: '#10b981', border: '1px solid #10b98150', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
-              تحديث مباشر كل ثانية
+
+            {/* Manual Signal Mode Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,0,0,0.4)', padding: '3px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button
+                onClick={() => setSignalMode('auto')}
+                style={{
+                  background: signalMode === 'auto' ? '#f59e0b' : 'transparent',
+                  color: signalMode === 'auto' ? '#000' : '#9ca3af',
+                  border: 'none', padding: '4px 8px', borderRadius: '7px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
+                }}
+              >
+                🤖 تلقائي
+              </button>
+              <button
+                onClick={() => setSignalMode('buy')}
+                style={{
+                  background: signalMode === 'buy' ? '#10b981' : 'transparent',
+                  color: signalMode === 'buy' ? '#fff' : '#9ca3af',
+                  border: 'none', padding: '4px 8px', borderRadius: '7px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
+                }}
+              >
+                🟢 شراء
+              </button>
+              <button
+                onClick={() => setSignalMode('sell')}
+                style={{
+                  background: signalMode === 'sell' ? '#ef4444' : 'transparent',
+                  color: signalMode === 'sell' ? '#fff' : '#9ca3af',
+                  border: 'none', padding: '4px 8px', borderRadius: '7px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
+                }}
+              >
+                🔴 بيع
+              </button>
+            </div>
+
+            <span style={{
+              background: wsConnected ? '#10b98125' : '#ef444425',
+              color: wsConnected ? '#10b981' : '#ef4444',
+              border: `1px solid ${wsConnected ? '#10b98150' : '#ef444450'}`,
+              padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+              <span style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: wsConnected ? '#10b981' : '#ef4444',
+                boxShadow: wsConnected ? '0 0 10px #10b981' : 'none'
+              }}></span>
+              {wsConnected ? '🔴 WebSocket Live' : '⏳ جاري الاتصال...'}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '12px' }}>
+          {/* Live Tick Stream Strip */}
+          {recentTicks.length > 0 && (
+            <div style={{
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '10px',
+              padding: '7px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              overflowX: 'auto',
+              fontSize: '11px'
+            }}>
+              <span style={{ color: '#9ca3af', fontWeight: 'bold', flexShrink: 0 }}>📡 تيكات حية:</span>
+              {recentTicks.map((tick, idx) => (
+                <span key={idx} style={{
+                  color: tick.isUp ? '#10b981' : '#f87171',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  opacity: 1 - idx * 0.15,
+                  flexShrink: 0
+                }}>
+                  {tick.isUp ? '▲' : '▼'} ${tick.price}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Giant BUY / SELL Signal Banner */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', background: 'rgba(0,0,0,0.4)', padding: '14px', borderRadius: '12px' }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>الإشارة والقرار اللحظي المباشر:</div>
-              <div style={{ fontSize: '26px', fontWeight: 'bold', color: actionColor, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span>{rawActionText}</span>
-                <span style={{ fontSize: '15px', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: '8px' }}>السعر: ${price}</span>
+              <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '2px' }}>الإشارة الحية الآن:</div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: actionColor, letterSpacing: '-1px', lineHeight: 1 }}>
+                {rawActionText}
               </div>
-              <div style={{ fontSize: '12px', color: '#d1d5db', marginTop: '4px' }}>
-                🎯 السهم يتجه لسحب سيولة الهدف عند: <b style={{ color: actionColor, fontSize: '14px' }}>${targetPrice}</b>
+              <div style={{ fontSize: '13px', color: '#fff', marginTop: '5px', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                ${price.toFixed(2)} &nbsp;→&nbsp; <span style={{ color: actionColor }}>🎯 ${targetPrice}</span>
               </div>
             </div>
 
-            <div style={{ background: `${oppositeColor}15`, border: `1px solid ${oppositeColor}50`, padding: '12px 16px', borderRadius: '12px', textAlign: 'center', minWidth: '180px' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>الخطوة القادمة فور لمس الهدف (${targetPrice}):</div>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', color: oppositeColor, marginTop: '4px' }}>
-                💰 اقفل الصفقات على ربح واضغط {oppositeActionText}!
+            <div style={{ background: `${oppositeColor}20`, border: `2px solid ${oppositeColor}60`, padding: '12px 16px', borderRadius: '12px', textAlign: 'center', minWidth: '170px' }}>
+              <div style={{ fontSize: '10px', color: '#9ca3af' }}>عند الوصول للهدف (${targetPrice}):</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: oppositeColor, marginTop: '4px' }}>
+                💰 اقفل ثم {oppositeActionText} فوراً!
               </div>
             </div>
           </div>
