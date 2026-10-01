@@ -6,6 +6,8 @@ import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [goldTicker, setGoldTicker] = useState({ price: 4236.50, change24h: -1.02, isUp: false });
   const [currentTimeUTC, setCurrentTimeUTC] = useState(new Date().toUTCString().slice(17, 25));
+  const [selectedTimeframe, setSelectedTimeframe] = useState('15m');
+  const [activeStudies, setActiveStudies] = useState(['STD;RSI', 'STD;EMA', 'STD;Volume']);
   const [sessionInfo, setSessionInfo] = useState({
     title: 'تداخل لندن ونيويورك (Peak Overlap)',
     status: 'peak',
@@ -391,10 +393,109 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
         </div>
 
+        {/* Dynamic Chart Toolbar & Indicator Controls */}
+        <div style={{
+          background: '#121721',
+          border: '1px solid #1f2937',
+          borderRadius: '14px',
+          padding: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          {/* Top Control Bar: Timeframe & Status */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold', color: '#f59e0b' }}>
+              <Activity size={16} />
+              <span>مؤشرات الشارت التفاعلية (Chart Indicators):</span>
+            </div>
+
+            {/* Timeframe Selector Buttons */}
+            <div style={{ display: 'flex', gap: '4px', background: '#0d0f14', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              {['1m', '5m', '15m', '1h', '4h', '1d'].map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setSelectedTimeframe(tf)}
+                  style={{
+                    background: selectedTimeframe === tf ? '#2563eb' : 'transparent',
+                    color: selectedTimeframe === tf ? '#fff' : '#9ca3af',
+                    border: 'none',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Indicator Toggles */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {[
+              { id: 'STD;RSI', name: '📈 RSI', desc: 'القوة النسبية' },
+              { id: 'STD;EMA', name: '🌊 EMA 20/50', desc: 'المتوسط الأسي' },
+              { id: 'STD;Volume', name: '📊 Volume', desc: 'حجم الأحجام' },
+              { id: 'STD;MACD', name: '📉 MACD', desc: 'مؤشر الماكدي' },
+              { id: 'STD;Bollinger_Bands', name: '🛡️ Bollinger', desc: 'بولينجر باندز' },
+              { id: 'STD;VWAP', name: '⚡ VWAP', desc: 'متوسط السعر بالحجم' },
+              { id: 'STD;Stochastic', name: '📍 Stochastic', desc: 'الاستوكاستك' }
+            ].map(ind => {
+              const isActive = activeStudies.includes(ind.id);
+              return (
+                <button
+                  key={ind.id}
+                  onClick={() => {
+                    if (isActive) {
+                      setActiveStudies(activeStudies.filter(s => s !== ind.id));
+                    } else {
+                      setActiveStudies([...activeStudies, ind.id]);
+                    }
+                  }}
+                  style={{
+                    background: isActive ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isActive ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+                    color: isActive ? '#fbbf24' : '#9ca3af',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isActive ? '0 0 10px rgba(245, 158, 11, 0.2)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title={`انقر لتفعيل أو إخفاء ${ind.desc} على الشارت`}
+                >
+                  <span>{ind.name}</span>
+                  <span style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: isActive ? '#10b981' : '#6b7280'
+                  }}></span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Live Chart Canvas */}
-        <TradingViewWidget symbol="OANDA:XAUUSD" height={420} timeframe="15m" />
+        <TradingViewWidget 
+          symbol="OANDA:XAUUSD" 
+          height={480} 
+          timeframe={selectedTimeframe}
+          studies={activeStudies} 
+        />
       </div>
 
     </div>
   );
 }
+

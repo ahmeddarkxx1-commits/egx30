@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe = "1h", showExternalLink = true }) {
+function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe = "1h", showExternalLink = true, studies = [] }) {
   const container = useRef();
 
   const getTvInterval = (tf) => {
@@ -52,6 +52,8 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     }
   };
 
+  const studiesSerialized = JSON.stringify(studies || []);
+
   useEffect(() => {
     // Clear the container first to avoid duplicate widgets
     if (container.current) {
@@ -80,10 +82,11 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
         "gridColor": "#1f2937",
         "hide_top_toolbar": false,
         "hide_legend": false,
-        "save_image": false
+        "save_image": false,
+        "studies": ${studiesSerialized}
       }`;
     container.current.appendChild(script);
-  }, [symbol, height, timeframe]);
+  }, [symbol, height, timeframe, studiesSerialized]);
 
   return (
     <div className="tradingview-widget-wrapper" style={{ width: "100%", position: "relative" }}>
