@@ -15,17 +15,26 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
 
   const formatTvSymbol = (s) => {
     if (!s) return 'BINANCE:BTCUSDT';
-    if (s.includes(':')) return s;
-    const clean = s.toUpperCase().replace('/', '').trim();
+    let clean = s.toUpperCase().trim();
+
+    // Strip broken or un-entitled prefixes
+    clean = clean.replace('GLOBALPRIME:', '').replace('FX:', '').replace('OANDA:', '').replace('BINANCE:', '').replace('NASDAQ:', '').replace('FOREXCOM:', '');
+    clean = clean.replace('/', '');
+
+    if (clean === 'US30' || clean.includes('US30') || clean === 'DJI') return 'FOREXCOM:US30';
+    if (clean === 'NAS100' || clean.includes('NAS100') || clean === 'NDX') return 'FOREXCOM:NAS100';
+    if (clean === 'SPX500' || clean.includes('SPX500') || clean === 'SPX') return 'FOREXCOM:SPX500';
+    if (clean === 'GER40' || clean.includes('GER40') || clean === 'DAX') return 'FOREXCOM:GER40';
+    if (clean === 'UK100' || clean.includes('UK100') || clean === 'FTSE') return 'FOREXCOM:UK100';
+    if (clean === 'JPN225' || clean.includes('JPN225')) return 'CAPITALCOM:JPN225';
     if (clean === 'WTI' || clean === 'USOIL') return 'TVC:USOIL';
     if (clean === 'BRENT' || clean === 'UKOIL') return 'TVC:UKOIL';
-    if (clean.includes('XAU') || clean.includes('GOLD')) return `OANDA:${clean}`;
-    if (clean.includes('XAG')) return `OANDA:${clean}`;
-    if (clean.includes('US30')) return `GLOBALPRIME:US30`;
-    if (clean.includes('NAS100')) return `GLOBALPRIME:NAS100`;
-    if (clean.includes('SPX500') || clean === 'SPX') return `GLOBALPRIME:SPX500`;
+    if (clean.includes('XAU') || clean.includes('GOLD')) return 'OANDA:XAUUSD';
+    if (clean.includes('XAG') || clean.includes('SILVER')) return 'OANDA:XAGUSD';
+    if (clean.includes('XPT')) return 'OANDA:XPTUSD';
+
     if (['AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD', 'INTC', 'COIN', 'PLTR'].includes(clean)) return `NASDAQ:${clean}`;
-    if (clean.includes('USDT') || clean.includes('BTC') || clean.includes('ETH') || clean.includes('SOL') || clean.includes('BNB') || clean.includes('XRP') || clean.includes('ADA') || clean.includes('AVAX') || clean.includes('SUI') || clean.includes('NEAR') || clean.includes('DOGE')) {
+    if (clean.includes('USDT') || clean.includes('BTC') || clean.includes('ETH') || clean.includes('SOL') || clean.includes('BNB') || clean.includes('XRP') || clean.includes('ADA') || clean.includes('AVAX') || clean.includes('SUI') || clean.includes('NEAR') || clean.includes('DOGE') || clean.includes('PEPE') || clean.includes('SHIB')) {
       return `BINANCE:${clean.includes('USDT') ? clean : clean + 'USDT'}`;
     }
     return `FX:${clean}`;

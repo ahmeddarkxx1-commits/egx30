@@ -12,18 +12,18 @@ const defaultCoreAssets = [
   { pair: 'ETH/USDT', name: 'Ethereum', symbol: 'BINANCE:ETHUSDT', icon: 'Ξ', category: 'crypto' },
   { pair: 'EUR/USD', name: 'يورو / دولار', symbol: 'FX:EURUSD', icon: '💶', category: 'forex' },
   { pair: 'GBP/USD', name: 'جنيه استرليني / دولار', symbol: 'FX:GBPUSD', icon: '💷', category: 'forex' },
-  { pair: 'US30', name: 'مؤشر داو جونز', symbol: 'GLOBALPRIME:US30', icon: '📈', category: 'indices' },
+  { pair: 'US30', name: 'مؤشر داو جونز', symbol: 'FOREXCOM:US30', icon: '📈', category: 'indices' },
   { pair: 'NVDA', name: 'إنفيديا (Nvidia)', symbol: 'NASDAQ:NVDA', icon: '💚', category: 'stocks' }
 ];
 
 // Universal Master Market Dictionary (Indices, Forex, Metals, Stocks)
 const globalMarketDictionary = [
   // Indices
-  { pair: 'US30', name: 'مؤشر داو جونز الأمريكي (Dow Jones)', symbol: 'GLOBALPRIME:US30', icon: '📈', category: 'indices', price: '$42,850.00', changeStr: '+0.34%', isUp: true },
-  { pair: 'NAS100', name: 'مؤشر ناسداك التكنولوجي (Nasdaq 100)', symbol: 'GLOBALPRIME:NAS100', icon: '💻', category: 'indices', price: '$19,850.00', changeStr: '+0.52%', isUp: true },
-  { pair: 'SPX500', name: 'مؤشر S&P 500 الرئيسي', symbol: 'GLOBALPRIME:SPX500', icon: '📊', category: 'indices', price: '$5,750.00', changeStr: '+0.28%', isUp: true },
-  { pair: 'GER40', name: 'مؤشر الداكس الألماني (DAX 40)', symbol: 'GLOBALPRIME:GER40', icon: '🇩🇪', category: 'indices', price: '$19,250.00', changeStr: '+0.15%', isUp: true },
-  { pair: 'UK100', name: 'مؤشر الفوتسي البريطاني (FTSE 100)', symbol: 'GLOBALPRIME:UK100', icon: '🇬🇧', category: 'indices', price: '$8,280.00', changeStr: '-0.10%', isUp: false },
+  { pair: 'US30', name: 'مؤشر داو جونز الأمريكي (Dow Jones)', symbol: 'FOREXCOM:US30', icon: '📈', category: 'indices', price: '$42,850.00', changeStr: '+0.34%', isUp: true },
+  { pair: 'NAS100', name: 'مؤشر ناسداك التكنولوجي (Nasdaq 100)', symbol: 'FOREXCOM:NAS100', icon: '💻', category: 'indices', price: '$19,850.00', changeStr: '+0.52%', isUp: true },
+  { pair: 'SPX500', name: 'مؤشر S&P 500 الرئيسي', symbol: 'FOREXCOM:SPX500', icon: '📊', category: 'indices', price: '$5,750.00', changeStr: '+0.28%', isUp: true },
+  { pair: 'GER40', name: 'مؤشر الداكس الألماني (DAX 40)', symbol: 'FOREXCOM:GER40', icon: '🇩🇪', category: 'indices', price: '$19,250.00', changeStr: '+0.15%', isUp: true },
+  { pair: 'UK100', name: 'مؤشر الفوتسي البريطاني (FTSE 100)', symbol: 'FOREXCOM:UK100', icon: '🇬🇧', category: 'indices', price: '$8,280.00', changeStr: '-0.10%', isUp: false },
   { pair: 'JPN225', name: 'مؤشر النيكي الياباني (Nikkei 225)', symbol: 'GLOBALPRIME:JPN225', icon: '🇯🇵', category: 'indices', price: '$38,400.00', changeStr: '+0.40%', isUp: true },
 
   // Metals & Energy
