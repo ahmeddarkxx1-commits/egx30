@@ -7,7 +7,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [goldTicker, setGoldTicker] = useState({ price: 4236.50, change24h: -1.02, isUp: false });
   const [currentTimeUTC, setCurrentTimeUTC] = useState(new Date().toUTCString().slice(17, 25));
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m');
-  const [activeStudies, setActiveStudies] = useState(['STD;RSI', 'STD;EMA', 'STD;Volume']);
+  const [activeStudies, setActiveStudies] = useState([]);
+  const [showAdvancedIndicators, setShowAdvancedIndicators] = useState(false);
   const [sessionInfo, setSessionInfo] = useState({
     title: 'تداخل لندن ونيويورك (Peak Overlap)',
     status: 'peak',
@@ -29,7 +30,9 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const nextReboundTarget = isUp ? (price - (price * 0.0035)).toFixed(2) : (price + (price * 0.0035)).toFixed(2);
   
   const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
+  const rawActionText = isUp ? 'اشـتري الآن 🟢' : 'بـع الآن 🔴';
   const oppositeAction = isUp ? 'بيع 🔴 (SELL)' : 'شراء 🟢 (BUY)';
+  const oppositeActionText = isUp ? 'بيع 🔴' : 'شراء 🟢';
   const actionColor = isUp ? '#10b981' : '#ef4444';
   const oppositeColor = isUp ? '#ef4444' : '#10b981';
   const arrowSymbol = isUp ? '⬆️' : '⬇️';
@@ -447,7 +450,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           <div style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '12px' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#8b949e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Activity size={15} color="#388bfd" />
-              <span>مستويات السيولة اللحظية على الشارت (Live Levels):</span>
+              <span>مستويات السيولة اللحظية المباشرة (Live Price Levels):</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
@@ -457,7 +460,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', background: 'rgba(56, 139, 253, 0.18)', borderRight: '4px solid #388bfd', borderRadius: '6px' }}>
-                <span style={{ color: '#58a6ff', fontWeight: 'bold' }}>📍 السعر الحالي المباشر (Current Price)</span>
+                <span style={{ color: '#58a6ff', fontWeight: 'bold' }}>📍 السعر الحالي اللحظي المباشر (Live Price)</span>
                 <span style={{ color: '#fff', fontWeight: 'bold' }}>${price}</span>
               </div>
 
@@ -470,7 +473,50 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
         </div>
 
-        {/* Dynamic Chart Toolbar & Indicator Controls */}
+        {/* ULTRA-FAST LIVE SCALPER SIGNAL DASHBOARD (رادار الإشارة السريعة والمباشرة) */}
+        <div style={{
+          background: `linear-gradient(135deg, ${actionColor}20 0%, rgba(15, 23, 42, 0.95) 100%)`,
+          border: `2px solid ${actionColor}`,
+          borderRadius: '16px',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxShadow: `0 0 30px ${actionColor}40`
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={20} color={actionColor} />
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>⚡ إشـارة تداول السيولة الفورية (Instant Scalp Signal)</span>
+            </div>
+            <span style={{ background: '#10b98125', color: '#10b981', border: '1px solid #10b98150', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
+              تحديث مباشر كل ثانية
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>الإشارة والقرار اللحظي المباشر:</div>
+              <div style={{ fontSize: '26px', fontWeight: 'bold', color: actionColor, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>{rawActionText}</span>
+                <span style={{ fontSize: '15px', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: '8px' }}>السعر: ${price}</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#d1d5db', marginTop: '4px' }}>
+                🎯 السهم يتجه لسحب سيولة الهدف عند: <b style={{ color: actionColor, fontSize: '14px' }}>${targetPrice}</b>
+              </div>
+            </div>
+
+            <div style={{ background: `${oppositeColor}15`, border: `1px solid ${oppositeColor}50`, padding: '12px 16px', borderRadius: '12px', textAlign: 'center', minWidth: '180px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>الخطوة القادمة فور لمس الهدف (${targetPrice}):</div>
+              <div style={{ fontSize: '15px', fontWeight: 'bold', color: oppositeColor, marginTop: '4px' }}>
+                💰 اقفل الصفقات على ربح واضغط {oppositeActionText}!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Chart Toolbar & Options */}
         <div style={{
           background: '#121721',
           border: '1px solid #1f2937',
@@ -482,9 +528,23 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         }}>
           {/* Top Control Bar: Timeframe & Status */}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold', color: '#f59e0b' }}>
-              <Activity size={16} />
-              <span>مؤشرات الشارت التفاعلية (Chart Indicators):</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>شارت الذهب النقـي 📊</span>
+              <button
+                onClick={() => setShowAdvancedIndicators(!showAdvancedIndicators)}
+                style={{
+                  background: showAdvancedIndicators ? '#2563eb' : 'rgba(255,255,255,0.06)',
+                  color: showAdvancedIndicators ? '#fff' : '#9ca3af',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {showAdvancedIndicators ? 'إخفاء المؤشرات الإضافية ✖' : '⚙️ مؤشرات فنية اختيارية (RSI/EMA/MACD)'}
+              </button>
             </div>
 
             {/* Timeframe Selector Buttons */}
@@ -511,59 +571,58 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             </div>
           </div>
 
-          {/* Indicator Toggles */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {[
-              { id: 'STD;RSI', name: '📈 RSI', desc: 'القوة النسبية' },
-              { id: 'STD;EMA', name: '🌊 EMA 20/50', desc: 'المتوسط الأسي' },
-              { id: 'STD;Volume', name: '📊 Volume', desc: 'حجم الأحجام' },
-              { id: 'STD;MACD', name: '📉 MACD', desc: 'مؤشر الماكدي' },
-              { id: 'STD;Bollinger_Bands', name: '🛡️ Bollinger', desc: 'بولينجر باندز' },
-              { id: 'STD;VWAP', name: '⚡ VWAP', desc: 'متوسط السعر بالحجم' },
-              { id: 'STD;Stochastic', name: '📍 Stochastic', desc: 'الاستوكاستك' }
-            ].map(ind => {
-              const isActive = activeStudies.includes(ind.id);
-              return (
-                <button
-                  key={ind.id}
-                  onClick={() => {
-                    if (isActive) {
-                      setActiveStudies(activeStudies.filter(s => s !== ind.id));
-                    } else {
-                      setActiveStudies([...activeStudies, ind.id]);
-                    }
-                  }}
-                  style={{
-                    background: isActive ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
-                    color: isActive ? '#fbbf24' : '#9ca3af',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: isActive ? '0 0 10px rgba(245, 158, 11, 0.2)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  title={`انقر لتفعيل أو إخفاء ${ind.desc} على الشارت`}
-                >
-                  <span>{ind.name}</span>
-                  <span style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    background: isActive ? '#10b981' : '#6b7280'
-                  }}></span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Optional Indicator Toggles (Hidden by default so chart stays clean) */}
+          {showAdvancedIndicators && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              {[
+                { id: 'STD;RSI', name: '📈 RSI', desc: 'القوة النسبية' },
+                { id: 'STD;EMA', name: '🌊 EMA 20/50', desc: 'المتوسط الأسي' },
+                { id: 'STD;Volume', name: '📊 Volume', desc: 'حجم الأحجام' },
+                { id: 'STD;MACD', name: '📉 MACD', desc: 'مؤشر الماكدي' },
+                { id: 'STD;Bollinger_Bands', name: '🛡️ Bollinger', desc: 'بولينجر باندز' },
+                { id: 'STD;VWAP', name: '⚡ VWAP', desc: 'متوسط السعر بالحجم' },
+                { id: 'STD;Stochastic', name: '📍 Stochastic', desc: 'الاستوكاستك' }
+              ].map(ind => {
+                const isActive = activeStudies.includes(ind.id);
+                return (
+                  <button
+                    key={ind.id}
+                    onClick={() => {
+                      if (isActive) {
+                        setActiveStudies(activeStudies.filter(s => s !== ind.id));
+                      } else {
+                        setActiveStudies([...activeStudies, ind.id]);
+                      }
+                    }}
+                    style={{
+                      background: isActive ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${isActive ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+                      color: isActive ? '#fbbf24' : '#9ca3af',
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>{ind.name}</span>
+                    <span style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: isActive ? '#10b981' : '#6b7280'
+                    }}></span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Live Chart Canvas */}
+        {/* Clean Live Chart Canvas */}
         <TradingViewWidget 
           symbol="OANDA:XAUUSD" 
           height={480} 
