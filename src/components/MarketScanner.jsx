@@ -5,7 +5,7 @@ import RasadAnalysisCard from './RasadAnalysisCard';
 import { AssetLogo } from '../utils/assetLogos';
 import { analyzeStudiedTechnicalSignal } from '../utils/priceFetcher';
 
-// Clean & Uncluttered Core Essential Favorites
+// Clean Core Default Favorites
 const defaultCoreAssets = [
   { pair: 'XAU/USD', name: 'الذهب / Dollar', symbol: 'OANDA:XAUUSD', icon: '🥇', category: 'metals' },
   { pair: 'BTC/USDT', name: 'Bitcoin', symbol: 'BINANCE:BTCUSDT', icon: '₿', category: 'crypto' },
@@ -16,6 +16,53 @@ const defaultCoreAssets = [
   { pair: 'NVDA', name: 'إنفيديا (Nvidia)', symbol: 'NASDAQ:NVDA', icon: '💚', category: 'stocks' }
 ];
 
+// Universal Master Market Dictionary (Indices, Forex, Metals, Stocks)
+const globalMarketDictionary = [
+  // Indices
+  { pair: 'US30', name: 'مؤشر داو جونز الأمريكي (Dow Jones)', symbol: 'GLOBALPRIME:US30', icon: '📈', category: 'indices', price: '$42,850.00', changeStr: '+0.34%', isUp: true },
+  { pair: 'NAS100', name: 'مؤشر ناسداك التكنولوجي (Nasdaq 100)', symbol: 'GLOBALPRIME:NAS100', icon: '💻', category: 'indices', price: '$19,850.00', changeStr: '+0.52%', isUp: true },
+  { pair: 'SPX500', name: 'مؤشر S&P 500 الرئيسي', symbol: 'GLOBALPRIME:SPX500', icon: '📊', category: 'indices', price: '$5,750.00', changeStr: '+0.28%', isUp: true },
+  { pair: 'GER40', name: 'مؤشر الداكس الألماني (DAX 40)', symbol: 'GLOBALPRIME:GER40', icon: '🇩🇪', category: 'indices', price: '$19,250.00', changeStr: '+0.15%', isUp: true },
+  { pair: 'UK100', name: 'مؤشر الفوتسي البريطاني (FTSE 100)', symbol: 'GLOBALPRIME:UK100', icon: '🇬🇧', category: 'indices', price: '$8,280.00', changeStr: '-0.10%', isUp: false },
+  { pair: 'JPN225', name: 'مؤشر النيكي الياباني (Nikkei 225)', symbol: 'GLOBALPRIME:JPN225', icon: '🇯🇵', category: 'indices', price: '$38,400.00', changeStr: '+0.40%', isUp: true },
+
+  // Metals & Energy
+  { pair: 'XAU/USD', name: 'الذهب مقابل الدولار (Gold Spot)', symbol: 'OANDA:XAUUSD', icon: '🥇', category: 'metals', price: '$4,164.65', changeStr: '+0.18%', isUp: true },
+  { pair: 'XAG/USD', name: 'الفضة مقابل الدولار (Silver Spot)', symbol: 'OANDA:XAGUSD', icon: '🥈', category: 'metals', price: '$31.85', changeStr: '+0.76%', isUp: true },
+  { pair: 'XPT/USD', name: 'البلاتين (Platinum)', symbol: 'OANDA:XPTUSD', icon: '💎', category: 'metals', price: '$1,778.00', changeStr: '+0.05%', isUp: true },
+  { pair: 'WTI', name: 'النفط الخام الأمريكي (WTI Oil)', symbol: 'TVC:USOIL', icon: '🛢️', category: 'metals', price: '$71.40', changeStr: '-0.20%', isUp: false },
+  { pair: 'BRENT', name: 'نفط برنت العالمي (Brent Crude Oil)', symbol: 'TVC:UKOIL', icon: '⛽', category: 'metals', price: '$75.20', changeStr: '-0.15%', isUp: false },
+  { pair: 'NGAS', name: 'الغاز الطبيعي (Natural Gas)', symbol: 'TVC:NGAS', icon: '🔥', category: 'metals', price: '$2.85', changeStr: '+0.50%', isUp: true },
+
+  // Forex Majors & Crosses
+  { pair: 'EUR/USD', name: 'يورو / دولار أمريكي', symbol: 'FX:EURUSD', icon: '💶', category: 'forex', price: '$1.1385', changeStr: '+0.12%', isUp: true },
+  { pair: 'GBP/USD', name: 'جنيه استرليني / دولار', symbol: 'FX:GBPUSD', icon: '💷', category: 'forex', price: '$1.3235', changeStr: '+0.08%', isUp: true },
+  { pair: 'USD/JPY', name: 'دولار / ين ياباني', symbol: 'FX:USDJPY', icon: '💴', category: 'forex', price: '$157.49', changeStr: '+0.15%', isUp: true },
+  { pair: 'AUD/USD', name: 'دولار أسترالي / دولار', symbol: 'FX:AUDUSD', icon: '🇦🇺', category: 'forex', price: '$0.6710', changeStr: '+0.22%', isUp: true },
+  { pair: 'USD/CAD', name: 'دولار / دولار كندي', symbol: 'FX:USDCAD', icon: '🇨🇦', category: 'forex', price: '$1.3540', changeStr: '-0.10%', isUp: false },
+  { pair: 'USD/CHF', name: 'دولار / فرنك سويسري', symbol: 'FX:USDCHF', icon: '🇨🇭', category: 'forex', price: '$0.8490', changeStr: '-0.05%', isUp: false },
+  { pair: 'NZD/USD', name: 'دولار نيوزيلندي / دولار', symbol: 'FX:NZDUSD', icon: '🇳🇿', category: 'forex', price: '$0.6230', changeStr: '+0.18%', isUp: true },
+  { pair: 'EUR/GBP', name: 'يورو / جنيه استرليني', symbol: 'FX:EURGBP', icon: '🇪🇺', category: 'forex', price: '$0.8415', changeStr: '+0.04%', isUp: true },
+  { pair: 'EUR/JPY', name: 'يورو / ين ياباني', symbol: 'FX:EURJPY', icon: '💶', category: 'forex', price: '$171.10', changeStr: '+0.28%', isUp: true },
+  { pair: 'GBP/JPY', name: 'جنيه استرليني / ين', symbol: 'FX:GBPJPY', icon: '💷', category: 'forex', price: '$208.50', changeStr: '+0.24%', isUp: true },
+  { pair: 'USD/TRY', name: 'دولار / ليرة تركية', symbol: 'FX:USDTRY', icon: '🇹🇷', category: 'forex', price: '$34.15', changeStr: '+0.45%', isUp: true },
+  { pair: 'USD/EGP', name: 'دولار / جنيه مصري', symbol: 'FX:USDEGP', icon: '🇪🇬', category: 'forex', price: '$48.60', changeStr: '+0.10%', isUp: true },
+  { pair: 'USD/SAR', name: 'دولار / ريال سعودي', symbol: 'FX:USDSAR', icon: '🇸🇦', category: 'forex', price: '$3.7510', changeStr: '0.00%', isUp: true },
+  { pair: 'USD/AED', name: 'دولار / درهم إماراتي', symbol: 'FX:USDAED', icon: '🇦🇪', category: 'forex', price: '$3.6725', changeStr: '0.00%', isUp: true },
+
+  // US Global Stocks
+  { pair: 'AAPL', name: 'شركة أبل (Apple Inc.)', symbol: 'NASDAQ:AAPL', icon: '🍎', category: 'stocks', price: '$228.40', changeStr: '+1.20%', isUp: true },
+  { pair: 'NVDA', name: 'إنفيديا (Nvidia AI)', symbol: 'NASDAQ:NVDA', icon: '💚', category: 'stocks', price: '$124.50', changeStr: '+3.45%', isUp: true },
+  { pair: 'TSLA', name: 'تسلا (Tesla Inc.)', symbol: 'NASDAQ:TSLA', icon: '⚡', category: 'stocks', price: '$245.20', changeStr: '-0.85%', isUp: false },
+  { pair: 'MSFT', name: 'مايكروسوفت (Microsoft)', symbol: 'NASDAQ:MSFT', icon: '🪟', category: 'stocks', price: '$448.10', changeStr: '+0.65%', isUp: true },
+  { pair: 'AMZN', name: 'أمازون (Amazon)', symbol: 'NASDAQ:AMZN', icon: '📦', category: 'stocks', price: '$186.50', changeStr: '+0.92%', isUp: true },
+  { pair: 'META', name: 'ميتا فيسبوك (Meta)', symbol: 'NASDAQ:META', icon: '♾️', category: 'stocks', price: '$512.30', changeStr: '+1.45%', isUp: true },
+  { pair: 'GOOGL', name: 'جوجل ألفابت (Alphabet)', symbol: 'NASDAQ:GOOGL', icon: '🔍', category: 'stocks', price: '$178.60', changeStr: '+0.40%', isUp: true },
+  { pair: 'AMD', name: 'شركة AMD للمعالجات', symbol: 'NASDAQ:AMD', icon: '💻', category: 'stocks', price: '$156.40', changeStr: '+2.10%', isUp: true },
+  { pair: 'COIN', name: 'منصة كوينبيس (Coinbase)', symbol: 'NASDAQ:COIN', icon: '🪙', category: 'stocks', price: '$215.80', changeStr: '+4.20%', isUp: true },
+  { pair: 'PLTR', name: 'بالانتير (Palantir AI)', symbol: 'NASDAQ:PLTR', icon: '🛡️', category: 'stocks', price: '$36.50', changeStr: '+2.80%', isUp: true }
+];
+
 // Binance Live Search Cache
 let binanceTickerCache = null;
 let lastCacheFetchTime = 0;
@@ -23,7 +70,7 @@ let lastCacheFetchTime = 0;
 export default function MarketScanner({ onBack }) {
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearchingBinance, setIsSearchingBinance] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [userWatchlist, setUserWatchlist] = useState([]);
   const [selectedCoin, setSelectedCoin] = useState(defaultCoreAssets[0]);
@@ -46,7 +93,7 @@ export default function MarketScanner({ onBack }) {
     }
   }, []);
 
-  // Dynamic Live Binance Search Query Engine
+  // Universal Live Search Engine (Global Markets + Binance Crypto Tickers)
   useEffect(() => {
     if (!search || search.trim().length < 1) {
       setSearchResults([]);
@@ -54,65 +101,87 @@ export default function MarketScanner({ onBack }) {
     }
 
     const query = search.trim().toUpperCase().replace('/', '');
+    const queryClean = search.trim().toUpperCase();
     let isCancelled = false;
 
-    const performBinanceSearch = async () => {
-      setIsSearchingBinance(true);
+    const performUnifiedSearch = async () => {
+      setIsSearching(true);
       try {
-        // Fetch or use cached 24hr Binance tickers
-        if (!binanceTickerCache || Date.now() - lastCacheFetchTime > 40000) {
-          const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
-          if (res.ok) {
-            binanceTickerCache = await res.json();
-            lastCacheFetchTime = Date.now();
+        // 1. Search Global Market Dictionary (Indices, Forex, Metals, Stocks)
+        const dictMatches = globalMarketDictionary.filter(item => {
+          const pClean = item.pair.toUpperCase().replace('/', '');
+          const nClean = item.name.toUpperCase();
+          return pClean.includes(query) || nClean.includes(queryClean);
+        });
+
+        // 2. Fetch/Query Binance Tickers for Crypto Matches
+        let cryptoMatches = [];
+        try {
+          if (!binanceTickerCache || Date.now() - lastCacheFetchTime > 40000) {
+            const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+            if (res.ok) {
+              binanceTickerCache = await res.json();
+              lastCacheFetchTime = Date.now();
+            }
           }
+
+          if (Array.isArray(binanceTickerCache)) {
+            const rawMatches = binanceTickerCache.filter(item => item.symbol.includes(query));
+            rawMatches.sort((a, b) => {
+              const aUsdt = a.symbol.endsWith('USDT');
+              const bUsdt = b.symbol.endsWith('USDT');
+              if (aUsdt && !bUsdt) return -1;
+              if (!aUsdt && bUsdt) return 1;
+              return parseFloat(b.quoteVolume || 0) - parseFloat(a.quoteVolume || 0);
+            });
+
+            cryptoMatches = rawMatches.slice(0, 6).map(item => {
+              let pairName = item.symbol;
+              if (item.symbol.endsWith('USDT')) {
+                pairName = item.symbol.replace('USDT', '') + '/USDT';
+              } else if (item.symbol.endsWith('BTC')) {
+                pairName = item.symbol.replace('BTC', '') + '/BTC';
+              }
+              const pVal = parseFloat(item.lastPrice);
+              const cVal = parseFloat(item.priceChangePercent);
+              return {
+                symbol: `BINANCE:${item.symbol}`,
+                pair: pairName,
+                name: pairName,
+                price: pVal > 100 ? `$${pVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${pVal}`,
+                changeStr: `${cVal >= 0 ? '+' : ''}${cVal.toFixed(2)}%`,
+                isUp: cVal >= 0,
+                icon: '₿',
+                category: 'crypto'
+              };
+            });
+          }
+        } catch (e) {
+          console.log('Binance search fallback:', e);
         }
 
         if (isCancelled) return;
 
-        if (Array.isArray(binanceTickerCache)) {
-          const matches = binanceTickerCache.filter(item => item.symbol.includes(query));
-
-          // Sort: USDT pairs first, then by 24h Volume
-          matches.sort((a, b) => {
-            const aUsdt = a.symbol.endsWith('USDT');
-            const bUsdt = b.symbol.endsWith('USDT');
-            if (aUsdt && !bUsdt) return -1;
-            if (!aUsdt && bUsdt) return 1;
-            return parseFloat(b.quoteVolume || 0) - parseFloat(a.quoteVolume || 0);
-          });
-
-          const formatted = matches.slice(0, 7).map(item => {
-            let pairName = item.symbol;
-            if (item.symbol.endsWith('USDT')) {
-              pairName = item.symbol.replace('USDT', '') + '/USDT';
-            } else if (item.symbol.endsWith('BTC')) {
-              pairName = item.symbol.replace('BTC', '') + '/BTC';
-            }
-            const pVal = parseFloat(item.lastPrice);
-            const cVal = parseFloat(item.priceChangePercent);
-            return {
-              symbol: `BINANCE:${item.symbol}`,
-              pair: pairName,
-              name: pairName,
-              price: pVal > 100 ? `$${pVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${pVal}`,
-              changeStr: `${cVal >= 0 ? '+' : ''}${cVal.toFixed(2)}%`,
-              isUp: cVal >= 0,
-              icon: '₿',
-              category: 'crypto'
-            };
-          });
-
-          setSearchResults(formatted);
+        // Merge dict + crypto matches and deduplicate
+        const merged = [...dictMatches, ...cryptoMatches];
+        const unique = [];
+        const seen = new Set();
+        for (const item of merged) {
+          if (!seen.has(item.pair)) {
+            seen.add(item.pair);
+            unique.push(item);
+          }
         }
+
+        setSearchResults(unique.slice(0, 8));
       } catch (err) {
-        console.log('Binance Live Search Error:', err);
+        console.log('Search Engine Error:', err);
       } finally {
-        if (!isCancelled) setIsSearchingBinance(false);
+        if (!isCancelled) setIsSearching(false);
       }
     };
 
-    const debounceTimer = setTimeout(performBinanceSearch, 150);
+    const debounceTimer = setTimeout(performUnifiedSearch, 120);
     return () => {
       isCancelled = true;
       clearTimeout(debounceTimer);
@@ -138,7 +207,7 @@ export default function MarketScanner({ onBack }) {
 
   // Save pair to Watchlist
   const handleAddToWatchlist = (assetObj) => {
-    const exists = userWatchlist.find(a => a.pair === assetObj.pair);
+    const exists = userWatchlist.find(a => a.pair.toUpperCase() === assetObj.pair.toUpperCase());
     if (exists) {
       setSelectedCoin(exists);
       setSearch('');
@@ -225,12 +294,12 @@ export default function MarketScanner({ onBack }) {
         </button>
       </div>
 
-      {/* Dynamic Binance & Global Search Input */}
+      {/* Dynamic Global & Binance Search Input */}
       <div style={{ position: 'relative' }}>
         <Search size={18} color="#f59e0b" style={{ position: 'absolute', right: '14px', top: '13px' }} />
         <input 
           type="text" 
-          placeholder="🔍 ابحث عن أي عملة في Binance أو أزواج الفوركس... (مثال: PEPE, SUI, EUR/USD, XAU)"
+          placeholder="🔍 ابحث عن أي أصل أو مؤشر... (مثال: US30, XAU, BTC, PEPE, NVDA, EUR/USD)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ 
@@ -254,7 +323,7 @@ export default function MarketScanner({ onBack }) {
         )}
       </div>
 
-      {/* Live Binance API Search Results Dropdown Panel */}
+      {/* Live Universal Search Results Panel */}
       {search && (
         <div style={{
           background: '#161b22',
@@ -267,13 +336,13 @@ export default function MarketScanner({ onBack }) {
           gap: '8px'
         }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <span>نتائج البحث الحية من بينانس والأسواق 🌐:</span>
-            {isSearchingBinance && <span style={{ fontSize: '11px', color: '#9ca3af' }}>جاري الاستعلام...</span>}
+            <span>نتائج البحث المباشرة من بينانس والأسواق العالمية 🌐:</span>
+            {isSearching && <span style={{ fontSize: '11px', color: '#9ca3af' }}>جاري الاستعلام...</span>}
           </div>
 
-          {searchResults.length === 0 && !isSearchingBinance && (
+          {searchResults.length === 0 && !isSearching && (
             <div style={{ textAlign: 'center', padding: '14px', fontSize: '12px', color: '#9ca3af' }}>
-              <div>لم نجد نتيجة مطابقة بـ Binance ticker 🔎</div>
+              <div>زوج غير مدرج بالقوائم الافتراضية 🔎</div>
               <button 
                 onClick={() => {
                   const customObj = {
@@ -285,8 +354,8 @@ export default function MarketScanner({ onBack }) {
                   };
                   handleAddToWatchlist(customObj);
                 }}
-                style={{ marginTop: '8px', background: '#f59e0b', color: '#000', border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
-                ➕ إضافة "{search.trim().toUpperCase()}" لقائمتي وتحليله فوراً
+                style={{ marginTop: '8px', background: '#f59e0b', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
+                ➕ تحليل وإضافة "{search.trim().toUpperCase()}" لقائمتي فوراً
               </button>
             </div>
           )}
@@ -309,7 +378,7 @@ export default function MarketScanner({ onBack }) {
                 <div>
                   <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff' }}>{item.pair}</div>
                   <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                    {item.price} · <span style={{ color: item.isUp ? '#10b981' : '#f87171', fontWeight: 'bold' }}>{item.changeStr}</span>
+                    {item.name || item.pair} {item.price ? `· ${item.price}` : ''} {item.changeStr ? <span style={{ color: item.isUp ? '#10b981' : '#f87171', fontWeight: 'bold' }}>{item.changeStr}</span> : ''}
                   </div>
                 </div>
               </div>
@@ -373,7 +442,8 @@ export default function MarketScanner({ onBack }) {
           { id: 'crypto', label: 'كريبتو ₿' },
           { id: 'forex', label: 'فوركس 💶' },
           { id: 'metals', label: 'معادن 🥇' },
-          { id: 'indices', label: 'مؤشرات 📈' }
+          { id: 'indices', label: 'مؤشرات 📈' },
+          { id: 'stocks', label: 'أسهم 🏛️' }
         ].map(cat => (
           <button
             key={cat.id}
