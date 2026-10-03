@@ -29,7 +29,10 @@ export default function PlatformsConnect({ onBack }) {
 
   // Smart multi-host fetch helper (Cloud Server + Auto Origin + Local Fallback)
   const fetchWithFallback = async (endpoint, options = {}) => {
-    const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
+    let cloudUrl = (localStorage.getItem('traden_cloud_url') || '').trim();
+    if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
+      cloudUrl = `https://${cloudUrl}`;
+    }
     const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     const hosts = [
       cloudUrl,

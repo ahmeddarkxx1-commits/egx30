@@ -78,13 +78,17 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const [orderError, setOrderError] = useState(false);
 
   const fetchWithCloudFallback = async (endpoint, options = {}) => {
-    const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
+    let cloudUrl = (localStorage.getItem('traden_cloud_url') || '').trim();
+    if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
+      cloudUrl = `https://${cloudUrl}`;
+    }
+    const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     const hosts = [
       cloudUrl,
+      currentOrigin,
       '',
       'http://localhost:5000',
-      'http://127.0.0.1:5000',
-      'http://localhost:8085'
+      'http://127.0.0.1:5000'
     ].filter(Boolean);
 
     for (const host of hosts) {
