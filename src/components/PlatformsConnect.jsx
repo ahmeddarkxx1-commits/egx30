@@ -23,18 +23,20 @@ export default function PlatformsConnect({ onBack }) {
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem('traden_crypto_apisecret') || '');
   const [passphrase, setPassphrase] = useState(() => localStorage.getItem('traden_crypto_passphrase') || '');
 
-  // Smart multi-host fetch helper with timeout
+  // Smart multi-host fetch helper (Cloud Server + Local Fallback)
   const fetchWithFallback = async (endpoint, options = {}) => {
+    const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
     const hosts = [
+      cloudUrl,
       '',
       'http://localhost:5000',
       'http://127.0.0.1:5000',
       'http://localhost:8085'
-    ];
+    ].filter(Boolean);
 
     for (const host of hosts) {
       try {
-        const url = host ? `${host}${endpoint}` : endpoint;
+        const url = host.endsWith('/') ? `${host.slice(0, -1)}${endpoint}` : `${host}${endpoint}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000);
         const res = await fetch(url, { ...options, signal: controller.signal });
