@@ -77,13 +77,38 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const [orderStatus, setOrderStatus] = useState('');
   const [orderError, setOrderError] = useState(false);
 
+  const fetchWithCloudFallback = async (endpoint, options = {}) => {
+    const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
+    const hosts = [
+      cloudUrl,
+      '',
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://localhost:8085'
+    ].filter(Boolean);
+
+    for (const host of hosts) {
+      try {
+        const url = host.endsWith('/') ? `${host.slice(0, -1)}${endpoint}` : `${host}${endpoint}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res) return res;
+      } catch (e) {
+        // try next
+      }
+    }
+    throw new Error('Cloud server unreachable');
+  };
+
   const handleExecuteLiveOrder = async () => {
     setExecutingOrder(true);
     setOrderStatus('جاري إرسال وتنفيذ الصفقة فورياً على الحساب المربوط...');
     setOrderError(false);
 
     try {
-      const response = await fetch('/api/orders/place', {
+      const response = await fetchWithCloudFallback('/api/orders/place', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,12 +121,12 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
       });
 
       const resData = await response.json();
-      if (response.ok && resData.success) {
+      if (response && response.ok && resData.success) {
         setOrderError(false);
         setOrderStatus(resData.message || `✅ تم تنفيذ صفقة ${signalLabel} بنجاح على الحساب المربوط!`);
       } else {
         setOrderError(true);
-        setOrderStatus(resData.message || '❌ تعذر فتح الصفقة تلقائياً. تأكد من أن حساب MT5 أو الكريبتو متصل ومفتوح.');
+        setOrderStatus(resData?.message || '❌ تعذر فتح الصفقة تلقائياً. تأكد من أن حساب MT5 أو الكريبتو متصل ومفتوح.');
       }
     } catch (e) {
       setOrderError(false);

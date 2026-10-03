@@ -23,6 +23,10 @@ export default function PlatformsConnect({ onBack }) {
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem('traden_crypto_apisecret') || '');
   const [passphrase, setPassphrase] = useState(() => localStorage.getItem('traden_crypto_passphrase') || '');
 
+  // Cloud Backend Server URL State
+  const [cloudUrl, setCloudUrl] = useState(() => localStorage.getItem('traden_cloud_url') || '');
+  const [showCloudConfig, setShowCloudConfig] = useState(false);
+
   // Smart multi-host fetch helper (Cloud Server + Local Fallback)
   const fetchWithFallback = async (endpoint, options = {}) => {
     const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
@@ -225,6 +229,50 @@ export default function PlatformsConnect({ onBack }) {
           <RefreshCw size={14} className={fetchingAccount ? 'animate-spin' : ''} />
           <span>تحديث الحساب</span>
         </button>
+      </div>
+
+      {/* 🌐 Cloud Backend Server Config Box */}
+      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#60a5fa', fontWeight: 'bold' }}>
+            <Server size={16} />
+            <span>🌐 الخادم السحابي (Cloud Server): {cloudUrl ? <code style={{ color: '#38bdf8' }}>{cloudUrl}</code> : <span style={{ color: '#8b949e' }}>(مباشر / تلقائي)</span>}</span>
+          </div>
+          <button 
+            onClick={() => setShowCloudConfig(!showCloudConfig)}
+            style={{ background: '#21262d', border: '1px solid #30363d', color: '#c9d1d9', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
+          >
+            {showCloudConfig ? 'إخفاء ✕' : 'إعدادات السيرفر السحابي ⚙️'}
+          </button>
+        </div>
+
+        {showCloudConfig && (
+          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #30363d' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#8b949e', marginBottom: '6px' }}>
+              ضع رابط أو عنوان IP السيرفر السحابي الخاص بك (Cloud Server IP / Domain):
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="مثال: http://YOUR-SERVER-IP:5000 أو https://your-domain.com"
+                value={cloudUrl}
+                onChange={(e) => setCloudUrl(e.target.value)}
+                style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
+              />
+              <button
+                onClick={() => {
+                  localStorage.setItem('traden_cloud_url', cloudUrl);
+                  fetchLiveAccount();
+                  setIsError(false);
+                  setSaveStatus('✅ تم إعداد وتوصيل رابط السيرفر السحابي بنجاح!');
+                }}
+                style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                حفظ واختبار ⚡
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 📊 Always-Visible Connected / Status Dashboard Card */}
