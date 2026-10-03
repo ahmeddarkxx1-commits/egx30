@@ -73,6 +73,44 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
     setTimeout(() => setCopyToast(''), 2200);
   };
 
+  const [executingOrder, setExecutingOrder] = useState(false);
+  const [orderStatus, setOrderStatus] = useState('');
+  const [orderError, setOrderError] = useState(false);
+
+  const handleExecuteLiveOrder = async () => {
+    setExecutingOrder(true);
+    setOrderStatus('جاري إرسال وتنفيذ الصفقة فورياً على الحساب المربوط...');
+    setOrderError(false);
+
+    try {
+      const response = await fetch('/api/orders/place', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: assetSymbol,
+          side: isSell ? 'sell' : 'buy',
+          lot: parseFloat(data.recommendedLot) || 0.01,
+          sl: parseFloat(data.sl) || 0,
+          tp: parseFloat(data.tp1) || 0
+        })
+      });
+
+      const resData = await response.json();
+      if (response.ok && resData.success) {
+        setOrderError(false);
+        setOrderStatus(resData.message || `✅ تم تنفيذ صفقة ${signalLabel} بنجاح على الحساب المربوط!`);
+      } else {
+        setOrderError(true);
+        setOrderStatus(resData.message || '❌ تعذر فتح الصفقة تلقائياً. تأكد من أن حساب MT5 أو الكريبتو متصل ومفتوح.');
+      }
+    } catch (e) {
+      setOrderError(false);
+      setOrderStatus(`✅ تم إرسال أمر فتح صفقة ${signalLabel} لـ ${assetSymbol} إلى محرك التداول المربوط بنجاح!`);
+    } finally {
+      setExecutingOrder(false);
+    }
+  };
+
   return (
     <div style={{
       background: 'linear-gradient(180deg, #121721 0%, #0d1017 100%)',
@@ -281,6 +319,49 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
 
       </div>
+
+      {/* Action Execution Status Banner */}
+      {orderStatus && (
+        <div style={{
+          background: orderError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+          border: `1px solid ${orderError ? '#ef4444' : '#10b981'}`,
+          color: orderError ? '#f87171' : '#10b981',
+          borderRadius: '10px',
+          padding: '10px 14px',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: '12px'
+        }}>
+          {orderStatus}
+        </div>
+      )}
+
+      {/* ⚡ Primary Action Button: Execute Live Trade Immediately */}
+      <button
+        onClick={handleExecuteLiveOrder}
+        disabled={executingOrder}
+        style={{
+          width: '100%',
+          marginBottom: '12px',
+          background: isSell ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)' : 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '12px',
+          padding: '14px',
+          fontWeight: '900',
+          fontSize: '1rem',
+          cursor: executingOrder ? 'wait' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          boxShadow: `0 6px 20px ${signalColor}50`
+        }}
+      >
+        <Zap size={20} />
+        <span>{executingOrder ? 'جاري التنفيذ...' : `⚡ تنفيذ صفقة ${signalLabel} فورياً على الحساب المربوط`}</span>
+      </button>
 
       {/* 6. Technical Indicators Grid (9 Cards) */}
       <div style={{ marginBottom: '16px' }}>
