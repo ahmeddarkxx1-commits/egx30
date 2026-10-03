@@ -23,16 +23,39 @@ export default function PlatformsConnect({ onBack }) {
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem('traden_crypto_apisecret') || '');
   const [passphrase, setPassphrase] = useState(() => localStorage.getItem('traden_crypto_passphrase') || '');
 
+  // Smart multi-host fetch helper with timeout
+  const fetchWithFallback = async (endpoint, options = {}) => {
+    const hosts = [
+      '',
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://localhost:8085'
+    ];
+
+    for (const host of hosts) {
+      try {
+        const url = host ? `${host}${endpoint}` : endpoint;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res) return res;
+      } catch (e) {
+        // try next host
+      }
+    }
+    throw new Error('Server unreachable');
+  };
+
   const fetchLiveAccount = async () => {
     setFetchingAccount(true);
     try {
-      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:5000' 
-        : '';
-      const response = await fetch(`${apiHost}/api/account`);
-      if (response.ok) {
+      const response = await fetchWithFallback('/api/account');
+      if (response && response.ok) {
         const data = await response.json();
-        setAccountData(data);
+        if (data && data.success) {
+          setAccountData(data);
+        }
       }
     } catch (e) {
       console.log('Account fetch error or standalone mode:', e);
@@ -43,7 +66,7 @@ export default function PlatformsConnect({ onBack }) {
 
   useEffect(() => {
     fetchLiveAccount();
-    const interval = setInterval(fetchLiveAccount, 10000);
+    const interval = setInterval(fetchLiveAccount, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -52,12 +75,12 @@ export default function PlatformsConnect({ onBack }) {
     
     if (!mt5Login || !mt5Password || !mt5Server || mt5Server === 'ةة') {
       setIsError(true);
-      setSaveStatus('⚠️ رجاءً كتابة اسم السيرفر الصحيح من Exness (مثال: Exness-MT5Trial16 أو Exness-Real10)');
+      setSaveStatus('⚠️ رجاءً كتابة اسم السيرفر الصحيح لحسابك في Exness (مثال: Exness-MT5Trial16 أو Exness-Real10)');
       return;
     }
 
     setLoading(true);
-    setSaveStatus('جاري الاتصال واختبار حساب MT5 مع السيرفر...');
+    setSaveStatus('جاري الاتصال واختبار حساب MT5 مع سيرفر البروكر...');
     setIsError(false);
 
     localStorage.setItem('traden_forex_broker', forexBroker);
@@ -66,10 +89,7 @@ export default function PlatformsConnect({ onBack }) {
     localStorage.setItem('traden_mt5_server', mt5Server);
 
     try {
-      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:5000' 
-        : '';
-      const response = await fetch(`${apiHost}/api/platforms/connect`, {
+      const response = await fetchWithFallback('/api/platforms/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,17 +102,27 @@ export default function PlatformsConnect({ onBack }) {
       });
 
       const data = await response.json();
-      if (response.ok && data.success) {
+      if (response && response.ok && data.success) {
         setIsError(false);
-        setSaveStatus(data.message || '✅ تم الاتصال بنجاح وعرض الرصيد!');
+        setSaveStatus(data.message || '✅ تم الاتصال بنجاح وتفعيل حساب MT5!');
+        setAccountData({
+          connected: true,
+          broker: forexBroker,
+          login: mt5Login,
+          balance: data.balance || 0.0,
+          equity: data.balance || 0.0,
+          free_margin: data.balance || 0.0,
+          currency: data.currency || 'USD',
+          positions: []
+        });
         fetchLiveAccount();
       } else {
         setIsError(true);
         setSaveStatus(data.message || '❌ فشل الاتصال بالسيرفر. تأكد من اسم السيرفر ورقم الحساب والباسورد.');
       }
     } catch (err) {
-      setIsError(false);
-      setSaveStatus(`✅ تم حفظ إعدادات دخول بروكر ${forexBroker} (حساب #${mt5Login})!`);
+      setIsError(true);
+      setSaveStatus(`⚠️ يتعذر الاتصال بسيرفر البوت المحلي على منفذ 5000. قم بتشغيل البوت أولاً عبر (python main.py) أو (Run_Desktop_App.bat) ليتم فتح الاتصال وتداول الحساب مباشرة.`);
     } finally {
       setLoading(false);
     }
@@ -116,10 +146,7 @@ export default function PlatformsConnect({ onBack }) {
     if (passphrase) localStorage.setItem('traden_crypto_passphrase', passphrase);
 
     try {
-      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:5000' 
-        : '';
-      const response = await fetch(`${apiHost}/api/platforms/connect`, {
+      const response = await fetchWithFallback('/api/platforms/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,17 +159,27 @@ export default function PlatformsConnect({ onBack }) {
       });
 
       const data = await response.json();
-      if (response.ok && data.success) {
+      if (response && response.ok && data.success) {
         setIsError(false);
         setSaveStatus(data.message || `✅ تم ربط منصة ${cryptoExchange.toUpperCase()} بنجاح!`);
+        setAccountData({
+          connected: true,
+          broker: cryptoExchange.toUpperCase(),
+          login: 'API User',
+          balance: data.balance || 0.0,
+          equity: data.balance || 0.0,
+          free_margin: data.balance || 0.0,
+          currency: 'USDT',
+          positions: []
+        });
         fetchLiveAccount();
       } else {
         setIsError(true);
         setSaveStatus(data.message || `❌ فشل الربط مع منصة ${cryptoExchange.toUpperCase()}. تأكد من المفاتيح.`);
       }
     } catch (err) {
-      setIsError(false);
-      setSaveStatus(`✅ تم حفظ مفاتيح API لمنصة ${cryptoExchange.toUpperCase()} بنجاح!`);
+      setIsError(true);
+      setSaveStatus(`⚠️ يتعذر الاتصال بسيرفر البوت المحلي على منفذ 5000. قم بتشغيل البوت أولاً عبر (python main.py) لتطبيق الربط المباشر.`);
     } finally {
       setLoading(false);
     }
@@ -150,10 +187,7 @@ export default function PlatformsConnect({ onBack }) {
 
   const handleClosePosition = async (ticket, symbol, volume, type) => {
     try {
-      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:5000' 
-        : '';
-      await fetch(`${apiHost}/api/control/close_position`, {
+      await fetchWithFallback('/api/control/close_position', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket, symbol, volume, type })
@@ -219,7 +253,7 @@ export default function PlatformsConnect({ onBack }) {
             borderRadius: '12px',
             fontWeight: 'bold'
           }}>
-            {isConnected ? '🟢 متصل ومفعل' : '🟡 يتطلب إكمال الاتصال والسيرفر'}
+            {isConnected ? '🟢 متصل ومفعل' : '🟡 يتطلب إكمال الاتصال بالسيرفر'}
           </span>
         </div>
 
