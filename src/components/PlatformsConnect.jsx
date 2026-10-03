@@ -233,39 +233,39 @@ export default function PlatformsConnect({ onBack }) {
       </div>
 
       {/* 🌐 Cloud Backend Server Config Box */}
-      <div style={{ background: '#161b22', border: '1px solid #3b82f6', borderRadius: '14px', padding: '16px', marginBottom: '20px', boxShadow: '0 0 15px rgba(59, 130, 246, 0.15)' }}>
+      <div style={{ background: '#161b22', border: `1px solid ${cloudUrl ? '#10b981' : '#f59e0b'}`, borderRadius: '14px', padding: '16px', marginBottom: '20px', boxShadow: `0 0 15px ${cloudUrl ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#60a5fa', fontWeight: 'bold' }}>
             <Server size={18} />
-            <span>🌐 الخادم السحابي النشط: <code style={{ color: '#38bdf8' }}>{cloudUrl || (typeof window !== 'undefined' ? window.location.origin : 'تلقائي')}</code></span>
+            <span>🌐 رابط سيرفر بيثون (Python Backend Server):</span>
           </div>
-          <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
-            مربوط تلقائياً بسيرفرك 🟢
+          <span style={{ fontSize: '11px', background: cloudUrl ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', color: cloudUrl ? '#10b981' : '#f59e0b', border: `1px solid ${cloudUrl ? '#10b981' : '#f59e0b'}`, padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
+            {cloudUrl ? 'مُربوط بالسيرفر 🟢' : 'مستضاف على Vercel (يتطلب إدخال رابط سيرفرك) 🟡'}
           </span>
         </div>
 
-        <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.5' }}>
-          ✨ يتصل الموقع تلقائياً بالسيرفر السحابي المفتوح حالياً (<b>{typeof window !== 'undefined' ? window.location.origin : ''}</b>). لست بحاجة لكتابة أي رابط، فقط أدخل بيانات حسابك بالأسفل واضغط اتصال!
+        <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.6' }}>
+          💡 <b>ملاحظة هامة:</b> استضافة <code>Vercel</code> تعرض واجهة المستخدم فقط. لربط وتداول حسابك، أدخل عنوان IP أو رابط سيرفر بيثون الخاص بك (مثال: <code style={{ color: '#f59e0b' }}>http://YOUR-SERVER-IP:5000</code> أو رابط Render/Ngrok) في المربع بالأسفل واضغط <b>تخصيص رابط السيرفر ⚡</b>:
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
-            placeholder="رابط سيرفر مختلف (اختياري، مثال: http://YOUR-SERVER-IP:5000)"
+            placeholder="ضع رابط سيرفر بيثون الخاص بك هُنا (مثال: http://YOUR-SERVER-IP:5000)"
             value={cloudUrl}
             onChange={(e) => setCloudUrl(e.target.value)}
-            style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '8px 12px', fontSize: '12px' }}
+            style={{ flex: 1, background: '#0d1117', border: '1px solid #f59e0b', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
           />
           <button
             onClick={() => {
               localStorage.setItem('traden_cloud_url', cloudUrl);
               fetchLiveAccount();
               setIsError(false);
-              setSaveStatus(cloudUrl ? `✅ تم تغيير وتوصيل السيرفر إلى (${cloudUrl})!` : '✅ تم ضبط السيرفر على التلقائي.');
+              setSaveStatus(cloudUrl ? `✅ تم ربط وتفعيل سيرفر بيثون (${cloudUrl}) بنجاح!` : '⚠️ يرجى كتابة رابط سيرفر بيثون.');
             }}
-            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            تخصيص رابط ⚡
+            تخصيص رابط السيرفر ⚡
           </button>
         </div>
       </div>
