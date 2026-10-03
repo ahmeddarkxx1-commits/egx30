@@ -128,7 +128,7 @@ export default function PlatformsConnect({ onBack }) {
       }
     } catch (err) {
       setIsError(true);
-      setSaveStatus(`⚠️ يتعذر الاتصال بسيرفر البوت المحلي على منفذ 5000. قم بتشغيل البوت أولاً عبر (python main.py) أو (Run_Desktop_App.bat) ليتم فتح الاتصال وتداول الحساب مباشرة.`);
+      setSaveStatus(`⚠️ يتعذر الاتصال بالسيرفر. إذا كنت تستخدم الربط السحابي، أدخل IP أو رابط سيرفرك في مربع (🌐 إعدادات رابط السيرفر السحابي) بالأعلى واضغط حفظ.`);
     } finally {
       setLoading(false);
     }
@@ -185,7 +185,7 @@ export default function PlatformsConnect({ onBack }) {
       }
     } catch (err) {
       setIsError(true);
-      setSaveStatus(`⚠️ يتعذر الاتصال بسيرفر البوت المحلي على منفذ 5000. قم بتشغيل البوت أولاً عبر (python main.py) لتطبيق الربط المباشر.`);
+      setSaveStatus(`⚠️ يتعذر الاتصال بالسيرفر. أدخل IP أو رابط سيرفرك في مربع (🌐 إعدادات رابط السيرفر السحابي) بالأعلى واضغط حفظ.`);
     } finally {
       setLoading(false);
     }
@@ -232,47 +232,47 @@ export default function PlatformsConnect({ onBack }) {
       </div>
 
       {/* 🌐 Cloud Backend Server Config Box */}
-      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#60a5fa', fontWeight: 'bold' }}>
-            <Server size={16} />
-            <span>🌐 الخادم السحابي (Cloud Server): {cloudUrl ? <code style={{ color: '#38bdf8' }}>{cloudUrl}</code> : <span style={{ color: '#8b949e' }}>(مباشر / تلقائي)</span>}</span>
+      <div style={{ background: '#161b22', border: '1px solid #3b82f6', borderRadius: '14px', padding: '16px', marginBottom: '20px', boxShadow: '0 0 15px rgba(59, 130, 246, 0.15)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#60a5fa', fontWeight: 'bold' }}>
+            <Server size={18} />
+            <span>🌐 إعدادات رابط السيرفر السحابي (Cloud Server URL)</span>
           </div>
-          <button 
-            onClick={() => setShowCloudConfig(!showCloudConfig)}
-            style={{ background: '#21262d', border: '1px solid #30363d', color: '#c9d1d9', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
-          >
-            {showCloudConfig ? 'إخفاء ✕' : 'إعدادات السيرفر السحابي ⚙️'}
-          </button>
+          {cloudUrl ? (
+            <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 8px', borderRadius: '8px', fontWeight: 'bold' }}>
+              مُفعل سحابياً 🟢
+            </span>
+          ) : (
+            <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b', padding: '2px 8px', borderRadius: '8px' }}>
+              افتراضي (محلي / 5000)
+            </span>
+          )}
         </div>
 
-        {showCloudConfig && (
-          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #30363d' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: '#8b949e', marginBottom: '6px' }}>
-              ضع رابط أو عنوان IP السيرفر السحابي الخاص بك (Cloud Server IP / Domain):
-            </label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                placeholder="مثال: http://YOUR-SERVER-IP:5000 أو https://your-domain.com"
-                value={cloudUrl}
-                onChange={(e) => setCloudUrl(e.target.value)}
-                style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '8px 12px', fontSize: '13px' }}
-              />
-              <button
-                onClick={() => {
-                  localStorage.setItem('traden_cloud_url', cloudUrl);
-                  fetchLiveAccount();
-                  setIsError(false);
-                  setSaveStatus('✅ تم إعداد وتوصيل رابط السيرفر السحابي بنجاح!');
-                }}
-                style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                حفظ واختبار ⚡
-              </button>
-            </div>
-          </div>
-        )}
+        <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.5' }}>
+          للربط السحابي 100% بدون تشغيل أي شيء على كمبيوترك: ادخل عنوان IP أو رابط سيرفرك السحابي هُنا:
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
+            placeholder="ضع رابط سيرفرك السحابي هُنا (مثال: http://YOUR-SERVER-IP:5000 أو https://domain.com)"
+            value={cloudUrl}
+            onChange={(e) => setCloudUrl(e.target.value)}
+            style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
+          />
+          <button
+            onClick={() => {
+              localStorage.setItem('traden_cloud_url', cloudUrl);
+              fetchLiveAccount();
+              setIsError(false);
+              setSaveStatus(cloudUrl ? `✅ تم تفعيل رابط السيرفر السحابي (${cloudUrl}) واختبار الاتصال!` : '✅ تم تعيين السيرفر على الوضع التلقائي.');
+            }}
+            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            حفظ السيرفر السحابي ⚡
+          </button>
+        </div>
       </div>
 
       {/* 📊 Always-Visible Connected / Status Dashboard Card */}
