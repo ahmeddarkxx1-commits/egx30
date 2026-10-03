@@ -27,15 +27,16 @@ export default function PlatformsConnect({ onBack }) {
   const [cloudUrl, setCloudUrl] = useState(() => localStorage.getItem('traden_cloud_url') || '');
   const [showCloudConfig, setShowCloudConfig] = useState(false);
 
-  // Smart multi-host fetch helper (Cloud Server + Local Fallback)
+  // Smart multi-host fetch helper (Cloud Server + Auto Origin + Local Fallback)
   const fetchWithFallback = async (endpoint, options = {}) => {
     const cloudUrl = localStorage.getItem('traden_cloud_url') || '';
+    const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     const hosts = [
       cloudUrl,
+      currentOrigin,
       '',
       'http://localhost:5000',
-      'http://127.0.0.1:5000',
-      'http://localhost:8085'
+      'http://127.0.0.1:5000'
     ].filter(Boolean);
 
     for (const host of hosts) {
@@ -236,41 +237,35 @@ export default function PlatformsConnect({ onBack }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#60a5fa', fontWeight: 'bold' }}>
             <Server size={18} />
-            <span>🌐 إعدادات رابط السيرفر السحابي (Cloud Server URL)</span>
+            <span>🌐 الخادم السحابي النشط: <code style={{ color: '#38bdf8' }}>{cloudUrl || (typeof window !== 'undefined' ? window.location.origin : 'تلقائي')}</code></span>
           </div>
-          {cloudUrl ? (
-            <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 8px', borderRadius: '8px', fontWeight: 'bold' }}>
-              مُفعل سحابياً 🟢
-            </span>
-          ) : (
-            <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b', padding: '2px 8px', borderRadius: '8px' }}>
-              افتراضي (محلي / 5000)
-            </span>
-          )}
+          <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
+            مربوط تلقائياً بسيرفرك 🟢
+          </span>
         </div>
 
         <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.5' }}>
-          للربط السحابي 100% بدون تشغيل أي شيء على كمبيوترك: ادخل عنوان IP أو رابط سيرفرك السحابي هُنا:
+          ✨ يتصل الموقع تلقائياً بالسيرفر السحابي المفتوح حالياً (<b>{typeof window !== 'undefined' ? window.location.origin : ''}</b>). لست بحاجة لكتابة أي رابط، فقط أدخل بيانات حسابك بالأسفل واضغط اتصال!
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
-            placeholder="ضع رابط سيرفرك السحابي هُنا (مثال: http://YOUR-SERVER-IP:5000 أو https://domain.com)"
+            placeholder="رابط سيرفر مختلف (اختياري، مثال: http://YOUR-SERVER-IP:5000)"
             value={cloudUrl}
             onChange={(e) => setCloudUrl(e.target.value)}
-            style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
+            style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '8px 12px', fontSize: '12px' }}
           />
           <button
             onClick={() => {
               localStorage.setItem('traden_cloud_url', cloudUrl);
               fetchLiveAccount();
               setIsError(false);
-              setSaveStatus(cloudUrl ? `✅ تم تفعيل رابط السيرفر السحابي (${cloudUrl}) واختبار الاتصال!` : '✅ تم تعيين السيرفر على الوضع التلقائي.');
+              setSaveStatus(cloudUrl ? `✅ تم تغيير وتوصيل السيرفر إلى (${cloudUrl})!` : '✅ تم ضبط السيرفر على التلقائي.');
             }}
-            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            حفظ السيرفر السحابي ⚡
+            تخصيص رابط ⚡
           </button>
         </div>
       </div>
