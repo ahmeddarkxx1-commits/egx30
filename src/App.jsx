@@ -449,12 +449,26 @@ function App() {
         <div className="header-title" style={{ fontSize: '18px' }}>
           تداول أذكى <span>مع Traden AI ✦</span>
         </div>
-        {tgUser && (
-          <div style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <CheckCircle size={12} />
-            <span>حساب مفعل: {tgUser.first_name}</span>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setCurrentView('platforms_connect')}
+            style={{
+              background: 'rgba(59, 130, 246, 0.15)',
+              border: '1px solid #3b82f6',
+              color: '#60a5fa',
+              borderRadius: '20px',
+              padding: '4px 12px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <span>🔗 ربط المنصة / رصيد الحساب</span>
+          </button>
+        </div>
       </header>
 
       {/* 1. Live Market Widget at TOP for zero scrolling! */}

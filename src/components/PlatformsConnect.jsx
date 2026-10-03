@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Key, CheckCircle, Server, DollarSign, ExternalLink, ArrowRight, Save, Info, Loader } from 'lucide-react';
+import { Shield, Key, CheckCircle, Server, DollarSign, ExternalLink, ArrowRight, Save, Info, Loader, RefreshCw, XCircle } from 'lucide-react';
 
 export default function PlatformsConnect({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('forex'); // 'forex' or 'crypto'
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [isError, setIsError] = useState(false);
+
+  // Live Account Details
+  const [accountData, setAccountData] = useState(null);
+  const [fetchingAccount, setFetchingAccount] = useState(false);
 
   // Forex Form State
   const [forexBroker, setForexBroker] = useState(() => localStorage.getItem('traden_forex_broker') || 'Exness');
@@ -19,6 +23,32 @@ export default function PlatformsConnect({ onBack }) {
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem('traden_crypto_apisecret') || '');
   const [passphrase, setPassphrase] = useState(() => localStorage.getItem('traden_crypto_passphrase') || '');
 
+  const fetchLiveAccount = async () => {
+    setFetchingAccount(true);
+    try {
+      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:5000' 
+        : '';
+      const response = await fetch(`${apiHost}/api/account`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.connected) {
+          setAccountData(data);
+        }
+      }
+    } catch (e) {
+      console.log('Account fetch error or standalone mode:', e);
+    } finally {
+      setFetchingAccount(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveAccount();
+    const interval = setInterval(fetchLiveAccount, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSaveForex = async (e) => {
     e.preventDefault();
     if (!mt5Login || !mt5Password || !mt5Server) {
@@ -31,14 +61,16 @@ export default function PlatformsConnect({ onBack }) {
     setSaveStatus('جاري الاتصال واختبار حساب MT5 مع السيرفر...');
     setIsError(false);
 
-    // Save to localStorage
     localStorage.setItem('traden_forex_broker', forexBroker);
     localStorage.setItem('traden_mt5_login', mt5Login);
     localStorage.setItem('traden_mt5_password', mt5Password);
     localStorage.setItem('traden_mt5_server', mt5Server);
 
     try {
-      const response = await fetch('/api/platforms/connect', {
+      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:5000' 
+        : '';
+      const response = await fetch(`${apiHost}/api/platforms/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -53,15 +85,15 @@ export default function PlatformsConnect({ onBack }) {
       const data = await response.json();
       if (response.ok && data.success) {
         setIsError(false);
-        setSaveStatus(data.message || '✅ تم حفظ وربط حساب MT5 بنجاح في الموقع!');
+        setSaveStatus(data.message || '✅ تم حفظ وربط حساب MT5 بنجاح!');
+        fetchLiveAccount();
       } else {
         setIsError(true);
-        setSaveStatus(data.message || '❌ فشل الاتصال. تأكد من البيانات ودخول السيرفر.');
+        setSaveStatus(data.message || '❌ فشل الاتصال. تأكد من رقم الحساب، الباسورد واسم السيرفر.');
       }
     } catch (err) {
-      // Local success fallback if running as standalone webapp
       setIsError(false);
-      setSaveStatus(`✅ تم حفظ بيانات دخول بروكر ${forexBroker} (حساب #${mt5Login}) بنجاح على المتصفح والـ Dashboard!`);
+      setSaveStatus(`✅ تم حفظ إعدادات دخول بروكر ${forexBroker} (حساب #${mt5Login})!`);
     } finally {
       setLoading(false);
     }
@@ -79,14 +111,16 @@ export default function PlatformsConnect({ onBack }) {
     setSaveStatus(`جاري الاتصال واختبار مفاتيح API لمنصة ${cryptoExchange.toUpperCase()}...`);
     setIsError(false);
 
-    // Save to localStorage
     localStorage.setItem('traden_crypto_exchange', cryptoExchange);
     localStorage.setItem('traden_crypto_apikey', apiKey);
     localStorage.setItem('traden_crypto_apisecret', apiSecret);
     if (passphrase) localStorage.setItem('traden_crypto_passphrase', passphrase);
 
     try {
-      const response = await fetch('/api/platforms/connect', {
+      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:5000' 
+        : '';
+      const response = await fetch(`${apiHost}/api/platforms/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,16 +136,32 @@ export default function PlatformsConnect({ onBack }) {
       if (response.ok && data.success) {
         setIsError(false);
         setSaveStatus(data.message || `✅ تم ربط منصة ${cryptoExchange.toUpperCase()} بنجاح!`);
+        fetchLiveAccount();
       } else {
         setIsError(true);
         setSaveStatus(data.message || `❌ فشل الربط مع منصة ${cryptoExchange.toUpperCase()}. تأكد من المفاتيح.`);
       }
     } catch (err) {
-      // Local success fallback
       setIsError(false);
-      setSaveStatus(`✅ تم حفظ مفاتيح API لمنصة ${cryptoExchange.toUpperCase()} بنجاح على الموقع!`);
+      setSaveStatus(`✅ تم حفظ مفاتيح API لمنصة ${cryptoExchange.toUpperCase()} بنجاح!`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClosePosition = async (ticket, symbol, volume, type) => {
+    try {
+      const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:5000' 
+        : '';
+      await fetch(`${apiHost}/api/control/close_position`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket, symbol, volume, type })
+      });
+      fetchLiveAccount();
+    } catch (e) {
+      console.error('Failed to close position:', e);
     }
   };
 
@@ -130,7 +180,89 @@ export default function PlatformsConnect({ onBack }) {
           </button>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>🔗 ربط وإدخال بيانات التداول المباشرة</h2>
         </div>
+        <button
+          onClick={fetchLiveAccount}
+          disabled={fetchingAccount}
+          style={{ background: '#161b22', border: '1px solid #30363d', color: '#60a5fa', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}
+        >
+          <RefreshCw size={14} className={fetchingAccount ? 'animate-spin' : ''} />
+          <span>تحديث بيانات الحساب</span>
+        </button>
       </div>
+
+      {/* 📊 Live Connected Account Dashboard Card */}
+      {accountData && accountData.connected && (
+        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #3b82f6', borderRadius: '16px', padding: '18px', marginBottom: '20px', boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></div>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f8fafc' }}>
+                الحساب المربوط: <b>{accountData.broker}</b> (#{accountData.login})
+              </span>
+            </div>
+            <span style={{ fontSize: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
+              🟢 متصل ومفعل
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الرصيد (Balance)</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8', marginTop: '2px' }}>
+                ${accountData.balance.toFixed(2)} {accountData.currency}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الإيكويتي (Equity)</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>
+                ${accountData.equity.toFixed(2)} {accountData.currency}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الهامش الحر (Free Margin)</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>
+                ${accountData.free_margin.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Open Positions List */}
+          {accountData.positions && accountData.positions.length > 0 && (
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>
+                ⚡ الصفقات الحالية المفتوحة ({accountData.positions.length}):
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {accountData.positions.map((pos) => (
+                  <div key={pos.ticket} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '10px', border: '1px solid #334155' }}>
+                    <div>
+                      <span style={{ fontWeight: 'bold', color: pos.type === 'buy' ? '#4ade80' : '#f87171', marginLeft: '6px' }}>
+                        {pos.type.toUpperCase()}
+                      </span>
+                      <span style={{ fontWeight: 'bold', color: '#fff' }}>{pos.symbol}</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', marginRight: '8px' }}>(Lot: {pos.volume})</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontWeight: 'bold', color: pos.profit >= 0 ? '#4ade80' : '#f87171' }}>
+                        {pos.profit >= 0 ? `+$${pos.profit.toFixed(2)}` : `-$${Math.abs(pos.profit).toFixed(2)}`}
+                      </span>
+                      <button
+                        onClick={() => handleClosePosition(pos.ticket, pos.symbol, pos.volume, pos.type)}
+                        style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        إغلاق 🛑
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Category Tabs */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #30363d', paddingBottom: '12px' }}>
