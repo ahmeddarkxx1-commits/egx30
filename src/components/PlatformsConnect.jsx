@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Key, CheckCircle, Server, DollarSign, ExternalLink, ArrowRight, Save, Info, Loader, RefreshCw, XCircle } from 'lucide-react';
+import { Shield, Key, CheckCircle, Server, DollarSign, ExternalLink, ArrowRight, Save, Info, Loader, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function PlatformsConnect({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('forex'); // 'forex' or 'crypto'
@@ -13,9 +13,9 @@ export default function PlatformsConnect({ onBack }) {
 
   // Forex Form State
   const [forexBroker, setForexBroker] = useState(() => localStorage.getItem('traden_forex_broker') || 'Exness');
-  const [mt5Login, setMt5Login] = useState(() => localStorage.getItem('traden_mt5_login') || '');
+  const [mt5Login, setMt5Login] = useState(() => localStorage.getItem('traden_mt5_login') || '472326565');
   const [mt5Password, setMt5Password] = useState(() => localStorage.getItem('traden_mt5_password') || '');
-  const [mt5Server, setMt5Server] = useState(() => localStorage.getItem('traden_mt5_server') || '');
+  const [mt5Server, setMt5Server] = useState(() => localStorage.getItem('traden_mt5_server') || 'Exness-MT5Trial16');
 
   // Crypto Form State
   const [cryptoExchange, setCryptoExchange] = useState(() => localStorage.getItem('traden_crypto_exchange') || 'binance');
@@ -32,9 +32,7 @@ export default function PlatformsConnect({ onBack }) {
       const response = await fetch(`${apiHost}/api/account`);
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.connected) {
-          setAccountData(data);
-        }
+        setAccountData(data);
       }
     } catch (e) {
       console.log('Account fetch error or standalone mode:', e);
@@ -50,10 +48,11 @@ export default function PlatformsConnect({ onBack }) {
   }, []);
 
   const handleSaveForex = async (e) => {
-    e.preventDefault();
-    if (!mt5Login || !mt5Password || !mt5Server) {
+    if (e) e.preventDefault();
+    
+    if (!mt5Login || !mt5Password || !mt5Server || mt5Server === 'ةة') {
       setIsError(true);
-      setSaveStatus('⚠️ رجاءً أدخل رقم الحساب، كلمة السر واسم السيرفر كاملاً.');
+      setSaveStatus('⚠️ رجاءً كتابة اسم السيرفر الصحيح من Exness (مثال: Exness-MT5Trial16 أو Exness-Real10)');
       return;
     }
 
@@ -85,11 +84,11 @@ export default function PlatformsConnect({ onBack }) {
       const data = await response.json();
       if (response.ok && data.success) {
         setIsError(false);
-        setSaveStatus(data.message || '✅ تم حفظ وربط حساب MT5 بنجاح!');
+        setSaveStatus(data.message || '✅ تم الاتصال بنجاح وعرض الرصيد!');
         fetchLiveAccount();
       } else {
         setIsError(true);
-        setSaveStatus(data.message || '❌ فشل الاتصال. تأكد من رقم الحساب، الباسورد واسم السيرفر.');
+        setSaveStatus(data.message || '❌ فشل الاتصال بالسيرفر. تأكد من اسم السيرفر ورقم الحساب والباسورد.');
       }
     } catch (err) {
       setIsError(false);
@@ -100,7 +99,7 @@ export default function PlatformsConnect({ onBack }) {
   };
 
   const handleSaveCrypto = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!apiKey || !apiSecret) {
       setIsError(true);
       setSaveStatus('⚠️ رجاءً أدخل الـ API Key والـ Secret Key للمنصة.');
@@ -165,6 +164,8 @@ export default function PlatformsConnect({ onBack }) {
     }
   };
 
+  const isConnected = accountData && accountData.connected;
+
   return (
     <div style={{ padding: '16px', color: '#f0f6fc', maxWidth: '800px', margin: '0 auto' }}>
       
@@ -186,83 +187,131 @@ export default function PlatformsConnect({ onBack }) {
           style={{ background: '#161b22', border: '1px solid #30363d', color: '#60a5fa', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}
         >
           <RefreshCw size={14} className={fetchingAccount ? 'animate-spin' : ''} />
-          <span>تحديث بيانات الحساب</span>
+          <span>تحديث الحساب</span>
         </button>
       </div>
 
-      {/* 📊 Live Connected Account Dashboard Card */}
-      {accountData && accountData.connected && (
-        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #3b82f6', borderRadius: '16px', padding: '18px', marginBottom: '20px', boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></div>
-              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f8fafc' }}>
-                الحساب المربوط: <b>{accountData.broker}</b> (#{accountData.login})
-              </span>
-            </div>
-            <span style={{ fontSize: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
-              🟢 متصل ومفعل
+      {/* 📊 Always-Visible Connected / Status Dashboard Card */}
+      <div style={{
+        background: isConnected 
+          ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' 
+          : 'linear-gradient(135deg, #1f1911 0%, #0d1117 100%)',
+        border: `1px solid ${isConnected ? '#3b82f6' : '#f59e0b'}`,
+        borderRadius: '16px',
+        padding: '18px',
+        marginBottom: '20px',
+        boxShadow: `0 0 20px ${isConnected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.15)'}`
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isConnected ? '#10b981' : '#f59e0b', boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f59e0b'}` }}></div>
+            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f8fafc' }}>
+              الحساب المربوط: <b>{accountData?.broker || forexBroker}</b> (#{accountData?.login || mt5Login || '472326565'})
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الرصيد (Balance)</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8', marginTop: '2px' }}>
-                ${accountData.balance.toFixed(2)} {accountData.currency}
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الإيكويتي (Equity)</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>
-                ${accountData.equity.toFixed(2)} {accountData.currency}
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>الهامش الحر (Free Margin)</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>
-                ${accountData.free_margin.toFixed(2)}
-              </div>
-            </div>
-          </div>
-
-          {/* Open Positions List */}
-          {accountData.positions && accountData.positions.length > 0 && (
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>
-                ⚡ الصفقات الحالية المفتوحة ({accountData.positions.length}):
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {accountData.positions.map((pos) => (
-                  <div key={pos.ticket} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '10px', border: '1px solid #334155' }}>
-                    <div>
-                      <span style={{ fontWeight: 'bold', color: pos.type === 'buy' ? '#4ade80' : '#f87171', marginLeft: '6px' }}>
-                        {pos.type.toUpperCase()}
-                      </span>
-                      <span style={{ fontWeight: 'bold', color: '#fff' }}>{pos.symbol}</span>
-                      <span style={{ fontSize: '11px', color: '#94a3b8', marginRight: '8px' }}>(Lot: {pos.volume})</span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: pos.profit >= 0 ? '#4ade80' : '#f87171' }}>
-                        {pos.profit >= 0 ? `+$${pos.profit.toFixed(2)}` : `-$${Math.abs(pos.profit).toFixed(2)}`}
-                      </span>
-                      <button
-                        onClick={() => handleClosePosition(pos.ticket, pos.symbol, pos.volume, pos.type)}
-                        style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                      >
-                        إغلاق 🛑
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <span style={{
+            fontSize: '12px',
+            background: isConnected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+            color: isConnected ? '#10b981' : '#f59e0b',
+            border: `1px solid ${isConnected ? '#10b981' : '#f59e0b'}`,
+            padding: '4px 12px',
+            borderRadius: '12px',
+            fontWeight: 'bold'
+          }}>
+            {isConnected ? '🟢 متصل ومفعل' : '🟡 يتطلب إكمال الاتصال والسيرفر'}
+          </span>
         </div>
-      )}
+
+        {isConnected ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>الرصيد (Balance)</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#38bdf8', marginTop: '2px' }}>
+                  ${accountData.balance.toFixed(2)} {accountData.currency}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>الإيكويتي (Equity)</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>
+                  ${accountData.equity.toFixed(2)} {accountData.currency}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>الهامش الحر (Free Margin)</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>
+                  ${accountData.free_margin.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* Open Positions List */}
+            {accountData.positions && accountData.positions.length > 0 && (
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>
+                  ⚡ الصفقات الحالية المفتوحة ({accountData.positions.length}):
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {accountData.positions.map((pos) => (
+                    <div key={pos.ticket} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '10px', border: '1px solid #334155' }}>
+                      <div>
+                        <span style={{ fontWeight: 'bold', color: pos.type === 'buy' ? '#4ade80' : '#f87171', marginLeft: '6px' }}>
+                          {pos.type.toUpperCase()}
+                        </span>
+                        <span style={{ fontWeight: 'bold', color: '#fff' }}>{pos.symbol}</span>
+                        <span style={{ fontSize: '11px', color: '#94a3b8', marginRight: '8px' }}>(Lot: {pos.volume})</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontWeight: 'bold', color: pos.profit >= 0 ? '#4ade80' : '#f87171' }}>
+                          {pos.profit >= 0 ? `+$${pos.profit.toFixed(2)}` : `-$${Math.abs(pos.profit).toFixed(2)}`}
+                        </span>
+                        <button
+                          onClick={() => handleClosePosition(pos.ticket, pos.symbol, pos.volume, pos.type)}
+                          style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          إغلاق 🛑
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              تأكد من كتابة اسم السيرفر الصحيح لحسابك في Exness (مثال: <code style={{ color: '#f59e0b', background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px' }}>Exness-MT5Trial16</code> أو <code style={{ color: '#f59e0b', background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px' }}>Exness-Real10</code>) واضغط على زر الاتصال بالأسفل لإظهار الرصيد فورياً.
+            </div>
+
+            <button
+              onClick={handleSaveForex}
+              disabled={loading}
+              style={{
+                background: '#f59e0b',
+                color: '#000',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              <span>اختبار وتوصيل السيرفر وجلب الرصيد الآن ⚡</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Category Tabs */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #30363d', paddingBottom: '12px' }}>
@@ -391,7 +440,7 @@ export default function PlatformsConnect({ onBack }) {
               <label style={{ display: 'block', fontSize: '12px', color: '#c9d1d9', marginBottom: '6px' }}>اسم السيرفر (MT5 Server):</label>
               <input
                 type="text"
-                placeholder="مثال: Exness-MT5Trial16 أو XMGlobal-MT5"
+                placeholder="مثال: Exness-MT5Trial16 أو Exness-Real10"
                 value={mt5Server}
                 onChange={(e) => setMt5Server(e.target.value)}
                 required
