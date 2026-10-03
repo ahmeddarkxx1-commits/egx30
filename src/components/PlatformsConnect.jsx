@@ -245,13 +245,13 @@ export default function PlatformsConnect({ onBack }) {
         </div>
 
         <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.6' }}>
-          💡 <b>ملاحظة هامة:</b> استضافة <code>Vercel</code> تعرض واجهة المستخدم فقط. لربط وتداول حسابك، أدخل عنوان IP أو رابط سيرفر بيثون الخاص بك (مثال: <code style={{ color: '#f59e0b' }}>http://YOUR-SERVER-IP:5000</code> أو رابط Render/Ngrok) في المربع بالأسفل واضغط <b>تخصيص رابط السيرفر ⚡</b>:
+          💡 <b>ملاحظة هامة:</b> استضافة <code>Vercel</code> تعرض واجهة المستخدم فقط. لربط وتداول حسابك، أدخل رابط سيرفر بيثون في <b>Railway</b> الخاص بك (مثال: <code style={{ color: '#f59e0b' }}>https://...up.railway.app</code>) في المربع بالأسفل واضغط <b>تخصيص رابط السيرفر ⚡</b>:
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
-            placeholder="ضع رابط سيرفر بيثون الخاص بك هُنا (مثال: http://YOUR-SERVER-IP:5000)"
+            placeholder="ضع رابط سيرفر Railway الخاص بك هُنا (مثال: https://...up.railway.app)"
             value={cloudUrl}
             onChange={(e) => setCloudUrl(e.target.value)}
             style={{ flex: 1, background: '#0d1117', border: '1px solid #f59e0b', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
