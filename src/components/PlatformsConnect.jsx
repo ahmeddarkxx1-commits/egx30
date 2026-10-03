@@ -23,19 +23,22 @@ export default function PlatformsConnect({ onBack }) {
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem('traden_crypto_apisecret') || '');
   const [passphrase, setPassphrase] = useState(() => localStorage.getItem('traden_crypto_passphrase') || '');
 
+  const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
+
   // Cloud Backend Server URL State
-  const [cloudUrl, setCloudUrl] = useState(() => localStorage.getItem('traden_cloud_url') || '');
+  const [cloudUrl, setCloudUrl] = useState(() => localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL);
   const [showCloudConfig, setShowCloudConfig] = useState(false);
 
   // Smart multi-host fetch helper (Cloud Server + Auto Origin + Local Fallback)
   const fetchWithFallback = async (endpoint, options = {}) => {
-    let cloudUrl = (localStorage.getItem('traden_cloud_url') || '').trim();
+    let cloudUrl = (localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL).trim();
     if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
       cloudUrl = `https://${cloudUrl}`;
     }
     const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     const hosts = [
       cloudUrl,
+      DEFAULT_RAILWAY_URL,
       currentOrigin,
       '',
       'http://localhost:5000',
@@ -236,39 +239,39 @@ export default function PlatformsConnect({ onBack }) {
       </div>
 
       {/* 🌐 Cloud Backend Server Config Box */}
-      <div style={{ background: '#161b22', border: `1px solid ${cloudUrl ? '#10b981' : '#f59e0b'}`, borderRadius: '14px', padding: '16px', marginBottom: '20px', boxShadow: `0 0 15px ${cloudUrl ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}` }}>
+      <div style={{ background: '#161b22', border: '1px solid #10b981', borderRadius: '14px', padding: '16px', marginBottom: '20px', boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#60a5fa', fontWeight: 'bold' }}>
             <Server size={18} />
-            <span>🌐 رابط سيرفر بيثون (Python Backend Server):</span>
+            <span>🌐 السيرفر السحابي النشط (Railway): <code style={{ color: '#38bdf8' }}>{cloudUrl || DEFAULT_RAILWAY_URL}</code></span>
           </div>
-          <span style={{ fontSize: '11px', background: cloudUrl ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', color: cloudUrl ? '#10b981' : '#f59e0b', border: `1px solid ${cloudUrl ? '#10b981' : '#f59e0b'}`, padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
-            {cloudUrl ? 'مُربوط بالسيرفر 🟢' : 'مستضاف على Vercel (يتطلب إدخال رابط سيرفرك) 🟡'}
+          <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
+            مربوط بسيرفر Railway 🟢
           </span>
         </div>
 
         <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px', lineHeight: '1.6' }}>
-          💡 <b>ملاحظة هامة:</b> استضافة <code>Vercel</code> تعرض واجهة المستخدم فقط. لربط وتداول حسابك، أدخل رابط سيرفر بيثون في <b>Railway</b> الخاص بك (مثال: <code style={{ color: '#f59e0b' }}>https://...up.railway.app</code>) في المربع بالأسفل واضغط <b>تخصيص رابط السيرفر ⚡</b>:
+          ✅ تم ضبط مفتاح الاتصال السحابي تلقائياً بسيرفرك في <b>Railway</b> (<code>{DEFAULT_RAILWAY_URL}</code>). اضغط على زر توصيل الحساب بالأسفل فوراً!
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
-            placeholder="ضع رابط سيرفر Railway الخاص بك هُنا (مثال: https://...up.railway.app)"
+            placeholder="رابط سيرفر مختلف (اختياري)"
             value={cloudUrl}
             onChange={(e) => setCloudUrl(e.target.value)}
-            style={{ flex: 1, background: '#0d1117', border: '1px solid #f59e0b', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
+            style={{ flex: 1, background: '#0d1117', border: '1px solid #30363d', color: '#fff', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
           />
           <button
             onClick={() => {
               localStorage.setItem('traden_cloud_url', cloudUrl);
               fetchLiveAccount();
               setIsError(false);
-              setSaveStatus(cloudUrl ? `✅ تم ربط وتفعيل سيرفر بيثون (${cloudUrl}) بنجاح!` : '⚠️ يرجى كتابة رابط سيرفر بيثون.');
+              setSaveStatus(cloudUrl ? `✅ تم تغيير وتوصيل السيرفر إلى (${cloudUrl})!` : '✅ تم إعادة ضبط السيرفر على Railway.');
             }}
-            style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ background: '#10b981', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            تخصيص رابط السيرفر ⚡
+            تحديث السيرفر ⚡
           </button>
         </div>
       </div>

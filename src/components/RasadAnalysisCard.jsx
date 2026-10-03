@@ -77,14 +77,17 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const [orderStatus, setOrderStatus] = useState('');
   const [orderError, setOrderError] = useState(false);
 
+  const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
+
   const fetchWithCloudFallback = async (endpoint, options = {}) => {
-    let cloudUrl = (localStorage.getItem('traden_cloud_url') || '').trim();
+    let cloudUrl = (localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL).trim();
     if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
       cloudUrl = `https://${cloudUrl}`;
     }
     const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     const hosts = [
       cloudUrl,
+      DEFAULT_RAILWAY_URL,
       currentOrigin,
       '',
       'http://localhost:5000',
