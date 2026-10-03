@@ -11,6 +11,7 @@ import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
 import EgxAnalysis from './components/EgxAnalysis';
 import TradingViewSparkline from './components/TradingViewSparkline';
+import PlatformsConnect from './components/PlatformsConnect';
 import './App.css';
 
 // Admin / Allowed User IDs or Master Activation Code
@@ -316,6 +317,7 @@ function App() {
     <div className="sticky-nav">
       {[
         { id: 'home', label: '🏠 الرئيسية' },
+        { id: 'platforms_connect', label: '🔗 ربط المنصات' },
         { id: 'egx_stocks', label: '🇪🇬 البورصة المصرية' },
         { id: 'signal_bot', label: '🤖 التوصيات' },
         { id: 'gold_liquidity', label: '🥇 سيولة الذهب' },
@@ -336,6 +338,15 @@ function App() {
   );
 
   // ✅ AUTHORIZED FULL APP VIEW
+  if (currentView === 'platforms_connect') {
+    return (
+      <div className="app-container">
+        {renderNav()}
+        <PlatformsConnect onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
   if (currentView === 'investment_bot') {
     return (
       <div className="app-container">
@@ -480,6 +491,11 @@ function App() {
             <span className="card-icon">📡</span>
             <div className="card-title">رادار الأسواق</div>
             <div className="badge" style={{ background: '#10b981', color: '#000' }}>حي 🔥</div>
+          </div>
+          <div className="card" onClick={() => setCurrentView('platforms_connect')} style={{ border: '1px solid rgba(59, 130, 246, 0.4)', background: 'rgba(59, 130, 246, 0.1)' }}>
+            <span className="card-icon">🔗</span>
+            <div className="card-title">ربط المنصات</div>
+            <div className="badge" style={{ background: '#3b82f6', color: '#fff' }}>ربط بروكر / API ⚡</div>
           </div>
           <div className="card" onClick={() => setCurrentView('market_scanner')}>
             <BarChart2 size={20} color="#60a5fa" />
