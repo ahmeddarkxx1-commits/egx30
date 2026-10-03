@@ -7,9 +7,11 @@ export default function PlatformsConnect({ onBack }) {
   const [saveStatus, setSaveStatus] = useState('');
   const [isError, setIsError] = useState(false);
 
-  // Live Account Details
+  // Live Account Details & Real-time Server Sync
   const [accountData, setAccountData] = useState(null);
   const [fetchingAccount, setFetchingAccount] = useState(false);
+  const [serverStatus, setServerStatus] = useState('connecting'); // 'connected' | 'connecting' | 'offline'
+  const [autoSynced, setAutoSynced] = useState(false);
 
   // Forex Form State
   const [forexBroker, setForexBroker] = useState(() => localStorage.getItem('traden_forex_broker') || 'Exness');
@@ -65,12 +67,50 @@ export default function PlatformsConnect({ onBack }) {
     try {
       const response = await fetchWithFallback('/api/account');
       if (response && response.ok) {
+        setServerStatus('connected');
         const data = await response.json();
         if (data && data.success) {
           setAccountData(data);
+          // Auto-sync stored credentials if server rebooted / state was cleared
+          if (!data.connected && !autoSynced) {
+            const savedLogin = localStorage.getItem('traden_mt5_login');
+            const savedPass = localStorage.getItem('traden_mt5_password');
+            const savedServer = localStorage.getItem('traden_mt5_server');
+            const savedBroker = localStorage.getItem('traden_forex_broker') || 'Exness';
+            if (savedLogin && savedPass && savedServer && savedServer !== 'ةة') {
+              setAutoSynced(true);
+              fetchWithFallback('/api/platforms/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'forex',
+                  broker: savedBroker,
+                  login: savedLogin,
+                  password: savedPass,
+                  server: savedServer
+                })
+              }).then(r => r.json()).then(d => {
+                if (d && d.success) {
+                  setAccountData({
+                    connected: true,
+                    broker: savedBroker,
+                    login: savedLogin,
+                    balance: d.balance || 0.0,
+                    equity: d.balance || 0.0,
+                    free_margin: d.balance || 0.0,
+                    currency: d.currency || 'USD',
+                    positions: []
+                  });
+                }
+              }).catch(() => {});
+            }
+          }
         }
+      } else {
+        setServerStatus('offline');
       }
     } catch (e) {
+      setServerStatus('offline');
       console.log('Account fetch error or standalone mode:', e);
     } finally {
       setFetchingAccount(false);
@@ -79,9 +119,10 @@ export default function PlatformsConnect({ onBack }) {
 
   useEffect(() => {
     fetchLiveAccount();
-    const interval = setInterval(fetchLiveAccount, 8000);
+    // Fast real-time live synchronization every 2500ms
+    const interval = setInterval(fetchLiveAccount, 2500);
     return () => clearInterval(interval);
-  }, []);
+  }, [autoSynced]);
 
   const handleSaveForex = async (e) => {
     if (e) e.preventDefault();
@@ -245,8 +286,20 @@ export default function PlatformsConnect({ onBack }) {
             <Server size={18} />
             <span>🌐 السيرفر السحابي النشط (Railway): <code style={{ color: '#38bdf8' }}>{cloudUrl || DEFAULT_RAILWAY_URL}</code></span>
           </div>
-          <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '2px 10px', borderRadius: '8px', fontWeight: 'bold' }}>
-            مربوط بسيرفر Railway 🟢
+          <span style={{
+            fontSize: '11px',
+            background: serverStatus === 'connected' ? 'rgba(16, 185, 129, 0.2)' : serverStatus === 'connecting' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+            color: serverStatus === 'connected' ? '#10b981' : serverStatus === 'connecting' ? '#f59e0b' : '#f87171',
+            border: `1px solid ${serverStatus === 'connected' ? '#10b981' : serverStatus === 'connecting' ? '#f59e0b' : '#f87171'}`,
+            padding: '3px 10px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: serverStatus === 'connected' ? '#10b981' : serverStatus === 'connecting' ? '#f59e0b' : '#f87171', display: 'inline-block' }}></span>
+            {serverStatus === 'connected' ? 'السيرفر متصل أونلاين 🟢' : serverStatus === 'connecting' ? 'جاري فحص السيرفر... 🟡' : 'السيرفر غير مستجيب 🔴'}
           </span>
         </div>
 
@@ -295,17 +348,24 @@ export default function PlatformsConnect({ onBack }) {
             </span>
           </div>
 
-          <span style={{
-            fontSize: '12px',
-            background: isConnected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-            color: isConnected ? '#10b981' : '#f59e0b',
-            border: `1px solid ${isConnected ? '#10b981' : '#f59e0b'}`,
-            padding: '4px 12px',
-            borderRadius: '12px',
-            fontWeight: 'bold'
-          }}>
-            {isConnected ? '🟢 متصل ومفعل' : '🟡 يتطلب إكمال الاتصال بالسيرفر'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {isConnected && (
+              <span style={{ fontSize: '11px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                ⚡ مزامنة لحظية حية
+              </span>
+            )}
+            <span style={{
+              fontSize: '12px',
+              background: isConnected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+              color: isConnected ? '#10b981' : '#f59e0b',
+              border: `1px solid ${isConnected ? '#10b981' : '#f59e0b'}`,
+              padding: '4px 12px',
+              borderRadius: '12px',
+              fontWeight: 'bold'
+            }}>
+              {isConnected ? '🟢 متصل ومفعل' : '🟡 يتطلب إكمال الاتصال بالسيرفر'}
+            </span>
+          </div>
         </div>
 
         {isConnected ? (

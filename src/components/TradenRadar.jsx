@@ -129,7 +129,7 @@ export default function TradenRadar({ onBack, onOpenBot }) {
     fetchLiveData();
     const interval = setInterval(() => {
       fetchLiveData();
-    }, 8000); // refresh every 8 seconds
+    }, 2500); // refresh every 2.5 seconds for real-time sync
     return () => clearInterval(interval);
   }, []);
 

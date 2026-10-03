@@ -37,7 +37,7 @@ function LiveMarketWidget({ onOpenBot }) {
 
   useEffect(() => {
     loadData(activeAsset);
-    const interval = setInterval(() => loadData(activeAsset), 10000);
+    const interval = setInterval(() => loadData(activeAsset), 2500);
     return () => clearInterval(interval);
   }, [activeAsset]);
 
