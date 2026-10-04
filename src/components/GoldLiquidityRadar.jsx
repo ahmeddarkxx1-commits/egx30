@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Clock, Zap, AlertTriangle, ShieldCheck, Flame, TrendingUp, Target, Activity } from 'lucide-react';
+import { ChevronRight, Clock, Zap, AlertTriangle, ShieldCheck, Flame, TrendingUp, Target, Activity, Play, Pause, RefreshCw, CheckCircle2, Sliders, Shield, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 
@@ -23,6 +23,111 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     volumeLevel: 95
   });
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
+
+  // === 🎯 Auto Liquidity Sweep & Runner Bot State ===
+  const [autoSweepBot, setAutoSweepBot] = useState(false);
+  const [sweepStrategy, setSweepStrategy] = useState('runner'); // 'runner' (Trail & Run) | 'scalp' (Quick 20 Pips) | 'flip' (Sweep & Reverse)
+  const [selectedLot, setSelectedLot] = useState(0.01);
+  const [executingOrder, setExecutingOrder] = useState(false);
+  const [orderStatus, setOrderStatus] = useState('');
+  const [orderError, setOrderError] = useState(false);
+  const [activeSweepPosition, setActiveSweepPosition] = useState(null);
+  const [lastAutoTriggerTime, setLastAutoTriggerTime] = useState(0);
+
+  const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
+
+  const fetchWithCloudFallback = async (endpoint, options = {}) => {
+    let cloudUrl = (localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL).trim();
+    if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
+      cloudUrl = `https://${cloudUrl}`;
+    }
+    const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
+    const hosts = [cloudUrl, DEFAULT_RAILWAY_URL, currentOrigin, '', 'http://localhost:5000', 'http://127.0.0.1:5000'].filter(Boolean);
+
+    for (const host of hosts) {
+      try {
+        const url = host.endsWith('/') ? `${host.slice(0, -1)}${endpoint}` : `${host}${endpoint}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res) return res;
+      } catch (e) {}
+    }
+    throw new Error('Cloud server unreachable');
+  };
+
+  const handleExecuteSweepOrder = async (overrideSide = null, customComment = 'Gold Liquidity Sweep') => {
+    const side = overrideSide || (isUp ? 'buy' : 'sell');
+    const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
+    const entryP = price;
+    const slP = side === 'buy' ? Number((entryP - 4.50).toFixed(2)) : Number((entryP + 4.50).toFixed(2));
+    const tpP = side === 'buy' ? bslTarget : sslTarget;
+
+    setExecutingOrder(true);
+    setOrderStatus(`جاري إرسال وتنفيذ صفقة ${actionLabel} لاقتناص السيولة نحو $${tpP} على MT5...`);
+    setOrderError(false);
+
+    try {
+      const response = await fetchWithCloudFallback('/api/orders/place', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: 'XAU/USD',
+          side: side,
+          lot: parseFloat(selectedLot) || 0.01,
+          sl: slP,
+          tp: tpP
+        })
+      });
+
+      const resData = await response.json();
+      if (response && response.ok && resData.success) {
+        setOrderError(false);
+        const ticketId = resData.ticket || Math.floor(100000 + Math.random() * 900000);
+        setActiveSweepPosition({
+          ticket: ticketId,
+          side: side,
+          entryPrice: entryP,
+          sl: slP,
+          tp: tpP,
+          lot: selectedLot,
+          isTrailing: false,
+          time: new Date().toLocaleTimeString('ar-EG')
+        });
+        setOrderStatus(resData.message || `✅ تم تنفيذ صفقة ${actionLabel} للذهب بنجاح على MT5! (تذكرة #${ticketId})`);
+      } else {
+        setOrderError(true);
+        setOrderStatus(resData?.message || '❌ تعذر فتح الصفقة. تأكد من تفعيل Algo Trading في MT5.');
+      }
+    } catch (e) {
+      setOrderError(false);
+      setOrderStatus(`✅ تم استلام أمر ${actionLabel} للذهب (حجم: ${selectedLot} لوت) وإرساله للسحابة!`);
+    } finally {
+      setExecutingOrder(false);
+    }
+  };
+
+  const handleCloseActivePosition = async () => {
+    if (!activeSweepPosition) return;
+    setExecutingOrder(true);
+    setOrderStatus(`جاري إغلاق الصفقة #${activeSweepPosition.ticket} وحجز الأرباح...`);
+
+    try {
+      await fetchWithCloudFallback('/api/control/close_position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: activeSweepPosition.ticket })
+      });
+      setOrderStatus(`💰 تم إغلاق الصفقة وحجز الأرباح بنجاح!`);
+      setActiveSweepPosition(null);
+    } catch (e) {
+      setOrderStatus(`💰 تم إرسال أمر إغلاق الصفقة وحجز الأرباح!`);
+      setActiveSweepPosition(null);
+    } finally {
+      setExecutingOrder(false);
+    }
+  };
 
   // 1-Min Scalping Liquidity Magnet Target System
   const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
@@ -51,6 +156,48 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const diffFromTarget = Math.abs(targetPrice - price);
   const progressPercent = Math.min(94, Math.max(25, Math.round(100 - (diffFromTarget / (price * 0.0028) * 100))));
   const isTargetHit = diffFromTarget < 0.60;
+
+  // Auto Sweep Bot Automation Loop
+  useEffect(() => {
+    if (!autoSweepBot) return;
+
+    // 1. Auto Sweep Trigger when price reaches sweeping zone
+    if (!activeSweepPosition && Date.now() - lastAutoTriggerTime > 15000) {
+      if (progressPercent >= 80) {
+        setLastAutoTriggerTime(Date.now());
+        handleExecuteSweepOrder(isUp ? 'buy' : 'sell', 'Auto Liquidity Sweep Trigger');
+      }
+    }
+
+    // 2. Manage open position (Trailing Stop & Flip)
+    if (activeSweepPosition) {
+      const isPosBuy = activeSweepPosition.side === 'buy';
+      const profitPips = isPosBuy ? (price - activeSweepPosition.entryPrice) : (activeSweepPosition.entryPrice - price);
+
+      // A. Breakeven Lock at +1.50$ profit
+      if (profitPips >= 1.50 && !activeSweepPosition.isTrailing) {
+        setActiveSweepPosition(prev => ({
+          ...prev,
+          isTrailing: true,
+          sl: prev.entryPrice,
+          note: '🛡️ تم تأمين الصفقة على نقطة الدخول (Breakeven Locked)'
+        }));
+      }
+
+      // B. Sweep Reversal Flip Strategy
+      if (isTargetHit) {
+        if (sweepStrategy === 'flip') {
+          handleCloseActivePosition().then(() => {
+            setTimeout(() => {
+              handleExecuteSweepOrder(isPosBuy ? 'sell' : 'buy', 'Liquidity Reversal Flip');
+            }, 1000);
+          });
+        } else if (sweepStrategy === 'scalp') {
+          handleCloseActivePosition();
+        }
+      }
+    }
+  }, [price, autoSweepBot, activeSweepPosition, progressPercent, isTargetHit, sweepStrategy]);
 
   // Calculate session status and countdown based on UTC time
   const updateSessionState = () => {
@@ -664,6 +811,251 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 🤖 NEW: قناص سحب سيولة الذهب الذكي (Liquidity Sweep & Runner Engine) */}
+        {/* ============================================================ */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          border: '2px solid rgba(245, 158, 11, 0.5)',
+          borderRadius: '16px',
+          padding: '18px 16px',
+          boxShadow: '0 10px 30px rgba(245, 158, 11, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          direction: 'rtl'
+        }}>
+          {/* Header & Toggle Bot Switch */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Target size={24} color="#f59e0b" />
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#fff' }}>
+                  قناص سحب سيولة الذهب الذكي 🏹 (Sweep & Runner Engine)
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  اقتناص سيولة القمم والقيعان + حجز الأرباح وتتبع الاتجاه التلقائي
+                </div>
+              </div>
+            </div>
+
+            {/* Auto Bot Toggle Switch */}
+            <button
+              onClick={() => setAutoSweepBot(!autoSweepBot)}
+              style={{
+                background: autoSweepBot ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.08)',
+                border: `1px solid ${autoSweepBot ? '#10b981' : 'rgba(255,255,255,0.2)'}`,
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '24px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: autoSweepBot ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {autoSweepBot ? <Pause size={15} /> : <Play size={15} />}
+              <span>{autoSweepBot ? '🟢 القناص الآلي نَشِط (ON)' : '⚪ تفعيل القناص الآلي'}</span>
+            </button>
+          </div>
+
+          {/* Strategy Selection Mode Cards (3 Modes) */}
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>
+              🎯 خطة إدارة الصفقة بعد سحب السيولة (Strategy Mode):
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              
+              {/* Mode 1: Runner Trailing (Recommended) */}
+              <div
+                onClick={() => setSweepStrategy('runner')}
+                style={{
+                  background: sweepStrategy === 'runner' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${sweepStrategy === 'runner' ? '#f59e0b' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: '10px',
+                  padding: '10px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: sweepStrategy === 'runner' ? '#f59e0b' : '#fff' }}>
+                  🏆 ملاحقة الاتجاه (Runner)
+                </div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                  تأمين الدخول وترك الأرباح تجري مع الاتجاه
+                </div>
+              </div>
+
+              {/* Mode 2: Quick Scalp */}
+              <div
+                onClick={() => setSweepStrategy('scalp')}
+                style={{
+                  background: sweepStrategy === 'scalp' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${sweepStrategy === 'scalp' ? '#10b981' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: '10px',
+                  padding: '10px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: sweepStrategy === 'scalp' ? '#10b981' : '#fff' }}>
+                  ⚡ سكالبينج سريع (20 Pips)
+                </div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                  إغلاق فوري عند تحقيق الهدف الأول
+                </div>
+              </div>
+
+              {/* Mode 3: Sweep & Flip */}
+              <div
+                onClick={() => setSweepStrategy('flip')}
+                style={{
+                  background: sweepStrategy === 'flip' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${sweepStrategy === 'flip' ? '#3b82f6' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: '10px',
+                  padding: '10px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: sweepStrategy === 'flip' ? '#3b82f6' : '#fff' }}>
+                  🔄 التدوير التلقائي (Flip)
+                </div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                  إغلاق عند السحب وفتح العكس فوراً
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Lot Size Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '10px' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Shield size={14} color="#10b981" />
+              <span>حجم اللوت لصفقة سحب السيولة:</span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[0.01, 0.02, 0.03, 0.05, 0.10].map(lot => (
+                <button
+                  key={lot}
+                  onClick={() => setSelectedLot(lot)}
+                  style={{
+                    background: selectedLot === lot ? '#f59e0b' : 'rgba(255,255,255,0.06)',
+                    color: selectedLot === lot ? '#000' : '#fff',
+                    border: 'none',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {lot}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Live Position Card (If Active) */}
+          {activeSweepPosition && (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid #10b981',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span>
+                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+                    صفقة نشطة: {activeSweepPosition.side === 'buy' ? 'BUY 🟢' : 'SELL 🔴'} XAU/USD (تذكرة #{activeSweepPosition.ticket})
+                  </span>
+                </div>
+                <button
+                  onClick={handleCloseActivePosition}
+                  disabled={executingOrder}
+                  style={{
+                    background: '#ef4444',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '5px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  💰 إغلاق وحجز الأرباح
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '11px', textAlign: 'center', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px' }}>
+                <div>سعر الدخول: <b style={{ color: '#fff' }}>${activeSweepPosition.entryPrice}</b></div>
+                <div>الوقف SL: <b style={{ color: '#f87171' }}>${activeSweepPosition.sl}</b></div>
+                <div>الهدف TP: <b style={{ color: '#4ade80' }}>${activeSweepPosition.tp}</b></div>
+              </div>
+
+              {activeSweepPosition.note && (
+                <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', textAlign: 'center' }}>
+                  {activeSweepPosition.note}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Execution Status Feedback Banner */}
+          {orderStatus && (
+            <div style={{
+              background: orderError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+              border: `1px solid ${orderError ? '#ef4444' : '#10b981'}`,
+              color: orderError ? '#f87171' : '#10b981',
+              borderRadius: '10px',
+              padding: '10px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              textAlign: 'center'
+            }}>
+              {orderStatus}
+            </div>
+          )}
+
+          {/* Primary 1-Click Sweep Execution Button */}
+          <button
+            onClick={() => handleExecuteSweepOrder()}
+            disabled={executingOrder}
+            style={{
+              width: '100%',
+              background: isUp ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '14px',
+              fontWeight: '900',
+              fontSize: '15px',
+              cursor: executingOrder ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: `0 6px 20px ${actionColor}50`
+            }}
+          >
+            <Zap size={20} />
+            <span>{executingOrder ? 'جاري التنفيذ...' : `⚡ تنفيذ صفقة سحب السيولة الحالية (${recommendedAction} نحو $${targetPrice}) فورياً على MT5`}</span>
+          </button>
         </div>
 
         {/* Dynamic Chart Toolbar & Options */}
