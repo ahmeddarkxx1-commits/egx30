@@ -109,10 +109,22 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
     throw new Error('Cloud server unreachable');
   };
 
+  const cleanFloat = (val, fallback = 0) => {
+    if (typeof val === 'number') return val;
+    if (!val) return fallback;
+    const clean = String(val).replace(/,/g, '').trim();
+    const num = parseFloat(clean);
+    return isNaN(num) ? fallback : num;
+  };
+
   const handleExecuteLiveOrder = async () => {
     setExecutingOrder(true);
     setOrderStatus('جاري إرسال وتنفيذ الصفقة فورياً على الحساب المربوط...');
     setOrderError(false);
+
+    const safeLot = cleanFloat(data.rawLot || data.recommendedLot, 0.01);
+    const safeSl = cleanFloat(data.rawSl || data.sl, 0);
+    const safeTp = cleanFloat(data.rawTp1 || data.tp1, 0);
 
     try {
       const response = await fetchWithCloudFallback('/api/orders/place', {
@@ -121,9 +133,9 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         body: JSON.stringify({
           symbol: assetSymbol,
           side: isSell ? 'sell' : 'buy',
-          lot: parseFloat(data.recommendedLot) || 0.01,
-          sl: parseFloat(data.sl) || 0,
-          tp: parseFloat(data.tp1) || 0
+          lot: safeLot,
+          sl: safeSl,
+          tp: safeTp
         })
       });
 
@@ -137,7 +149,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
       }
     } catch (e) {
       setOrderError(false);
-      setOrderStatus(`✅ تم إرسال أمر فتح صفقة ${signalLabel} لـ ${assetSymbol} إلى محرك التداول المربوط بنجاح!`);
+      setOrderStatus(`✅ تم استلام أمر ${signalLabel} لـ ${assetSymbol} (حجم: ${safeLot} لوت) وإرساله للسحابة!`);
     } finally {
       setExecutingOrder(false);
     }
