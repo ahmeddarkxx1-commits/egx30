@@ -38,15 +38,67 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const wsRef = useRef(null);
   const [priceHistory, setPriceHistory] = useState([]);
   const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
-  const [sessionInfo, setSessionInfo] = useState({
-    title: 'تداخل لندن ونيويورك',
-    enTag: 'Peak Overlap',
-    status: 'peak',
-    color: '#10b981',
-    badge: 'ذروة السيولة 🔥',
-    desc: 'أقوى وأعلى فترة حركة وسيولة للذهب على مدار اليوم. فرصة عالية جداً للسكالبينج والصفقات السريعة.',
-    volumeLevel: 95
-  });
+  const computeSessionInfo = (now = new Date()) => {
+    const utcHour = now.getUTCHours();
+    const utcMin = now.getUTCMinutes();
+    const timeVal = utcHour + utcMin / 60;
+
+    if (timeVal >= 12 && timeVal < 16) {
+      return {
+        title: 'تداخل لندن ونيويورك',
+        enTag: 'Peak Overlap',
+        status: 'peak',
+        color: '#10b981',
+        badge: 'ذروة السيولة 🔥',
+        desc: 'أقوى وأعلى فترة حركة وسيولة للذهب على مدار اليوم. فرصة عالية جداً للسكالبينج والصفقات السريعة.',
+        volumeLevel: 95
+      };
+    }
+    if (timeVal >= 7 && timeVal < 12) {
+      return {
+        title: 'جلسة لندن الأوروبية',
+        enTag: 'London Session',
+        status: 'high',
+        color: '#3b82f6',
+        badge: 'سيولة عالية ⚡',
+        desc: 'افتتاح وتداول البنوك الأوروبية ولندن. نشاط وحركة اتجاهية قوية في الذهب والعملات.',
+        volumeLevel: 85
+      };
+    }
+    if (timeVal >= 16 && timeVal < 21) {
+      return {
+        title: 'جلسة نيويورك الأمريكية',
+        enTag: 'New York Session',
+        status: 'high',
+        color: '#f59e0b',
+        badge: 'نشاط أمريكي 🇺🇸',
+        desc: 'جلسة التداول الأمريكية بعد إغلاق لندن. تحركات قوية مع تداولات وول ستريت.',
+        volumeLevel: 80
+      };
+    }
+    if (timeVal >= 21 && timeVal < 23) {
+      return {
+        title: 'إغلاق نيويورك وبداية سيدني',
+        enTag: 'Late NY / Sydney Open',
+        status: 'moderate',
+        color: '#a855f7',
+        badge: 'سيولة متوسطة 🌙',
+        desc: 'فترة ختام التداولات الأمريكية وافتتاح السوق الأسترالي. الحركة تتجه للهدوء النسبي.',
+        volumeLevel: 45
+      };
+    }
+    return {
+      title: 'الجلسة الآسيوية (طوكيو)',
+      enTag: 'Asian Session',
+      status: 'low',
+      color: '#64748b',
+      badge: 'سيولة هادئة 💤',
+      desc: 'تداولات هادئة ونطاقات تذبذب ضيقة (Consolidation) بانتظار افتتاح لندن.',
+      volumeLevel: 30
+    };
+  };
+
+  const [sessionInfo, setSessionInfo] = useState(() => computeSessionInfo());
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
 
   // === 🎯 Auto Liquidity Sweep & Multi-Order Grid Engine State ===
@@ -371,7 +423,9 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   // Live Binance WebSocket for XAU/USD
   useEffect(() => {
     const clockInterval = setInterval(() => {
-      setCurrentTimeUTC(new Date().toUTCString().slice(17, 25));
+      const now = new Date();
+      setCurrentTimeUTC(now.toUTCString().slice(17, 25));
+      setSessionInfo(computeSessionInfo(now));
     }, 1000);
 
     const pollInterval = setInterval(async () => {
