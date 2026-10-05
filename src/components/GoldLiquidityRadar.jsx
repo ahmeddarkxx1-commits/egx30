@@ -1211,15 +1211,50 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           </div>
         ) : (
           <div style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '12px',
-            textAlign: 'center',
-            fontSize: '12px',
-            color: '#94a3b8'
+            background: 'rgba(0,0,0,0.4)',
+            border: autoSweepBot ? '1px solid rgba(16, 185, 129, 0.4)' : '1px dashed rgba(255,255,255,0.12)',
+            borderRadius: '14px',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
           }}>
-            لا توجد صفقات نشطة حالياً في حساب MT5
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={16} color={autoSweepBot ? '#10b981' : '#f59e0b'} />
+                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+                  {autoSweepBot ? 'القناص الآلي نشط ويرصد السوق لحظياً 🎯' : 'حالة رادار قناص الذهب:'}
+                </span>
+              </div>
+              <span style={{ 
+                background: autoSweepBot ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)', 
+                color: autoSweepBot ? '#10b981' : '#94a3b8', 
+                padding: '2px 8px', 
+                borderRadius: '10px', 
+                fontSize: '10px', 
+                fontWeight: 'bold' 
+              }}>
+                {autoSweepBot ? 'Scanning M1/M5 Live ⚡' : 'بانتظار الإشارة ⚪'}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              {autoSweepBot ? (
+                <>
+                  🔍 <b>النشاط الحالي:</b> جاري مراقبة كسر مناطق السيولة عند <code>${sweepKeyLevel}</code> وتأكيد شمعة الارتداد لفتح صفقة الاختبار (0.01 لوت) تلقائياً.
+                </>
+              ) : (
+                <>
+                  لا توجد صفقات مفتوحة حالياً. يمكنك الضغط على <b>"تشغيل القناص الآلي"</b> بالأعلى للتداول الذكي الآلي، أو فتح صفقة الاختبار يدوياً بالزر أدناه.
+                </>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '10.5px', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '8px', textAlign: 'center' }}>
+              <div>السعر اللحظي: <b style={{ color: '#f59e0b' }}>${price}</b></div>
+              <div>السبريد: <b>${spreadGold}</b></div>
+              <div>المرحلة: <b style={{ color: '#38bdf8' }}>1. اختبار (0.01)</b></div>
+            </div>
           </div>
         )}
 
