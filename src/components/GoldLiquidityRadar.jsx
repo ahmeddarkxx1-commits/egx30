@@ -104,6 +104,39 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     localStorage.setItem('traden_gold_split_mode', orderSplitMode);
   }, [orderSplitMode]);
 
+  // 1-Min Scalping Liquidity Magnet Target System
+  const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
+  let isUp = goldTicker ? goldTicker.isUp : false;
+  if (signalMode === 'buy') isUp = true;
+  if (signalMode === 'sell') isUp = false;
+
+  // Spread-Aware Calculation on Gold (Typical standard spread 0.20 USD)
+  const spreadGold = 0.20;
+  const bslTarget = Number((price + 1.65).toFixed(2));
+  const sslTarget = Number((price - 1.65).toFixed(2));
+  const targetPrice = isUp ? bslTarget : sslTarget;
+  const nextReboundTarget = isUp ? (price - 1.80).toFixed(2) : (price + 1.80).toFixed(2);
+  
+  const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
+  const rawActionText = isUp ? 'اشـتري الآن 🟢' : 'بـع الآن 🔴';
+  const oppositeAction = isUp ? 'بيع 🔴 (SELL)' : 'شراء 🟢 (BUY)';
+  const oppositeActionText = isUp ? 'بيع 🔴' : 'شراء 🟢';
+  const actionColor = isUp ? '#10b981' : '#ef4444';
+  const oppositeColor = isUp ? '#ef4444' : '#10b981';
+  const arrowSymbol = isUp ? '⬆️' : '⬇️';
+
+  // Bias indicator
+  const sweepBiasTitle = isUp ? 'سحب سيولة القاع' : 'سحب سيولة القمة';
+  const sweepBiasTag = isUp ? 'Sweep Low / Buy Bias' : 'Sweep High / Sell Bias';
+  const sweepKeyLevel = isUp ? sslTarget : bslTarget;
+
+  // Calculate live 1-min progress to target
+  const diffFromTarget = Math.abs(targetPrice - price);
+  const progressPercent = Math.min(96, Math.max(20, Math.round(100 - (diffFromTarget / 1.65 * 100))));
+  const isTargetHit = diffFromTarget < 0.35;
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
 
   const fetchWithCloudFallback = async (endpoint, options = {}) => {
@@ -173,39 +206,6 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     const interval = setInterval(syncLiveMt5Positions, 3500);
     return () => clearInterval(interval);
   }, [price]);
-
-  // 1-Min Scalping Liquidity Magnet Target System
-  const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
-  let isUp = goldTicker ? goldTicker.isUp : false;
-  if (signalMode === 'buy') isUp = true;
-  if (signalMode === 'sell') isUp = false;
-
-  // Spread-Aware Calculation on Gold (Typical standard spread 0.20 USD)
-  const spreadGold = 0.20;
-  const bslTarget = Number((price + 1.65).toFixed(2));
-  const sslTarget = Number((price - 1.65).toFixed(2));
-  const targetPrice = isUp ? bslTarget : sslTarget;
-  const nextReboundTarget = isUp ? (price - 1.80).toFixed(2) : (price + 1.80).toFixed(2);
-  
-  const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
-  const rawActionText = isUp ? 'اشـتري الآن 🟢' : 'بـع الآن 🔴';
-  const oppositeAction = isUp ? 'بيع 🔴 (SELL)' : 'شراء 🟢 (BUY)';
-  const oppositeActionText = isUp ? 'بيع 🔴' : 'شراء 🟢';
-  const actionColor = isUp ? '#10b981' : '#ef4444';
-  const oppositeColor = isUp ? '#ef4444' : '#10b981';
-  const arrowSymbol = isUp ? '⬆️' : '⬇️';
-
-  // Bias indicator
-  const sweepBiasTitle = isUp ? 'سحب سيولة القاع' : 'سحب سيولة القمة';
-  const sweepBiasTag = isUp ? 'Sweep Low / Buy Bias' : 'Sweep High / Sell Bias';
-  const sweepKeyLevel = isUp ? sslTarget : bslTarget;
-
-  // Calculate live 1-min progress to target
-  const diffFromTarget = Math.abs(targetPrice - price);
-  const progressPercent = Math.min(96, Math.max(20, Math.round(100 - (diffFromTarget / 1.65 * 100))));
-  const isTargetHit = diffFromTarget < 0.35;
-
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // === 🚀 1. Multi-Order Grid Execution (5 صفقات متزامنة معاً على MT5 الحقيقي) ===
   const handleExecuteSweepOrder = async (overrideSide = null, customComment = 'Gold Liquidity Sweep', currentWave = scalpWave) => {
