@@ -91,48 +91,63 @@ export default function AutoPilotTrader({ onBack }) {
     throw new Error('Cloud server unreachable');
   };
 
-  // Save changes to localStorage
-  useEffect(() => {
-    localStorage.setItem('traden_autopilot_active', isAutoPilotActive ? 'true' : 'false');
-  }, [isAutoPilotActive]);
+  // Sync with Cloud Server 24/7
+  const [serverSynced, setServerSynced] = useState(false);
 
+  // Load state from Cloud Server on mount
   useEffect(() => {
-    localStorage.setItem('traden_autopilot_pairs', JSON.stringify(selectedPairs));
-  }, [selectedPairs]);
-
-  useEffect(() => {
-    localStorage.setItem('traden_autopilot_lot', selectedLot.toString());
-  }, [selectedLot]);
-
-  useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(`traden_autopilot_quota_${today}`, JSON.stringify(dailyQuota));
-  }, [dailyQuota]);
-
-  useEffect(() => {
-    localStorage.setItem('traden_autopilot_active_trades', JSON.stringify(activeAutoTrades));
-  }, [activeAutoTrades]);
-
-  // Live Prices Ticker Loop for Selected Pairs
-  useEffect(() => {
-    const pollPrices = async () => {
-      const activeList = selectedPairs.filter(p => p.enabled);
-      const newP = { ...livePrices };
-      for (const p of activeList) {
-        try {
-          const t = await fetchLiveAssetTicker(p.symbol);
-          if (t && t.price) {
-            newP[p.symbol] = { price: t.price, change: t.change24h || 0, isUp: t.isUp };
+    const fetchServerState = async () => {
+      try {
+        const res = await fetchWithCloudFallback('/api/autopilot/state');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.state) {
+            setServerSynced(true);
+            setIsAutoPilotActive(data.state.active);
+            if (data.state.pairs && data.state.pairs.length > 0) {
+              setSelectedPairs(data.state.pairs);
+            }
+            if (data.state.lot) {
+              setSelectedLot(data.state.lot);
+            }
+            if (data.state.executed_today !== undefined) {
+              setDailyQuota(prev => ({ ...prev, executedCount: data.state.executed_today }));
+            }
           }
-        } catch (e) {}
+        }
+      } catch (e) {
+        console.log('Server autopilot sync error:', e);
       }
-      setLivePrices(newP);
     };
-
-    pollPrices();
-    const interval = setInterval(pollPrices, 2500);
+    fetchServerState();
+    const interval = setInterval(fetchServerState, 8000);
     return () => clearInterval(interval);
-  }, [selectedPairs]);
+  }, []);
+
+  const handleToggleAutoPilot = async (newState) => {
+    setIsAutoPilotActive(newState);
+    try {
+      await fetchWithCloudFallback('/api/autopilot/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: newState, lot: selectedLot })
+      });
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت وتثبيته على السيرفر (شغال 24/7 حتى لو أغلقت تيليجرام)' : '⏸️ تم إيقاف الأوتوبايلوت على السيرفر.');
+    } catch (e) {
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت.' : '⏸️ تم إيقاف الأوتوبايلوت.');
+    }
+  };
+
+  const handleUpdatePairsOnServer = async (newPairs, newLot = selectedLot) => {
+    setSelectedPairs(newPairs);
+    try {
+      await fetchWithCloudFallback('/api/autopilot/update_pairs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pairs: newPairs, lot: newLot })
+      });
+    } catch (e) {}
+  };
 
   // Autonomous Daily Hunter Engine Loop
   useEffect(() => {
@@ -268,12 +283,14 @@ export default function AutoPilotTrader({ onBack }) {
 
   // Toggle Pair Selection
   const handleTogglePair = (sym) => {
-    setSelectedPairs(prev => prev.map(p => p.symbol === sym ? { ...p, enabled: !p.enabled } : p));
+    const updated = selectedPairs.map(p => p.symbol === sym ? { ...p, enabled: !p.enabled } : p);
+    handleUpdatePairsOnServer(updated);
   };
 
   // Delete Pair
   const handleDeletePair = (sym) => {
-    setSelectedPairs(prev => prev.filter(p => p.symbol !== sym));
+    const updated = selectedPairs.filter(p => p.symbol !== sym);
+    handleUpdatePairsOnServer(updated);
   };
 
   // Add Custom Pair
@@ -283,12 +300,13 @@ export default function AutoPilotTrader({ onBack }) {
     const cleanName = newPairName.trim() || cleanSym;
 
     if (!selectedPairs.some(p => p.symbol === cleanSym)) {
-      setSelectedPairs(prev => [...prev, {
+      const updated = [...selectedPairs, {
         symbol: cleanSym,
         name: cleanName,
         enabled: true,
         category: 'Custom'
-      }]);
+      }];
+      handleUpdatePairsOnServer(updated);
     }
     setNewPairInput('');
     setNewPairName('');
@@ -318,7 +336,7 @@ export default function AutoPilotTrader({ onBack }) {
           gap: '6px'
         }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isAutoPilotActive ? '#10b981' : '#ef4444', boxShadow: isAutoPilotActive ? '0 0 8px #10b981' : 'none' }}></span>
-          <span>{isAutoPilotActive ? 'الأوتوبايلوت نَشِط 🟢' : 'الأوتوبايلوت مُتوقف ⚪'}</span>
+          <span>{isAutoPilotActive ? 'الأوتوبايلوت نَشِط (24/7 سحابي) 🟢' : 'الأوتوبايلوت مُتوقف ⚪'}</span>
         </div>
       </div>
 
@@ -360,7 +378,7 @@ export default function AutoPilotTrader({ onBack }) {
 
           {/* Master ON/OFF Switch */}
           <button
-            onClick={() => setIsAutoPilotActive(!isAutoPilotActive)}
+            onClick={() => handleToggleAutoPilot(!isAutoPilotActive)}
             style={{
               background: isAutoPilotActive ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : 'rgba(255,255,255,0.08)',
               border: `1px solid ${isAutoPilotActive ? '#10b981' : 'rgba(255,255,255,0.2)'}`,
