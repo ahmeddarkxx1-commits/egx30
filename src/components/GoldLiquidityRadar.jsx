@@ -28,7 +28,8 @@ import {
   Info,
   Award,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Check
 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
@@ -44,6 +45,10 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const wsRef = useRef(null);
   const [priceHistory, setPriceHistory] = useState([]);
   const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
+
+  // === 🛡️ EXECUTION MUTEX & DEBOUNCE REFS (Prevents any duplicate loop calls) ===
+  const isExecutingRef = useRef(false);
+  const lastOrderTimestampRef = useRef(0);
 
   // === 🎯 DAILY TARGET & RISK RULES ($20 Target / $10 Max Loss) ===
   const DAILY_TARGET = 20.0;
@@ -73,7 +78,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     return null;
   });
 
-  // Save Daily PnL changes
+  // Save Daily PnL changes & Trigger Daily Lock when limits reached
   useEffect(() => {
     const today = getTodayKey();
     localStorage.setItem('traden_gold_daily_date', today);
@@ -124,6 +129,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     setDailyPnL(0.0);
     localStorage.setItem('traden_gold_daily_pnl', '0.0');
     clearCooldown();
+    setOrderStatus('🔄 تم إعادة ضبط عداد اليوم بنجاح.');
   };
 
   // Dynamic Real-time Session Calculator
@@ -200,7 +206,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   // REAL LIVE MT5 POSITIONS (Synced with /api/account)
   const [activeSweepPositions, setActiveSweepPositions] = useState([]);
   const [isMt5Connected, setIsMt5Connected] = useState(false);
-  const [lastAutoTriggerTime, setLastAutoTriggerTime] = useState(0);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // 1-Min Scalping Liquidity Magnet Target System
   const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
@@ -222,8 +228,6 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const sweepBiasTitle = isUp ? 'سحب سيولة القاع (Liquidity Sweep Low)' : 'سحب سيولة القمة (Liquidity Sweep High)';
   const sweepBiasTag = isUp ? 'Sweep Low / Bullish Reaction' : 'Sweep High / Bearish Reaction';
   const sweepKeyLevel = isUp ? sslTarget : bslTarget;
-
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
 
@@ -248,7 +252,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     throw new Error('Cloud server unreachable');
   };
 
-  // === 🔄 REAL-TIME SYNC WITH REAL MT5 ACCOUNT POSITIONS ===
+  // === 🔄 REAL-TIME SYNC WITH REAL MT5 ACCOUNT POSITIONS (Matches XAUUSDm / GOLD / All pairs) ===
   const syncLiveMt5Positions = async () => {
     try {
       const response = await fetchWithCloudFallback('/api/account');
@@ -258,7 +262,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         
         const rawPositions = Array.isArray(data.positions) ? data.positions : [];
         
-        // Format and display all active positions currently open on MT5
+        // Match Gold positions (XAUUSDm, XAUUSD, GOLD, etc.) and other account pairs
         const formatted = rawPositions.map((p, idx) => {
           const side = String(p.type || '').toLowerCase().includes('buy') || p.type === 0 ? 'buy' : 'sell';
           const sym = String(p.symbol || '').toUpperCase();
@@ -291,24 +295,30 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         setActiveSweepPositions(formatted);
       }
     } catch (err) {
-      // If network offline, don't invent fake positions
+      // Offline fallback
     }
   };
 
-  // Poll live MT5 account every 3 seconds
+  // Fast live MT5 polling every 2.5 seconds
   useEffect(() => {
     syncLiveMt5Positions();
-    const interval = setInterval(syncLiveMt5Positions, 3000);
+    const interval = setInterval(syncLiveMt5Positions, 2500);
     return () => clearInterval(interval);
   }, [price]);
 
-  // Determine current Scout & Scale-In Cycle Stage (1 to 4)
+  // Derived Position Metrics
   const totalRealProfit = activeSweepPositions.reduce((acc, p) => acc + (p.profit || 0), 0);
   const totalOpenLots = activeSweepPositions.reduce((acc, p) => acc + (p.lot || 0), 0).toFixed(2);
-  const hasScoutTrade = activeSweepPositions.length === 1;
-  const hasScaleInTrades = activeSweepPositions.length >= 2;
-  const isScoutInProfit = hasScoutTrade && totalRealProfit >= 0.70;
+  const goldPositions = activeSweepPositions.filter(p => {
+    const s = String(p.symbol || '').toUpperCase();
+    return s.includes('XAU') || s.includes('GOLD');
+  });
+  
+  const hasScoutTrade = goldPositions.length === 1;
+  const hasScaleInTrades = goldPositions.length >= 2;
+  const isScoutInProfit = hasScoutTrade && totalRealProfit >= 1.50;
 
+  // Compute Active Cycle Stage (1 to 4)
   let currentCycleStage = 1;
   if (dailyLocked === 'target_reached') {
     currentCycleStage = 4;
@@ -322,6 +332,15 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
   // === 🎯 1. SCOUT TRADE (فتح صفقة اختبار 0.01 لوت بستوب وقائي 3.0$) ===
   const handleExecuteScoutTrade = async (overrideSide = null) => {
+    const now = Date.now();
+    
+    // Front-end Mutex & Debounce Guard: 15s minimum spacing
+    if (isExecutingRef.current || (now - lastOrderTimestampRef.current < 15000)) {
+      const waitSec = Math.ceil((15000 - (now - lastOrderTimestampRef.current)) / 1000);
+      setOrderStatus(`⏳ جاري معالجة الأوامر السابقة. يرجى الانتظار ${waitSec > 0 ? waitSec : 1} ثواني.`);
+      return;
+    }
+
     if (dailyLocked) {
       setOrderStatus(`🛑 التداول مقفل اليوم: ${dailyLocked === 'target_reached' ? 'تم تحقيق الهدف $20 🎉' : 'تم بلوغ حد الخسارة -$10 🛡️'}`);
       setOrderError(true);
@@ -334,13 +353,23 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
       return;
     }
 
+    if (goldPositions.length >= 1) {
+      setOrderStatus(`⚠️ توجد صفقة ذهب مفتوحة بالفعل في حسابك على MT5. لا يمكن فتح صفقة اختبار جديدة.`);
+      setOrderError(true);
+      return;
+    }
+
+    isExecutingRef.current = true;
+    lastOrderTimestampRef.current = now;
+    setExecutingOrder(true);
+
     const side = overrideSide || (isUp ? 'buy' : 'sell');
     const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
     const entryP = price;
     
-    // Logical Stop Loss (3.00$ on Gold to survive spread) and TP ($3.50)
+    // Logical Stop Loss ($3.00 on Gold to survive spread) and TP ($3.80)
     const slDist = 3.00;
-    const tpDist = 3.50;
+    const tpDist = 3.80;
 
     const subSl = side === 'buy' 
       ? Number((entryP - slDist - spreadGold).toFixed(2)) 
@@ -350,16 +379,15 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
       ? Number((entryP + tpDist + spreadGold).toFixed(2)) 
       : Number((entryP - tpDist - spreadGold).toFixed(2));
 
-    setExecutingOrder(true);
     setOrderStatus(`🎯 جاري إرسال صفقة اختبار السوق (Scout Trade: 0.01 Lot - ${actionLabel}) إلى MT5...`);
     setOrderError(false);
 
     try {
-      await fetchWithCloudFallback('/api/orders/place', {
+      const res = await fetchWithCloudFallback('/api/orders/place', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          symbol: 'XAU/USD',
+          symbol: 'XAUUSDm',
           side: side,
           lot: 0.01,
           sl: subSl,
@@ -368,25 +396,51 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         })
       });
 
-      setOrderError(false);
-      setOrderStatus(`✅ تم فتح صفقة الاختبار (0.01 Lot) بنجاح! نراقب تأكيد الاتجاه وتأمين الدخول.`);
+      const resData = await res.json();
+      if (res.ok && resData.success !== false) {
+        setOrderError(false);
+        setOrderStatus(`✅ تم فتح صفقة الاختبار (0.01 Lot) بنجاح! نراقب تأكيد الاتجاه وتأمين الدخول.`);
+      } else {
+        setOrderError(true);
+        setOrderStatus(`⚠️ ${resData.message || 'تعذر فتح الصفقة.'}`);
+      }
+
       setTimeout(syncLiveMt5Positions, 1000);
-      setTimeout(syncLiveMt5Positions, 2500);
+      setTimeout(syncLiveMt5Positions, 3000);
     } catch (e) {
       setOrderError(true);
       setOrderStatus(`⚠️ تعذر إرسال صفقة الاختبار إلى MT5. تأكد من تشغيل الجسر على الـ VPS.`);
     } finally {
-      setExecutingOrder(false);
+      setTimeout(() => {
+        isExecutingRef.current = false;
+        setExecutingOrder(false);
+      }, 2000);
     }
   };
 
   // === 🚀 2. SCALE-IN (تعزيز بصفقتين 0.01 بعد تأمين صفقة الاختبار) ===
   const handleExecuteScaleIn = async () => {
+    const now = Date.now();
+    if (isExecutingRef.current || (now - lastOrderTimestampRef.current < 15000)) {
+      setOrderStatus(`⏳ يرجى الانتظار قليلاً قبل إرسال أمر التعزيز.`);
+      return;
+    }
+
     if (dailyLocked) {
       setOrderStatus(`🛑 التداول مقفل اليوم.`);
       setOrderError(true);
       return;
     }
+
+    if (goldPositions.length >= 3) {
+      setOrderStatus(`⚠️ تم بلوغ الحد الأقصى للصفقات (3 صفقات كحد أقصى).`);
+      setOrderError(true);
+      return;
+    }
+
+    isExecutingRef.current = true;
+    lastOrderTimestampRef.current = now;
+    setExecutingOrder(true);
 
     const side = isUp ? 'buy' : 'sell';
     const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
@@ -394,7 +448,6 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     const slDist = 2.50;
     const tpDist = 4.20;
 
-    setExecutingOrder(true);
     setOrderStatus(`🚀 جاري تأمين صفقة الاختبار وتعزيز بصفقتين (0.01x2 - ${actionLabel}) على MT5...`);
     setOrderError(false);
 
@@ -416,7 +469,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            symbol: 'XAU/USD',
+            symbol: 'XAUUSDm',
             side: side,
             lot: 0.01,
             sl: subSl,
@@ -429,12 +482,15 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
       setOrderError(false);
       setOrderStatus(`✅ تم تأمين الاختبار وفتح صفقتي التعزيز (0.01x2) بنجاح! جاري متابعة الهدف.`);
       setTimeout(syncLiveMt5Positions, 1000);
-      setTimeout(syncLiveMt5Positions, 2500);
+      setTimeout(syncLiveMt5Positions, 3000);
     } catch (e) {
       setOrderError(true);
       setOrderStatus(`⚠️ تعذر تنفيذ التعزيز.`);
     } finally {
-      setExecutingOrder(false);
+      setTimeout(() => {
+        isExecutingRef.current = false;
+        setExecutingOrder(false);
+      }, 2000);
     }
   };
 
@@ -463,7 +519,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           return nextVal;
         });
 
-        // Check if trade resulted in loss -> trigger 20 min cooldown
+        // If closed at loss -> trigger 20 min cooldown
         if (closedProfit < -1.0) {
           triggerCooldown();
         }
@@ -508,45 +564,52 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     }
   };
 
-  // Toggle Auto Bot
+  // Toggle Auto Bot (Single Unified Controller)
   const toggleAutoBot = (newState) => {
     if (dailyLocked) {
-      setOrderStatus(`🛑 لا يمكن تشغيل البوت اليوم بسبب بلوغ سقف الهدف أو الخسارة.`);
+      setOrderStatus(`🛑 لا يمكن تشغيل البوت اليوم بسبب بلوغ سقف الهدف ($20) أو الخسارة (-$10).`);
       setOrderError(true);
       return;
     }
     setAutoSweepBot(newState);
     localStorage.setItem('traden_gold_scout_bot_active', String(newState));
-    setOrderStatus(newState ? '🟢 تم تفعيل قناص Scout & Scale-in الآلي' : '⚪ تم إيقاف القناص الآلي');
+    setOrderStatus(newState ? '🟢 تم تفعيل قناص Scout & Scale-in الآلي بنجاح.' : '⚪ تم إيقاف القناص الآلي.');
   };
 
-  // Live Auto Scout Engine Loop
+  // Live Auto Scout Engine Loop (Strictly Gated with Debounce & Max 1 Scout)
   useEffect(() => {
     if (!autoSweepBot || dailyLocked || cooldownRemaining > 0) return;
+    const now = Date.now();
 
-    // 1. If no positions, open Scout (0.01) after sweep confirmation
-    if (activeSweepPositions.length === 0 && !isAnalyzing && Date.now() - lastAutoTriggerTime > 6000) {
-      setLastAutoTriggerTime(Date.now());
+    // 1. Only open Scout (0.01) if ZERO gold positions exist
+    if (goldPositions.length === 0 && !isAnalyzing && !isExecutingRef.current && (now - lastOrderTimestampRef.current > 20000)) {
       setIsAnalyzing(true);
       setOrderStatus(`🔍 [فحص السيولة] جاري تأكيد شمعة الانعكاس وفتح صفقة الاختبار (0.01 Lot)...`);
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsAnalyzing(false);
-        handleExecuteScoutTrade(isUp ? 'buy' : 'sell');
-      }, 2500);
+        if (goldPositions.length === 0 && !isExecutingRef.current && !dailyLocked) {
+          handleExecuteScoutTrade(isUp ? 'buy' : 'sell');
+        }
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
-    // 2. If Scout in profit > $0.80 and no scale-in yet, auto trigger scale-in
-    else if (activeSweepPositions.length === 1 && totalRealProfit >= 0.85 && !isAnalyzing && Date.now() - lastAutoTriggerTime > 10000) {
-      setLastAutoTriggerTime(Date.now());
+    // 2. Auto Scale-In only when Scout in profit >= $1.50
+    else if (goldPositions.length === 1 && totalRealProfit >= 1.50 && !isAnalyzing && !isExecutingRef.current && (now - lastOrderTimestampRef.current > 20000)) {
       setIsAnalyzing(true);
       setOrderStatus(`🚀 [تعزيز الأرباح] صفقة الاختبار في ربح (+${totalRealProfit.toFixed(2)}$) - جاري التأمين والتعزيز بصفقتين...`);
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsAnalyzing(false);
-        handleExecuteScaleIn();
-      }, 2000);
+        if (goldPositions.length === 1 && !isExecutingRef.current) {
+          handleExecuteScaleIn();
+        }
+      }, 2500);
+
+      return () => clearTimeout(timer);
     }
-  }, [autoSweepBot, activeSweepPositions, totalRealProfit, dailyLocked, cooldownRemaining, isUp]);
+  }, [autoSweepBot, goldPositions.length, totalRealProfit, dailyLocked, cooldownRemaining, isUp]);
 
   // Live Binance WebSocket for XAU/USD
   useEffect(() => {
@@ -903,7 +966,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         flexDirection: 'column',
         gap: '14px'
       }}>
-        {/* Header & Toggle Bot Switch */}
+        {/* Header & Single Unified Toggle Bot Switch */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Compass size={24} color="#f59e0b" />
@@ -918,7 +981,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             </div>
           </div>
 
-          {/* Auto Bot Toggle Switch */}
+          {/* Unified Auto Bot Toggle Switch */}
           <button
             onClick={() => toggleAutoBot(!autoSweepBot)}
             disabled={Boolean(dailyLocked)}
@@ -1176,10 +1239,10 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           </div>
         )}
 
-        {/* Scout & Scale-In Action Buttons */}
+        {/* Contextual Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {/* Main Scout Action Button (0.01 Lot) */}
-          {activeSweepPositions.length === 0 && (
+          {goldPositions.length === 0 && (
             <button
               onClick={() => handleExecuteScoutTrade()}
               disabled={executingOrder || Boolean(dailyLocked) || cooldownRemaining > 0}
@@ -1208,8 +1271,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             </button>
           )}
 
-          {/* Scale-In Action Button (Active only when 1 scout trade is running) */}
-          {activeSweepPositions.length === 1 && (
+          {/* Scale-In Action Button (Active when 1 scout trade is running) */}
+          {goldPositions.length === 1 && (
             <button
               onClick={handleExecuteScaleIn}
               disabled={executingOrder || Boolean(dailyLocked)}
@@ -1264,7 +1327,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
           <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #3b82f6' }}>
             <b style={{ color: '#3b82f6' }}>2. تأمين الدخول والتعزيز الذكي (Scaling In):</b>
-            <div>بمجرد تحقيق صفقة الاختبار ربحاً مبدئياً (+0.80$)، يتم نقل الستوب فوراً لنقطة الدخول (Break-Even)، ثم فتح صفقتين تعزيز فقط (0.01 لكل منهما) لمضاعفة الأرباح بدون مخاطرة على رأس المال.</div>
+            <div>بمجرد تحقيق صفقة الاختبار ربحاً مبدئياً (+1.50$)، يتم نقل الستوب فوراً لنقطة الدخول (Break-Even)، ثم فتح صفقتين تعزيز فقط (0.01 لكل منهما) لمضاعفة الأرباح بدون مخاطرة على رأس المال.</div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #f59e0b' }}>
