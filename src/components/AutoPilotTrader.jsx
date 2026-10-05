@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bot, Power, CheckCircle2, Shield, Target, Plus, Trash2, 
   TrendingUp, Activity, AlertTriangle, ArrowUpRight, ArrowDownRight, 
-  Clock, RefreshCw, Sliders, DollarSign, Zap, ChevronRight, X
+  Clock, RefreshCw, Sliders, DollarSign, Zap, ChevronRight, X, Globe, Sparkles, Lock
 } from 'lucide-react';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 import { AssetLogo } from '../utils/assetLogos';
@@ -33,17 +33,26 @@ export default function AutoPilotTrader({ onBack }) {
     return parseFloat(localStorage.getItem('traden_autopilot_lot')) || 0.01;
   });
 
-  // Daily Quota (Max 5 High-Conviction Trades per day)
+  // Daily Quota ($20 Daily Target & Max 5 Trades)
   const [dailyQuota, setDailyQuota] = useState(() => {
     const today = new Date().toISOString().slice(0, 10);
     const savedData = localStorage.getItem(`traden_autopilot_quota_${today}`);
     if (savedData) {
       try { return JSON.parse(savedData); } catch (e) {}
     }
-    return { date: today, executedCount: 0, maxDaily: 5, totalProfit: 0.0 };
+    return { 
+      date: today, 
+      executedCount: 0, 
+      maxDaily: 5, 
+      currentProfit: 0.0, 
+      targetDaily: 20.0, 
+      maxLoss: 10.0,
+      targetReached: false,
+      stopLossLocked: false
+    };
   });
 
-  // Active Autopilot Trades (Strictly isolated from Scalper)
+  // Active Autopilot Trades
   const [activeAutoTrades, setActiveAutoTrades] = useState(() => {
     const saved = localStorage.getItem('traden_autopilot_active_trades');
     if (saved) {
@@ -52,21 +61,69 @@ export default function AutoPilotTrader({ onBack }) {
     return [];
   });
 
+  // Active Market Session Info
+  const [sessionInfo, setSessionInfo] = useState(() => {
+    const nowUtc = new Date();
+    const decHour = nowUtc.getUTCHours() + nowUtc.getUTCMinutes() / 60;
+    if (decHour >= 12 && decHour < 16) {
+      return {
+        session_id: 'london_ny_overlap',
+        name: 'تداخل لندن ونيويورك 🇬🇧🇺🇸',
+        tag: 'Peak Global Liquidity',
+        volatility: 'VERY_HIGH',
+        optimal_pairs: ['XAU/USD', 'US30', 'EUR/USD', 'GBP/USD'],
+        strategy: 'سحب سيولة القمم واختراق الـ FVG المؤسسي',
+        rr_target: '1:3.0'
+      };
+    } else if (decHour >= 16 && decHour < 21) {
+      return {
+        session_id: 'new_york',
+        name: 'جلسة نيويورك 🇺🇸',
+        tag: 'New York Power Hour',
+        volatility: 'HIGH',
+        optimal_pairs: ['XAU/USD', 'US30', 'NAS100', 'EUR/USD'],
+        strategy: 'متابعة الزخم الأمريكي وإغلاق الفجوات السعرية',
+        rr_target: '1:2.8'
+      };
+    } else if (decHour >= 7 && decHour < 12) {
+      return {
+        session_id: 'london',
+        name: 'جلسة لندن 🇬🇧',
+        tag: 'London Open Breakouts',
+        volatility: 'HIGH',
+        optimal_pairs: ['GBP/USD', 'EUR/USD', 'XAU/USD'],
+        strategy: 'كسر نطاق آسيا وسحب سيولة القمم والقيعان',
+        rr_target: '1:3.0'
+      };
+    } else {
+      return {
+        session_id: 'tokyo_asia',
+        name: 'جلسة طوكيو وآسيا 🇯🇵',
+        tag: 'Asian Range & Accumulation',
+        volatility: 'MODERATE',
+        optimal_pairs: ['USD/JPY', 'AUD/USD', 'BTC/USDT', 'XAU/USD'],
+        strategy: 'تجميع السيولة وارتداد حدود النطاق العرضي',
+        rr_target: '1:2.2'
+      };
+    }
+  });
+
   // Custom Pair Input Modal
   const [showAddPairModal, setShowAddPairModal] = useState(false);
   const [newPairInput, setNewPairInput] = useState('');
   const [newPairName, setNewPairName] = useState('');
 
   // AI Agent Status & Live Thoughts
-  const [agentStatus, setAgentStatus] = useState('مسح وتحليل الهيكل اليومي 🔍');
+  const [agentStatus, setAgentStatus] = useState('مسح وتحليل الهيكل الذكي للجلسة 🔍');
   const [agentLogs, setAgentLogs] = useState([
     { time: new Date().toLocaleTimeString('ar-EG'), text: 'تم بدء تشغيل العقل التحليلي لـ Agent Horizon بنجاح.' },
-    { time: new Date().toLocaleTimeString('ar-EG'), text: 'فحص مناطق السيولة الكبرى (H1 / H4 OrderBlocks) للأزواج المحددة.' }
+    { time: new Date().toLocaleTimeString('ar-EG'), text: `فحص توافق الجلسة الحالية (${sessionInfo.name}) وتحديد مناطق السيولة المؤسسية.` }
   ]);
 
   const [livePrices, setLivePrices] = useState({});
   const [executingOrder, setExecutingOrder] = useState(false);
   const [orderStatus, setOrderStatus] = useState('');
+  const [serverSynced, setServerSynced] = useState(false);
 
   const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
 
@@ -91,10 +148,7 @@ export default function AutoPilotTrader({ onBack }) {
     throw new Error('Cloud server unreachable');
   };
 
-  // Sync with Cloud Server 24/7
-  const [serverSynced, setServerSynced] = useState(false);
-
-  // Load state and reconcile with Cloud Server & LocalStorage
+  // Sync state with Server 24/7
   useEffect(() => {
     const fetchServerState = async () => {
       try {
@@ -104,69 +158,74 @@ export default function AutoPilotTrader({ onBack }) {
           if (data.success && data.state) {
             setServerSynced(true);
             
+            if (data.state.session_info) {
+              setSessionInfo(data.state.session_info);
+            }
+
             const localActive = localStorage.getItem('traden_autopilot_active');
             if (localActive !== null) {
               const boolActive = localActive === 'true';
               setIsAutoPilotActive(boolActive);
-              if (data.state.active !== boolActive) {
-                // Ensure server matches user's local active switch
-                fetchWithCloudFallback('/api/autopilot/toggle', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ active: boolActive, lot: selectedLot })
-                }).catch(() => {});
-              }
             } else {
               setIsAutoPilotActive(data.state.active);
               localStorage.setItem('traden_autopilot_active', String(data.state.active));
             }
 
-            const localPairs = localStorage.getItem('traden_autopilot_pairs');
-            if (localPairs) {
-              try {
-                const parsed = JSON.parse(localPairs);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  setSelectedPairs(parsed);
-                  if (!data.state.pairs || data.state.pairs.length === 0) {
-                    fetchWithCloudFallback('/api/autopilot/update_pairs', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ pairs: parsed, lot: selectedLot })
-                    }).catch(() => {});
-                  }
-                }
-              } catch (e) {}
-            } else if (data.state.pairs && data.state.pairs.length > 0) {
-              setSelectedPairs(data.state.pairs);
-              localStorage.setItem('traden_autopilot_pairs', JSON.stringify(data.state.pairs));
-            }
-
-            if (data.state.lot) {
-              const localLot = parseFloat(localStorage.getItem('traden_autopilot_lot'));
-              if (!localLot) {
-                setSelectedLot(data.state.lot);
-                localStorage.setItem('traden_autopilot_lot', String(data.state.lot));
+            if (data.state.pairs && Array.isArray(data.state.pairs) && data.state.pairs.length > 0) {
+              const localPairs = localStorage.getItem('traden_autopilot_pairs');
+              if (!localPairs) {
+                setSelectedPairs(data.state.pairs);
+                localStorage.setItem('traden_autopilot_pairs', JSON.stringify(data.state.pairs));
               }
             }
 
-            if (data.state.executed_today !== undefined) {
-              setDailyQuota(prev => {
-                const updated = { ...prev, executedCount: data.state.executed_today };
-                const today = new Date().toISOString().slice(0, 10);
-                localStorage.setItem(`traden_autopilot_quota_${today}`, JSON.stringify(updated));
-                return updated;
-              });
+            if (data.state.lot) {
+              setSelectedLot(data.state.lot);
             }
+
+            setDailyQuota(prev => {
+              const today = new Date().toISOString().slice(0, 10);
+              const updated = {
+                ...prev,
+                executedCount: data.state.executed_today ?? prev.executedCount,
+                currentProfit: data.state.current_profit_usd ?? prev.currentProfit,
+                targetDaily: data.state.daily_target_usd ?? 20.0,
+                targetReached: !!data.state.target_reached,
+                stopLossLocked: !!data.state.stop_loss_locked
+              };
+              localStorage.setItem(`traden_autopilot_quota_${today}`, JSON.stringify(updated));
+              return updated;
+            });
           }
         }
       } catch (e) {
-        console.log('Server autopilot sync error:', e);
+        console.log('Server autopilot sync notice:', e);
       }
     };
     fetchServerState();
     const interval = setInterval(fetchServerState, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Poll live price feeds for enabled pairs
+  useEffect(() => {
+    const updatePrices = async () => {
+      const enabled = selectedPairs.filter(p => p.enabled);
+      const updates = {};
+      for (const p of enabled) {
+        try {
+          const tick = await fetchLiveAssetTicker(p.symbol);
+          if (tick && tick.price) {
+            updates[p.symbol] = tick;
+          }
+        } catch (e) {}
+      }
+      setLivePrices(prev => ({ ...prev, ...updates }));
+    };
+    updatePrices();
+    const priceInt = setInterval(updatePrices, 5000);
+    return () => clearInterval(priceInt);
+  }, [selectedPairs]);
 
   const handleToggleAutoPilot = async (newState) => {
     setIsAutoPilotActive(newState);
@@ -177,9 +236,9 @@ export default function AutoPilotTrader({ onBack }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: newState, lot: selectedLot })
       });
-      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت وتثبيته سحابياً 24/7 (شغال دائماً حتى لو أغلقت تيليجرام)' : '⏸️ تم إيقاف الأوتوبايلوت على السيرفر.');
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت الذكي سحابياً 24/7!' : '⏸️ تم إيقاف الأوتوبايلوت.');
     } catch (e) {
-      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت محلياً وسحابياً.' : '⏸️ تم إيقاف الأوتوبايلوت.');
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت محلياً.' : '⏸️ تم إيقاف الأوتوبايلوت.');
     }
   };
 
@@ -201,117 +260,25 @@ export default function AutoPilotTrader({ onBack }) {
     handleUpdatePairsOnServer(selectedPairs, newLot);
   };
 
-  // Autonomous Daily Hunter Engine Loop
-  useEffect(() => {
-    if (!isAutoPilotActive) return;
-
-    // Check if daily quota (5 trades) is reached
-    if (dailyQuota.executedCount >= dailyQuota.maxDaily) {
-      setAgentStatus(`تم اكتمال نصاب اليوم (5/5 صفقات) بنجاح 🏆`);
-      return;
-    }
-
-    // Auto-analysis interval
-    const hunterInterval = setInterval(async () => {
-      const enabledPairs = selectedPairs.filter(p => p.enabled);
-      if (enabledPairs.length === 0) return;
-
-      const nowTimeStr = new Date().toLocaleTimeString('ar-EG');
-      setAgentStatus('جاري فحص وتصفية الفرص عالية الدقة عبر الأزواج المختارة... ⚡');
-
-      // Check each enabled pair for highest conviction structure setup
-      for (const pair of enabledPairs) {
-        const pairData = livePrices[pair.symbol];
-        if (!pairData || !pairData.price) continue;
-
-        // Check if there is already an open trade on this symbol
-        const alreadyOpen = activeAutoTrades.some(t => t.symbol === pair.symbol);
-        if (alreadyOpen) continue;
-
-        // Simulate institutional conviction calculation
-        const isUp = pairData.isUp;
-        const currentP = pairData.price;
-        const symUpper = pair.symbol.toUpperCase();
-
-        // Target / Stop calculation (High R:R 1:2.5 to 1:4 with high profit potential)
-        let slP = 0.0;
-        let tpP = 0.0;
-
-        if (symUpper.includes('XAU') || symUpper.includes('GOLD')) {
-          slP = isUp ? Number((currentP - 2.80).toFixed(2)) : Number((currentP + 2.80).toFixed(2));
-          tpP = isUp ? Number((currentP + 8.50).toFixed(2)) : Number((currentP - 8.50).toFixed(2));
-        } else if (symUpper.includes('US30')) {
-          slP = isUp ? Number((currentP - 85).toFixed(1)) : Number((currentP + 85).toFixed(1));
-          tpP = isUp ? Number((currentP + 240).toFixed(1)) : Number((currentP - 240).toFixed(1));
-        } else if (symUpper.includes('BTC')) {
-          slP = isUp ? Number((currentP - 650).toFixed(2)) : Number((currentP + 650).toFixed(2));
-          tpP = isUp ? Number((currentP + 1850).toFixed(2)) : Number((currentP - 1850).toFixed(2));
-        } else { // Forex Pairs
-          slP = isUp ? Number((currentP - 0.0025).toFixed(5)) : Number((currentP + 0.0025).toFixed(5));
-          tpP = isUp ? Number((currentP + 0.0075).toFixed(5)) : Number((currentP - 0.0075).toFixed(5));
-        }
-
-        // Trigger an autonomous high-conviction daily trade if quota allows
-        if (dailyQuota.executedCount < dailyQuota.maxDaily && activeAutoTrades.length < 2) {
-          executeAutoPilotTrade(pair.symbol, isUp ? 'buy' : 'sell', currentP, slP, tpP);
-          break;
-        }
-      }
-    }, 45000); // Scans periodically for major intraday market shifts
-
-    return () => clearInterval(hunterInterval);
-  }, [isAutoPilotActive, selectedPairs, livePrices, dailyQuota, activeAutoTrades]);
-
-  // Execute an Autopilot Order
-  const executeAutoPilotTrade = async (symbol, side, entryP, slP, tpP) => {
-    setExecutingOrder(true);
-    const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
-    const tradeComment = `AUTOPILOT_DAILY_${dailyQuota.executedCount + 1}`;
-
+  const handleResetDailyQuota = async () => {
     try {
-      const response = await fetchWithCloudFallback('/api/orders/place', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: symbol.replace('/', ''),
-          side: side,
-          lot: parseFloat(selectedLot) || 0.01,
-          sl: slP,
-          tp: tpP,
-          comment: tradeComment
-        })
-      });
-
-      const resData = await response.json();
-      const ticketId = resData.ticket || Math.floor(200000 + Math.random() * 800000);
-
-      const newTrade = {
-        id: `auto_${Date.now()}`,
-        ticket: ticketId,
-        symbol: symbol,
-        side: side,
-        entryPrice: entryP,
-        sl: slP,
-        tp: tpP,
-        lot: selectedLot,
-        time: new Date().toLocaleTimeString('ar-EG'),
-        comment: tradeComment,
-        targetProfitUsd: ((Math.abs(tpP - entryP) / (entryP > 100 ? 1 : 0.0001)) * (selectedLot * 10)).toFixed(2)
+      await fetchWithCloudFallback('/api/autopilot/reset_daily', { method: 'POST' });
+      const today = new Date().toISOString().slice(0, 10);
+      const resetData = {
+        date: today,
+        executedCount: 0,
+        maxDaily: 5,
+        currentProfit: 0.0,
+        targetDaily: 20.0,
+        maxLoss: 10.0,
+        targetReached: false,
+        stopLossLocked: false
       };
-
-      setActiveAutoTrades(prev => [newTrade, ...prev]);
-      setDailyQuota(prev => ({
-        ...prev,
-        executedCount: prev.executedCount + 1
-      }));
-
-      const logText = `🎯 تم اقتناص صفقة يومية مؤكدة [${dailyQuota.executedCount + 1}/5]: ${actionLabel} ${symbol} (تذكرة #${ticketId}) بنجاح!`;
-      setAgentLogs(prev => [{ time: new Date().toLocaleTimeString('ar-EG'), text: logText }, ...prev.slice(0, 9)]);
-      setOrderStatus(logText);
+      setDailyQuota(resetData);
+      localStorage.setItem(`traden_autopilot_quota_${today}`, JSON.stringify(resetData));
+      setOrderStatus('🔄 تم تصفير العداد اليومي وبدء جولة تداول جديدة بنجاح!');
     } catch (e) {
-      setOrderStatus(`✅ تم إرسال صفقة الأوتوبايلوت لـ ${symbol} إلى سيرفر التنفيذ.`);
-    } finally {
-      setExecutingOrder(false);
+      setOrderStatus('🔄 تم تصفير العداد محلياً.');
     }
   };
 
@@ -325,7 +292,7 @@ export default function AutoPilotTrader({ onBack }) {
         body: JSON.stringify({ ticket: trade.ticket })
       });
       setActiveAutoTrades(prev => prev.filter(t => t.id !== trade.id));
-      setOrderStatus(`💰 تم إغلاق صفقة ${trade.symbol} وحجز الأرباح بنجاح.`);
+      setOrderStatus(`💰 تم إغلاق صفقة ${trade.symbol} وحجز الربح بنجاح.`);
     } catch (e) {
       setActiveAutoTrades(prev => prev.filter(t => t.id !== trade.id));
     } finally {
@@ -365,6 +332,10 @@ export default function AutoPilotTrader({ onBack }) {
     setShowAddPairModal(false);
   };
 
+  const isTargetAchieved = dailyQuota.targetReached || dailyQuota.currentProfit >= 20.0;
+  const isLossLocked = dailyQuota.stopLossLocked || dailyQuota.currentProfit <= -10.0;
+  const progressPercent = Math.min(100, Math.max(0, (dailyQuota.currentProfit / 20.0) * 100));
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
       
@@ -388,20 +359,66 @@ export default function AutoPilotTrader({ onBack }) {
           gap: '6px'
         }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isAutoPilotActive ? '#10b981' : '#ef4444', boxShadow: isAutoPilotActive ? '0 0 8px #10b981' : 'none' }}></span>
-          <span>{isAutoPilotActive ? 'الأوتوبايلوت نَشِط (24/7 سحابي) 🟢' : 'الأوتوبايلوت مُتوقف ⚪'}</span>
+          <span>{isAutoPilotActive ? 'الأوتوبايلوت نَشِط (سحابي 24/7) 🟢' : 'الأوتوبايلوت مُتوقف ⚪'}</span>
         </div>
       </div>
 
-      {/* Main Autonomous Control Banner with Master Switch */}
+      {/* 🌐 Smart Session Intelligence Card */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(30, 41, 59, 0.7) 100%)',
+        border: '1px solid rgba(56, 189, 248, 0.35)',
+        borderRadius: '16px',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: '0 4px 20px rgba(14, 165, 233, 0.15)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Globe size={18} color="#38bdf8" />
+            <span style={{ fontSize: '13px', fontWeight: '900', color: '#fff' }}>رادار الجلسات المالية الذكي:</span>
+          </div>
+          <span style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: '#fff',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            padding: '3px 10px',
+            borderRadius: '20px',
+            boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)'
+          }}>
+            {sessionInfo.name}
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '11.5px' }}>
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ color: '#94a3b8', fontSize: '10px' }}>🎯 الاستراتيجية المعتمدة للجلسة:</div>
+            <div style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '2px' }}>{sessionInfo.strategy}</div>
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ color: '#94a3b8', fontSize: '10px' }}>⭐ نسبة العائد / المخاطرة (R:R):</div>
+            <div style={{ color: '#10b981', fontWeight: '900', marginTop: '2px' }}>{sessionInfo.rr_target} (عائد مضاعف)</div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: '11px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Sparkles size={14} color="#f59e0b" />
+          <span><b>الأزواج المفضلة للجلسة الحالية:</b> {sessionInfo.optimal_pairs ? sessionInfo.optimal_pairs.join(' • ') : 'XAU/USD, EUR/USD'}</span>
+        </div>
+      </div>
+
+      {/* 🏆 $20 Daily Profit Target & Safety Engine Banner */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%)',
-        border: `2px solid ${isAutoPilotActive ? '#10b981' : 'rgba(255,255,255,0.1)'}`,
+        border: `2px solid ${isTargetAchieved ? '#f59e0b' : isAutoPilotActive ? '#10b981' : 'rgba(255,255,255,0.1)'}`,
         borderRadius: '18px',
         padding: '18px',
         display: 'flex',
         flexDirection: 'column',
         gap: '14px',
-        boxShadow: isAutoPilotActive ? '0 0 30px rgba(16, 185, 129, 0.2)' : 'none'
+        boxShadow: isTargetAchieved ? '0 0 35px rgba(245, 158, 11, 0.3)' : isAutoPilotActive ? '0 0 30px rgba(16, 185, 129, 0.2)' : 'none'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -409,33 +426,33 @@ export default function AutoPilotTrader({ onBack }) {
               width: '44px',
               height: '44px',
               borderRadius: '12px',
-              background: isAutoPilotActive ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.06)',
+              background: isTargetAchieved ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : isAutoPilotActive ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.06)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '22px',
-              boxShadow: isAutoPilotActive ? '0 0 15px rgba(16, 185, 129, 0.5)' : 'none'
+              boxShadow: isTargetAchieved ? '0 0 15px rgba(245, 158, 11, 0.5)' : isAutoPilotActive ? '0 0 15px rgba(16, 185, 129, 0.5)' : 'none'
             }}>
-              🤖
+              {isTargetAchieved ? '🏆' : '🤖'}
             </div>
             <div>
               <div style={{ fontSize: '18px', fontWeight: '900', color: '#fff' }}>
-                التداول الآلي الذكي (AI Auto-Pilot Intraday)
+                نظام الأوتوبايلوت (هدف 20$ يومياً)
               </div>
               <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                تحليل يومي مستمر + 5 صفقات يومية مدروسة بأرباح عالية دون تدخل
+                اقتناص أفضل صفقات الجلسات + قفل آلي ذكي عند تحقيق الـ 20$
               </div>
             </div>
           </div>
 
-          {/* Master ON/OFF Switch */}
+          {/* Master Switch Button */}
           <button
             onClick={() => handleToggleAutoPilot(!isAutoPilotActive)}
             style={{
               background: isAutoPilotActive ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : 'rgba(255,255,255,0.08)',
               border: `1px solid ${isAutoPilotActive ? '#10b981' : 'rgba(255,255,255,0.2)'}`,
               color: '#fff',
-              padding: '10px 20px',
+              padding: '10px 18px',
               borderRadius: '24px',
               fontWeight: '900',
               fontSize: '13px',
@@ -448,63 +465,77 @@ export default function AutoPilotTrader({ onBack }) {
             }}
           >
             <Power size={16} />
-            <span>{isAutoPilotActive ? 'إيقاف الأوتوبايلوت ⏸️' : 'تفعيل الأوتوبايلوت الآلي 🚀'}</span>
+            <span>{isAutoPilotActive ? 'إيقاف الأوتوبايلوت ⏸️' : 'تفعيل الأوتوبايلوت 🚀'}</span>
           </button>
         </div>
 
-        {/* 5 Daily Trades Quota Tracker */}
+        {/* 🎯 $20 Target Progress Visualizer Card */}
         <div style={{
-          background: 'rgba(0,0,0,0.4)',
+          background: 'rgba(0,0,0,0.45)',
           border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '12px',
+          borderRadius: '14px',
           padding: '12px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '10px'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Target size={15} color="#f59e0b" />
-              <span>نصاب الصفقات اليومية المؤكدة (Daily Quota):</span>
+              <span>الهدف اليومي الثابت (Target Goal):</span>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: '900', color: '#10b981' }}>
-              {dailyQuota.executedCount} من {dailyQuota.maxDaily} صفقات اليوم
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '900', color: isTargetAchieved ? '#f59e0b' : '#10b981' }}>
+                ${dailyQuota.currentProfit.toFixed(2)} / $20.00
+              </span>
+              <button 
+                onClick={handleResetDailyQuota}
+                title="تصفير العداد اليومي"
+                style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                <RefreshCw size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{
+              width: `${progressPercent}%`,
+              height: '100%',
+              background: isTargetAchieved 
+                ? 'linear-gradient(90deg, #f59e0b 0%, #10b981 100%)' 
+                : 'linear-gradient(90deg, #38bdf8 0%, #10b981 100%)',
+              transition: 'width 0.4s ease'
+            }} />
+          </div>
+
+          {/* Quota Steps & Status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
+            <span style={{ color: '#94a3b8' }}>
+              عدد الصفقات المنفذة اليوم: <b>{dailyQuota.executedCount} من 5 صفقات</b>
             </span>
-          </div>
-
-          {/* 5-Step Visualizer */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
-            {[1, 2, 3, 4, 5].map(step => {
-              const isDone = dailyQuota.executedCount >= step;
-              return (
-                <div
-                  key={step}
-                  style={{
-                    background: isDone ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${isDone ? '#10b981' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: '8px',
-                    padding: '8px 4px',
-                    textAlign: 'center'
-                  }}
-                >
-                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: isDone ? '#10b981' : '#64748b' }}>
-                    {isDone ? '✅ نُفذت' : `صفقة ${step}`}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '2px' }}>
-            🛡️ <b>حماية الصفقات:</b> صفقات هذا القسم معزولة ومستقلة تماماً، ولا يمكن إغلاقها إلا بيدك أو عند وصول الهدف (TP).
+            {isTargetAchieved ? (
+              <span style={{ color: '#f59e0b', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Lock size={12} /> تم تحقيق الهدف وقفل الأرباح 🏆
+              </span>
+            ) : isLossLocked ? (
+              <span style={{ color: '#f87171', fontWeight: 'bold' }}>
+                🛡️ تم تفعيل حماية الحساب اليومية
+              </span>
+            ) : (
+              <span style={{ color: '#10b981', fontWeight: 'bold' }}>
+                جاري اقتناص الهدف (Scouting Active) 🏹
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Lot Size Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '10px' }}>
+        {/* Lot Size Selector with Projected Gain */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '10px', flexWrap: 'wrap', gap: '6px' }}>
           <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Shield size={14} color="#10b981" />
-            <span>حجم اللوت للصفقات اليومية:</span>
+            <span>حجم اللوت المنفذ:</span>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
             {[0.01, 0.02, 0.03, 0.05, 0.10].map(lot => (
@@ -529,7 +560,7 @@ export default function AutoPilotTrader({ onBack }) {
         </div>
       </div>
 
-      {/* Target Selected Pairs Section */}
+      {/* Target Selected Pairs Section with Session Badges */}
       <div style={{
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -542,7 +573,7 @@ export default function AutoPilotTrader({ onBack }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <TrendingUp size={16} color="#38bdf8" />
-            <span>الأزواج المستهدفة للتداول الآلي ({selectedPairs.filter(p => p.enabled).length} مفعّلة):</span>
+            <span>الأزواج المستهدفة للأوتوبايلوت ({selectedPairs.filter(p => p.enabled).length} مفعّلة):</span>
           </div>
 
           <button
@@ -570,12 +601,15 @@ export default function AutoPilotTrader({ onBack }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {selectedPairs.map((pair) => {
             const pairData = livePrices[pair.symbol];
+            const cleanSym = pair.symbol.replace('/', '').toUpperCase();
+            const isOptimalSession = sessionInfo.optimal_pairs && sessionInfo.optimal_pairs.some(x => x.replace('/', '').toUpperCase() === cleanSym);
+
             return (
               <div
                 key={pair.symbol}
                 style={{
-                  background: pair.enabled ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
-                  border: `1px solid ${pair.enabled ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255,255,255,0.05)'}`,
+                  background: isOptimalSession ? 'rgba(56, 189, 248, 0.05)' : pair.enabled ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
+                  border: `1px solid ${isOptimalSession ? 'rgba(56, 189, 248, 0.4)' : pair.enabled ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}`,
                   borderRadius: '12px',
                   padding: '10px 14px',
                   display: 'flex',
@@ -587,8 +621,15 @@ export default function AutoPilotTrader({ onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <AssetLogo symbol={pair.symbol} size={20} containerSize={32} />
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: pair.enabled ? '#fff' : '#64748b' }}>
-                      {pair.symbol}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: pair.enabled ? '#fff' : '#64748b' }}>
+                        {pair.symbol}
+                      </span>
+                      {isOptimalSession && (
+                        <span style={{ fontSize: '9px', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          🔥 قمة سيولة الجلسة
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: '10px', color: '#94a3b8' }}>
                       {pair.name}
@@ -705,7 +746,7 @@ export default function AutoPilotTrader({ onBack }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Bot size={16} />
-            <span>حالة الوكيل المسؤول (Agent Horizon Live Activity):</span>
+            <span>نشاط خوارزمية الذكاء الاصطناعي (Agent Horizon Live):</span>
           </div>
           <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>{agentStatus}</span>
         </div>
@@ -720,7 +761,7 @@ export default function AutoPilotTrader({ onBack }) {
         </div>
       </div>
 
-      {/* Add Custom Pair Modal with Smart Autocomplete & Quick Chips */}
+      {/* Add Custom Pair Modal with Smart Autocomplete */}
       {showAddPairModal && (
         <div style={{
           position: 'fixed',
@@ -851,118 +892,6 @@ export default function AutoPilotTrader({ onBack }) {
                 }}
               />
             </div>
-
-            {/* Instant Suggestions Dropdown / Matching List */}
-            {(() => {
-              const VERIFIED_DIRECTORY = [
-                // Metals & Energy
-                { symbol: 'XAU/USD', name: 'الذهب مقابل الدولار الأمريكي', category: 'Metals' },
-                { symbol: 'XAG/USD', name: 'الفضة مقابل الدولار الأمريكي', category: 'Metals' },
-                { symbol: 'USOIL', name: 'نفط خام تكساس (WTI)', category: 'Energy' },
-                { symbol: 'UKOIL', name: 'نفط برنت الخام (Brent)', category: 'Energy' },
-                // Indices
-                { symbol: 'US30', name: 'مؤشر الداو جونز الصناعي', category: 'Indices' },
-                { symbol: 'NAS100', name: 'مؤشر ناسداك للتكنولوجيا', category: 'Indices' },
-                { symbol: 'SPX500', name: 'مؤشر إس آند بي 500', category: 'Indices' },
-                { symbol: 'GER40', name: 'مؤشر الداكس الألماني', category: 'Indices' },
-                // Forex
-                { symbol: 'EUR/USD', name: 'اليورو مقابل الدولار الأمريكي', category: 'Forex' },
-                { symbol: 'GBP/USD', name: 'الجنيه الإسترليني مقابل الدولار', category: 'Forex' },
-                { symbol: 'USD/JPY', name: 'الدولار الأمريكي مقابل الين الياباني', category: 'Forex' },
-                { symbol: 'USD/CAD', name: 'الدولار الأمريكي مقابل الدولار الكندي', category: 'Forex' },
-                { symbol: 'USD/CHF', name: 'الدولار الأمريكي مقابل الفرنك السويسري', category: 'Forex' },
-                { symbol: 'AUD/USD', name: 'الدولار الأسترالي مقابل الدولار الأمريكي', category: 'Forex' },
-                { symbol: 'NZD/USD', name: 'الدولار النيوزيلندي مقابل الدولار الأمريكي', category: 'Forex' },
-                { symbol: 'EUR/GBP', name: 'اليورو مقابل الجنيه الإسترليني', category: 'Forex' },
-                { symbol: 'EUR/JPY', name: 'اليورو مقابل الين الياباني', category: 'Forex' },
-                { symbol: 'GBP/JPY', name: 'الجنيه الإسترليني مقابل الين الياباني', category: 'Forex' },
-                { symbol: 'CAD/JPY', name: 'الدولار الكندي مقابل الين الياباني', category: 'Forex' },
-                { symbol: 'AUD/JPY', name: 'الدولار الأسترالي مقابل الين الياباني', category: 'Forex' },
-                { symbol: 'EUR/AUD', name: 'اليورو مقابل الدولار الأسترالي', category: 'Forex' },
-                // Crypto
-                { symbol: 'BTC/USDT', name: 'البيتكوين مقابل التيثر', category: 'Crypto' },
-                { symbol: 'ETH/USDT', name: 'الإيثيريوم مقابل التيثر', category: 'Crypto' },
-                { symbol: 'SOL/USDT', name: 'سولانا مقابل التيثر', category: 'Crypto' },
-                { symbol: 'BNB/USDT', name: 'بينانس كوين مقابل التيثر', category: 'Crypto' },
-                { symbol: 'XRP/USDT', name: 'الريبل مقابل التيثر', category: 'Crypto' },
-                { symbol: 'ADA/USDT', name: 'كاردانو مقابل التيثر', category: 'Crypto' },
-                { symbol: 'DOGE/USDT', name: 'دوجكوين مقابل التيثر', category: 'Crypto' },
-                { symbol: 'AVAX/USDT', name: 'أفالانش مقابل التيثر', category: 'Crypto' }
-              ];
-
-              const query = newPairInput.trim().toUpperCase().replace('/', '');
-              const suggestions = VERIFIED_DIRECTORY.filter(item => {
-                const sClean = item.symbol.replace('/', '').toUpperCase();
-                const nClean = item.name.toUpperCase();
-                const cClean = item.category.toUpperCase();
-                if (!query) return true;
-                return sClean.includes(query) || nClean.includes(query) || cClean.includes(query);
-              });
-
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '10.5px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>نتائج المقترحات المعتمدة ({suggestions.length}):</span>
-                    <span>اضغط للاختيار الفوري ⚡</span>
-                  </div>
-                  <div style={{
-                    maxHeight: '160px',
-                    overflowY: 'auto',
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '10px',
-                    padding: '4px'
-                  }}>
-                    {suggestions.length === 0 ? (
-                      <div style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
-                        لا يوجد رمز مطابق في الدليل، ولكن يمكنك حفظه كرمز مخصص بالضغط على الزر الأزرق بالأسفل!
-                      </div>
-                    ) : (
-                      suggestions.map(item => {
-                        const isAlready = selectedPairs.some(p => p.symbol.toUpperCase() === item.symbol.toUpperCase());
-                        return (
-                          <div
-                            key={item.symbol}
-                            onClick={() => {
-                              setNewPairInput(item.symbol);
-                              setNewPairName(item.name);
-                            }}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '8px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              cursor: 'pointer',
-                              background: newPairInput.toUpperCase().replace('/', '') === item.symbol.replace('/', '').toUpperCase() ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
-                              transition: 'background 0.15s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <AssetLogo symbol={item.symbol} size={18} containerSize={26} />
-                              <div>
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>
-                                  {item.symbol}
-                                </div>
-                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                  {item.name}
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '9.5px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px' }}>
-                                {item.category}
-                              </span>
-                              {isAlready && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>مضاف ✓</span>}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
 
             <div>
               <label style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', display: 'block' }}>اسم الزوج التوضيحي (اختياري):</label>
