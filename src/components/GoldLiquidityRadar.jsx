@@ -221,26 +221,24 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         setIsMt5Connected(Boolean(data.connected));
         
         const rawPositions = Array.isArray(data.positions) ? data.positions : [];
-        // Filter strictly for Gold open positions on real MT5
-        const goldPositions = rawPositions.filter(p => {
-          const sym = String(p.symbol || '').toUpperCase();
-          return sym.includes('XAU') || sym.includes('GOLD');
-        });
-
-        const formatted = goldPositions.map((p, idx) => {
+        
+        // Format and display all active positions currently open on MT5
+        const formatted = rawPositions.map((p, idx) => {
           const side = String(p.type || '').toLowerCase().includes('buy') || p.type === 0 ? 'buy' : 'sell';
+          const sym = String(p.symbol || '').toUpperCase();
+          const isGold = sym.includes('XAU') || sym.includes('GOLD');
           const isRunner = idx >= 3;
           return {
             id: String(p.ticket || idx),
             ticket: p.ticket,
-            symbol: p.symbol,
+            symbol: p.symbol || 'XAU/USD',
             side: side,
             entryPrice: Number(p.price_open || p.price || price),
             sl: Number(p.sl || 0),
             tp: Number(p.tp || 0),
             lot: Number(p.volume || selectedLot),
             profit: Number(p.profit || 0),
-            type: isRunner ? 'RUNNER 🏆' : 'SCALP ⚡',
+            type: isGold ? (isRunner ? 'RUNNER 🏆' : 'SCALP ⚡') : `${sym.slice(0, 7)} 🌐`,
             isBreakEven: false
           };
         });
