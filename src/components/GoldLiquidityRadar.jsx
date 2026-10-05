@@ -25,19 +25,58 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   const [nextEventCountdown, setNextEventCountdown] = useState({ label: '', timeStr: '' });
 
   // === 🎯 Auto Liquidity Sweep & 5-Wave Scalper Engine State ===
-  const [autoSweepBot, setAutoSweepBot] = useState(false);
-  const [sweepStrategy, setSweepStrategy] = useState('scalp'); // 'scalp' (5-Wave Pulse) | 'runner' (Trail & Run) | 'flip' (Sweep & Reverse)
-  const [selectedLot, setSelectedLot] = useState(0.01);
+  const [autoSweepBot, setAutoSweepBot] = useState(() => {
+    return localStorage.getItem('traden_gold_radar_bot_active') === 'true';
+  });
+  const [sweepStrategy, setSweepStrategy] = useState(() => {
+    return localStorage.getItem('traden_gold_sweep_strategy') || 'scalp';
+  });
+  const [selectedLot, setSelectedLot] = useState(() => {
+    return parseFloat(localStorage.getItem('traden_gold_selected_lot')) || 0.01;
+  });
   const [executingOrder, setExecutingOrder] = useState(false);
   const [orderStatus, setOrderStatus] = useState('');
   const [orderError, setOrderError] = useState(false);
-  const [activeSweepPosition, setActiveSweepPosition] = useState(null);
+  const [activeSweepPosition, setActiveSweepPosition] = useState(() => {
+    const saved = localStorage.getItem('traden_gold_active_sweep_pos');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  });
   const [lastAutoTriggerTime, setLastAutoTriggerTime] = useState(0);
 
   // 5-Wave Scalping Cycle Progress
-  const [scalpWave, setScalpWave] = useState(1);
-  const [completedCycles, setCompletedCycles] = useState(0);
-  const [cycleProfit, setCycleProfit] = useState(0.0);
+  const [scalpWave, setScalpWave] = useState(() => {
+    return parseInt(localStorage.getItem('traden_gold_scalp_wave')) || 1;
+  });
+  const [completedCycles, setCompletedCycles] = useState(() => {
+    return parseInt(localStorage.getItem('traden_gold_completed_cycles')) || 0;
+  });
+  const [cycleProfit, setCycleProfit] = useState(() => {
+    return parseFloat(localStorage.getItem('traden_gold_cycle_profit')) || 0.0;
+  });
+
+  // LocalStorage state synchronizers
+  useEffect(() => {
+    if (activeSweepPosition) {
+      localStorage.setItem('traden_gold_active_sweep_pos', JSON.stringify(activeSweepPosition));
+    } else {
+      localStorage.removeItem('traden_gold_active_sweep_pos');
+    }
+  }, [activeSweepPosition]);
+
+  useEffect(() => {
+    localStorage.setItem('traden_gold_scalp_wave', String(scalpWave));
+  }, [scalpWave]);
+
+  useEffect(() => {
+    localStorage.setItem('traden_gold_completed_cycles', String(completedCycles));
+  }, [completedCycles]);
+
+  useEffect(() => {
+    localStorage.setItem('traden_gold_cycle_profit', String(cycleProfit));
+  }, [cycleProfit]);
 
   const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
 
@@ -134,6 +173,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
   const toggleAutoBot = (newState) => {
     setAutoSweepBot(newState);
+    localStorage.setItem('traden_gold_radar_bot_active', String(newState));
     if (newState) {
       setOrderStatus(`🚀 تم تفعيل القناص الآلي بنمط [${sweepStrategy.toUpperCase()}] - جاري فتح الموجة [${scalpWave}/5] فوراً...`);
       setTimeout(() => {
@@ -146,12 +186,18 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
   const handleSelectStrategy = (strat) => {
     setSweepStrategy(strat);
+    localStorage.setItem('traden_gold_sweep_strategy', strat);
     if (autoSweepBot && !activeSweepPosition) {
       setOrderStatus(`🎯 تم تغيير النمط إلى [${strat.toUpperCase()}] - جاري بدء الاستراتيجية...`);
       setTimeout(() => {
         handleExecuteSweepOrder(isUp ? 'buy' : 'sell', `Auto Bot Strategy [${strat.toUpperCase()}]`, scalpWave);
       }, 300);
     }
+  };
+
+  const handleSelectLot = (lot) => {
+    setSelectedLot(lot);
+    localStorage.setItem('traden_gold_selected_lot', String(lot));
   };
 
   const handleCloseActivePosition = async () => {
@@ -1142,7 +1188,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
               {[0.01, 0.02, 0.03, 0.05, 0.10].map(lot => (
                 <button
                   key={lot}
-                  onClick={() => setSelectedLot(lot)}
+                  onClick={() => handleSelectLot(lot)}
                   style={{
                     background: selectedLot === lot ? '#f59e0b' : 'rgba(255,255,255,0.06)',
                     color: selectedLot === lot ? '#000' : '#fff',

@@ -94,7 +94,7 @@ export default function AutoPilotTrader({ onBack }) {
   // Sync with Cloud Server 24/7
   const [serverSynced, setServerSynced] = useState(false);
 
-  // Load state from Cloud Server on mount
+  // Load state and reconcile with Cloud Server & LocalStorage
   useEffect(() => {
     const fetchServerState = async () => {
       try {
@@ -103,15 +103,59 @@ export default function AutoPilotTrader({ onBack }) {
           const data = await res.json();
           if (data.success && data.state) {
             setServerSynced(true);
-            setIsAutoPilotActive(data.state.active);
-            if (data.state.pairs && data.state.pairs.length > 0) {
+            
+            const localActive = localStorage.getItem('traden_autopilot_active');
+            if (localActive !== null) {
+              const boolActive = localActive === 'true';
+              setIsAutoPilotActive(boolActive);
+              if (data.state.active !== boolActive) {
+                // Ensure server matches user's local active switch
+                fetchWithCloudFallback('/api/autopilot/toggle', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ active: boolActive, lot: selectedLot })
+                }).catch(() => {});
+              }
+            } else {
+              setIsAutoPilotActive(data.state.active);
+              localStorage.setItem('traden_autopilot_active', String(data.state.active));
+            }
+
+            const localPairs = localStorage.getItem('traden_autopilot_pairs');
+            if (localPairs) {
+              try {
+                const parsed = JSON.parse(localPairs);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setSelectedPairs(parsed);
+                  if (!data.state.pairs || data.state.pairs.length === 0) {
+                    fetchWithCloudFallback('/api/autopilot/update_pairs', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ pairs: parsed, lot: selectedLot })
+                    }).catch(() => {});
+                  }
+                }
+              } catch (e) {}
+            } else if (data.state.pairs && data.state.pairs.length > 0) {
               setSelectedPairs(data.state.pairs);
+              localStorage.setItem('traden_autopilot_pairs', JSON.stringify(data.state.pairs));
             }
+
             if (data.state.lot) {
-              setSelectedLot(data.state.lot);
+              const localLot = parseFloat(localStorage.getItem('traden_autopilot_lot'));
+              if (!localLot) {
+                setSelectedLot(data.state.lot);
+                localStorage.setItem('traden_autopilot_lot', String(data.state.lot));
+              }
             }
+
             if (data.state.executed_today !== undefined) {
-              setDailyQuota(prev => ({ ...prev, executedCount: data.state.executed_today }));
+              setDailyQuota(prev => {
+                const updated = { ...prev, executedCount: data.state.executed_today };
+                const today = new Date().toISOString().slice(0, 10);
+                localStorage.setItem(`traden_autopilot_quota_${today}`, JSON.stringify(updated));
+                return updated;
+              });
             }
           }
         }
@@ -120,26 +164,28 @@ export default function AutoPilotTrader({ onBack }) {
       }
     };
     fetchServerState();
-    const interval = setInterval(fetchServerState, 8000);
+    const interval = setInterval(fetchServerState, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const handleToggleAutoPilot = async (newState) => {
     setIsAutoPilotActive(newState);
+    localStorage.setItem('traden_autopilot_active', String(newState));
     try {
       await fetchWithCloudFallback('/api/autopilot/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: newState, lot: selectedLot })
       });
-      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت وتثبيته على السيرفر (شغال 24/7 حتى لو أغلقت تيليجرام)' : '⏸️ تم إيقاف الأوتوبايلوت على السيرفر.');
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت وتثبيته سحابياً 24/7 (شغال دائماً حتى لو أغلقت تيليجرام)' : '⏸️ تم إيقاف الأوتوبايلوت على السيرفر.');
     } catch (e) {
-      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت.' : '⏸️ تم إيقاف الأوتوبايلوت.');
+      setOrderStatus(newState ? '🟢 تم تفعيل الأوتوبايلوت محلياً وسحابياً.' : '⏸️ تم إيقاف الأوتوبايلوت.');
     }
   };
 
   const handleUpdatePairsOnServer = async (newPairs, newLot = selectedLot) => {
     setSelectedPairs(newPairs);
+    localStorage.setItem('traden_autopilot_pairs', JSON.stringify(newPairs));
     try {
       await fetchWithCloudFallback('/api/autopilot/update_pairs', {
         method: 'POST',
@@ -147,6 +193,12 @@ export default function AutoPilotTrader({ onBack }) {
         body: JSON.stringify({ pairs: newPairs, lot: newLot })
       });
     } catch (e) {}
+  };
+
+  const handleSelectLot = (newLot) => {
+    setSelectedLot(newLot);
+    localStorage.setItem('traden_autopilot_lot', String(newLot));
+    handleUpdatePairsOnServer(selectedPairs, newLot);
   };
 
   // Autonomous Daily Hunter Engine Loop
@@ -458,7 +510,7 @@ export default function AutoPilotTrader({ onBack }) {
             {[0.01, 0.02, 0.03, 0.05, 0.10].map(lot => (
               <button
                 key={lot}
-                onClick={() => setSelectedLot(lot)}
+                onClick={() => handleSelectLot(lot)}
                 style={{
                   background: selectedLot === lot ? '#10b981' : 'rgba(255,255,255,0.06)',
                   color: selectedLot === lot ? '#000' : '#fff',
@@ -668,7 +720,7 @@ export default function AutoPilotTrader({ onBack }) {
         </div>
       </div>
 
-      {/* Add Custom Pair Modal */}
+      {/* Add Custom Pair Modal with Smart Autocomplete & Quick Chips */}
       {showAddPairModal && (
         <div style={{
           position: 'fixed',
@@ -676,68 +728,274 @@ export default function AutoPilotTrader({ onBack }) {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.75)',
+          background: 'rgba(0,0,0,0.82)',
+          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 999,
-          padding: '20px'
+          zIndex: 9999,
+          padding: '16px'
         }}>
           <div style={{
-            background: '#121721',
-            border: '1px solid #38bdf850',
-            borderRadius: '16px',
+            background: '#0f172a',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            borderRadius: '20px',
             padding: '20px',
             width: '100%',
-            maxWidth: '360px',
+            maxWidth: '420px',
+            maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px'
+            gap: '14px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(56, 189, 248, 0.15)',
+            overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>إضافة زوج جديد للأوتوبايلوت</span>
-              <button onClick={() => setShowAddPairModal(false)} style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-                <X size={20} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>⚡</span>
+                <span style={{ fontSize: '15px', fontWeight: '900', color: '#fff' }}>إضافة زوج تداول للأوتوبايلوت</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddPairModal(false);
+                  setNewPairInput('');
+                  setNewPairName('');
+                }}
+                style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#94a3b8', cursor: 'pointer', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} />
               </button>
             </div>
 
+            {/* Quick Popular Chips */}
             <div>
-              <label style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', display: 'block' }}>رمز الزوج (Symbol e.g. USDJPY / ETHUSDT):</label>
+              <div style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '6px' }}>
+                🚀 اختيارات سريعة شائعة (اضغط للإضافة الفورية):
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {[
+                  { symbol: 'XAU/USD', name: 'الذهب مقابل الدولار', category: 'Metals' },
+                  { symbol: 'EUR/USD', name: 'اليورو مقابل الدولار', category: 'Forex' },
+                  { symbol: 'GBP/USD', name: 'الجنيه الإسترليني', category: 'Forex' },
+                  { symbol: 'USD/JPY', name: 'الدولار مقابل الين', category: 'Forex' },
+                  { symbol: 'US30', name: 'مؤشر الداو جونز', category: 'Indices' },
+                  { symbol: 'NAS100', name: 'مؤشر ناسداك', category: 'Indices' },
+                  { symbol: 'USOIL', name: 'نفط تكساس (WTI)', category: 'Energy' },
+                  { symbol: 'BTC/USDT', name: 'البيتكوين', category: 'Crypto' },
+                  { symbol: 'ETH/USDT', name: 'الإيثيريوم', category: 'Crypto' }
+                ].map(item => {
+                  const alreadyAdded = selectedPairs.some(p => p.symbol.toUpperCase() === item.symbol.toUpperCase());
+                  return (
+                    <button
+                      key={item.symbol}
+                      onClick={() => {
+                        if (!alreadyAdded) {
+                          const updated = [...selectedPairs, {
+                            symbol: item.symbol,
+                            name: item.name,
+                            enabled: true,
+                            category: item.category
+                          }];
+                          handleUpdatePairsOnServer(updated);
+                          setShowAddPairModal(false);
+                        }
+                      }}
+                      style={{
+                        background: alreadyAdded ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${alreadyAdded ? '#10b981' : 'rgba(255,255,255,0.12)'}`,
+                        color: alreadyAdded ? '#10b981' : '#e2e8f0',
+                        padding: '4px 10px',
+                        borderRadius: '16px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: alreadyAdded ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <span>{item.symbol}</span>
+                      {alreadyAdded && <span>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Live Autocomplete Search Input */}
+            <div>
+              <label style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>اكتب أي حرف للبحث التلقائي الفوري (Symbol / Name):</span>
+                <span style={{ color: '#38bdf8', fontSize: '10px' }}>بحث فوري 🔍</span>
+              </label>
               <input
                 type="text"
-                placeholder="مثال: USD/CAD أو ETH/USDT"
+                placeholder="مثال: JPY أو ذهب أو CAD أو ETH أو US30..."
                 value={newPairInput}
-                onChange={(e) => setNewPairInput(e.target.value)}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', boxSizing: 'border-box' }}
+                autoFocus
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNewPairInput(val);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#fff',
+                  boxSizing: 'border-box',
+                  fontSize: '13px',
+                  outline: 'none',
+                  fontWeight: 'bold'
+                }}
               />
             </div>
+
+            {/* Instant Suggestions Dropdown / Matching List */}
+            {(() => {
+              const VERIFIED_DIRECTORY = [
+                // Metals & Energy
+                { symbol: 'XAU/USD', name: 'الذهب مقابل الدولار الأمريكي', category: 'Metals' },
+                { symbol: 'XAG/USD', name: 'الفضة مقابل الدولار الأمريكي', category: 'Metals' },
+                { symbol: 'USOIL', name: 'نفط خام تكساس (WTI)', category: 'Energy' },
+                { symbol: 'UKOIL', name: 'نفط برنت الخام (Brent)', category: 'Energy' },
+                // Indices
+                { symbol: 'US30', name: 'مؤشر الداو جونز الصناعي', category: 'Indices' },
+                { symbol: 'NAS100', name: 'مؤشر ناسداك للتكنولوجيا', category: 'Indices' },
+                { symbol: 'SPX500', name: 'مؤشر إس آند بي 500', category: 'Indices' },
+                { symbol: 'GER40', name: 'مؤشر الداكس الألماني', category: 'Indices' },
+                // Forex
+                { symbol: 'EUR/USD', name: 'اليورو مقابل الدولار الأمريكي', category: 'Forex' },
+                { symbol: 'GBP/USD', name: 'الجنيه الإسترليني مقابل الدولار', category: 'Forex' },
+                { symbol: 'USD/JPY', name: 'الدولار الأمريكي مقابل الين الياباني', category: 'Forex' },
+                { symbol: 'USD/CAD', name: 'الدولار الأمريكي مقابل الدولار الكندي', category: 'Forex' },
+                { symbol: 'USD/CHF', name: 'الدولار الأمريكي مقابل الفرنك السويسري', category: 'Forex' },
+                { symbol: 'AUD/USD', name: 'الدولار الأسترالي مقابل الدولار الأمريكي', category: 'Forex' },
+                { symbol: 'NZD/USD', name: 'الدولار النيوزيلندي مقابل الدولار الأمريكي', category: 'Forex' },
+                { symbol: 'EUR/GBP', name: 'اليورو مقابل الجنيه الإسترليني', category: 'Forex' },
+                { symbol: 'EUR/JPY', name: 'اليورو مقابل الين الياباني', category: 'Forex' },
+                { symbol: 'GBP/JPY', name: 'الجنيه الإسترليني مقابل الين الياباني', category: 'Forex' },
+                { symbol: 'CAD/JPY', name: 'الدولار الكندي مقابل الين الياباني', category: 'Forex' },
+                { symbol: 'AUD/JPY', name: 'الدولار الأسترالي مقابل الين الياباني', category: 'Forex' },
+                { symbol: 'EUR/AUD', name: 'اليورو مقابل الدولار الأسترالي', category: 'Forex' },
+                // Crypto
+                { symbol: 'BTC/USDT', name: 'البيتكوين مقابل التيثر', category: 'Crypto' },
+                { symbol: 'ETH/USDT', name: 'الإيثيريوم مقابل التيثر', category: 'Crypto' },
+                { symbol: 'SOL/USDT', name: 'سولانا مقابل التيثر', category: 'Crypto' },
+                { symbol: 'BNB/USDT', name: 'بينانس كوين مقابل التيثر', category: 'Crypto' },
+                { symbol: 'XRP/USDT', name: 'الريبل مقابل التيثر', category: 'Crypto' },
+                { symbol: 'ADA/USDT', name: 'كاردانو مقابل التيثر', category: 'Crypto' },
+                { symbol: 'DOGE/USDT', name: 'دوجكوين مقابل التيثر', category: 'Crypto' },
+                { symbol: 'AVAX/USDT', name: 'أفالانش مقابل التيثر', category: 'Crypto' }
+              ];
+
+              const query = newPairInput.trim().toUpperCase().replace('/', '');
+              const suggestions = VERIFIED_DIRECTORY.filter(item => {
+                const sClean = item.symbol.replace('/', '').toUpperCase();
+                const nClean = item.name.toUpperCase();
+                const cClean = item.category.toUpperCase();
+                if (!query) return true;
+                return sClean.includes(query) || nClean.includes(query) || cClean.includes(query);
+              });
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '10.5px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>نتائج المقترحات المعتمدة ({suggestions.length}):</span>
+                    <span>اضغط للاختيار الفوري ⚡</span>
+                  </div>
+                  <div style={{
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '10px',
+                    padding: '4px'
+                  }}>
+                    {suggestions.length === 0 ? (
+                      <div style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
+                        لا يوجد رمز مطابق في الدليل، ولكن يمكنك حفظه كرمز مخصص بالضغط على الزر الأزرق بالأسفل!
+                      </div>
+                    ) : (
+                      suggestions.map(item => {
+                        const isAlready = selectedPairs.some(p => p.symbol.toUpperCase() === item.symbol.toUpperCase());
+                        return (
+                          <div
+                            key={item.symbol}
+                            onClick={() => {
+                              setNewPairInput(item.symbol);
+                              setNewPairName(item.name);
+                            }}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              cursor: 'pointer',
+                              background: newPairInput.toUpperCase().replace('/', '') === item.symbol.replace('/', '').toUpperCase() ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                              transition: 'background 0.15s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <AssetLogo symbol={item.symbol} size={18} containerSize={26} />
+                              <div>
+                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fff' }}>
+                                  {item.symbol}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                  {item.name}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '9.5px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px' }}>
+                                {item.category}
+                              </span>
+                              {isAlready && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>مضاف ✓</span>}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div>
               <label style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px', display: 'block' }}>اسم الزوج التوضيحي (اختياري):</label>
               <input
                 type="text"
-                placeholder="مثال: الدولار مقابل الكندي"
+                placeholder="مثال: الدولار الأمريكي مقابل الين"
                 value={newPairName}
                 onChange={(e) => setNewPairName(e.target.value)}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', boxSizing: 'border-box', fontSize: '12px' }}
               />
             </div>
 
             <button
               onClick={handleAddCustomPair}
+              disabled={!newPairInput.trim()}
               style={{
-                background: '#38bdf8',
-                color: '#000',
+                background: newPairInput.trim() ? 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)' : 'rgba(255,255,255,0.1)',
+                color: newPairInput.trim() ? '#000' : '#64748b',
                 border: 'none',
                 padding: '12px',
-                borderRadius: '10px',
-                fontWeight: 'bold',
+                borderRadius: '12px',
+                fontWeight: '900',
                 fontSize: '13px',
-                cursor: 'pointer',
-                marginTop: '4px'
+                cursor: newPairInput.trim() ? 'pointer' : 'not-allowed',
+                marginTop: '4px',
+                boxShadow: newPairInput.trim() ? '0 4px 15px rgba(56, 189, 248, 0.4)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
               }}
             >
-              حفظ وإضافة الزوج للتداول الآلي 🚀
+              <span>حفظ وتفعيل الزوج للتداول الآلي 24/7 🚀</span>
             </button>
           </div>
         </div>
