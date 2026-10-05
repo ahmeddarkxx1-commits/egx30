@@ -20,7 +20,9 @@ import {
   Layers,
   Lock,
   DollarSign,
-  XCircle
+  XCircle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
@@ -58,24 +60,15 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     return parseFloat(localStorage.getItem('traden_gold_selected_lot')) || 0.02;
   });
   const [orderSplitMode, setOrderSplitMode] = useState(() => {
-    return localStorage.getItem('traden_gold_split_mode') || 'smart_split'; // 'smart_split' (3 Scalp + 2 Runner) | 'uniform'
+    return localStorage.getItem('traden_gold_split_mode') || 'smart_split';
   });
   const [executingOrder, setExecutingOrder] = useState(false);
   const [orderStatus, setOrderStatus] = useState('');
   const [orderError, setOrderError] = useState(false);
 
-  // Active Multi-Orders List (Grid of 5 Sub-Orders)
-  const [activeSweepPositions, setActiveSweepPositions] = useState(() => {
-    const saved = localStorage.getItem('traden_gold_active_sweep_positions');
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed && typeof parsed === 'object') return [parsed];
-      } catch (e) {}
-    }
-    return [];
-  });
+  // REAL LIVE MT5 POSITIONS (Strictly synced with /api/account)
+  const [activeSweepPositions, setActiveSweepPositions] = useState([]);
+  const [isMt5Connected, setIsMt5Connected] = useState(false);
   const [lastAutoTriggerTime, setLastAutoTriggerTime] = useState(0);
 
   // 5-Wave Scalping Cycle Progress
@@ -89,14 +82,11 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     return parseFloat(localStorage.getItem('traden_gold_cycle_profit')) || 0.0;
   });
 
-  // LocalStorage state synchronizers
+  // Clear any legacy mock storage on initial load
   useEffect(() => {
-    if (activeSweepPositions && activeSweepPositions.length > 0) {
-      localStorage.setItem('traden_gold_active_sweep_positions', JSON.stringify(activeSweepPositions));
-    } else {
-      localStorage.removeItem('traden_gold_active_sweep_positions');
-    }
-  }, [activeSweepPositions]);
+    localStorage.removeItem('traden_gold_active_sweep_pos');
+    localStorage.removeItem('traden_gold_active_sweep_positions');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('traden_gold_scalp_wave', String(scalpWave));
@@ -137,6 +127,53 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     throw new Error('Cloud server unreachable');
   };
 
+  // === 🔄 REAL-TIME SYNC WITH REAL MT5 ACCOUNT POSITIONS ===
+  const syncLiveMt5Positions = async () => {
+    try {
+      const response = await fetchWithCloudFallback('/api/account');
+      if (response && response.ok) {
+        const data = await response.json();
+        setIsMt5Connected(Boolean(data.connected));
+        
+        const rawPositions = Array.isArray(data.positions) ? data.positions : [];
+        // Filter strictly for Gold open positions on real MT5
+        const goldPositions = rawPositions.filter(p => {
+          const sym = String(p.symbol || '').toUpperCase();
+          return sym.includes('XAU') || sym.includes('GOLD');
+        });
+
+        const formatted = goldPositions.map((p, idx) => {
+          const side = String(p.type || '').toLowerCase().includes('buy') || p.type === 0 ? 'buy' : 'sell';
+          const isRunner = idx >= 3;
+          return {
+            id: String(p.ticket || idx),
+            ticket: p.ticket,
+            symbol: p.symbol,
+            side: side,
+            entryPrice: Number(p.price_open || p.price || price),
+            sl: Number(p.sl || 0),
+            tp: Number(p.tp || 0),
+            lot: Number(p.volume || selectedLot),
+            profit: Number(p.profit || 0),
+            type: isRunner ? 'RUNNER 🏆' : 'SCALP ⚡',
+            isBreakEven: false
+          };
+        });
+
+        setActiveSweepPositions(formatted);
+      }
+    } catch (err) {
+      // If network offline, don't invent fake positions
+    }
+  };
+
+  // Poll live MT5 account every 3.5 seconds
+  useEffect(() => {
+    syncLiveMt5Positions();
+    const interval = setInterval(syncLiveMt5Positions, 3500);
+    return () => clearInterval(interval);
+  }, [price]);
+
   // 1-Min Scalping Liquidity Magnet Target System
   const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
   let isUp = goldTicker ? goldTicker.isUp : false;
@@ -170,7 +207,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // === 🚀 1. Multi-Order Grid Execution (5 صفقات متزامنة معاً) ===
+  // === 🚀 1. Multi-Order Grid Execution (5 صفقات متزامنة معاً على MT5 الحقيقي) ===
   const handleExecuteSweepOrder = async (overrideSide = null, customComment = 'Gold Liquidity Sweep', currentWave = scalpWave) => {
     const side = overrideSide || (isUp ? 'buy' : 'sell');
     const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
@@ -192,17 +229,13 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     }
 
     setExecutingOrder(true);
-    setOrderStatus(`⚡ جاري إرسال حزمة من 5 صفقات متزامنة (${actionLabel}) بإجمالي ${(selectedLot * 5).toFixed(2)} لوت إلى MT5...`);
+    setOrderStatus(`⚡ جاري إرسال حزمة الـ 5 صفقات المتزامنة (${actionLabel}) بإجمالي ${(selectedLot * 5).toFixed(2)} لوت إلى MT5...`);
     setOrderError(false);
 
-    const newSubOrders = [];
-
     try {
-      // Execute 5 Sub-Orders Grid
       for (let i = 1; i <= 5; i++) {
         const isRunnerOrder = (orderSplitMode === 'smart_split' && i >= 4);
         const appliedTpDist = isRunnerOrder ? runnerTpDist : baseTpDist;
-        const subType = isRunnerOrder ? 'RUNNER 🏆' : 'SCALP ⚡';
 
         let subSl = side === 'buy' 
           ? Number((entryP - baseSlDist - spreadGold).toFixed(2)) 
@@ -214,7 +247,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
         const subComment = `Traden W${currentWave}-${i} ${isRunnerOrder ? 'RUNNER' : 'SCALP'}`;
 
-        const response = await fetchWithCloudFallback('/api/orders/place', {
+        await fetchWithCloudFallback('/api/orders/place', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -226,73 +259,26 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             comment: subComment
           })
         });
-
-        let ticketId = Math.floor(100000 + Math.random() * 900000);
-        if (response && response.ok) {
-          try {
-            const resJson = await response.json();
-            if (resJson.ticket) ticketId = resJson.ticket;
-          } catch (e) {}
-        }
-
-        newSubOrders.push({
-          id: `${Date.now()}-${i}`,
-          subIndex: i,
-          ticket: ticketId,
-          side: side,
-          entryPrice: entryP,
-          sl: subSl,
-          tp: subTp,
-          lot: selectedLot,
-          strategy: sweepStrategy,
-          type: subType,
-          isRunner: isRunnerOrder,
-          wave: currentWave,
-          isBreakEven: false,
-          time: new Date().toLocaleTimeString('ar-EG')
-        });
       }
 
-      setActiveSweepPositions(newSubOrders);
       setOrderError(false);
-      setOrderStatus(`🎉 تم فتح حزمة 5 صفقات متزامنة بنجاح! [3 صفقات خطف سريع + صفقتين Runner] بإجمالي ${(selectedLot * 5).toFixed(2)} لوت.`);
+      setOrderStatus(`✅ تم إرسال حزمة الـ 5 صفقات بنجاح إلى منصة MT5! جاري تحديث بيانات الحساب المباشرة...`);
+      // Trigger instant sync with real account
+      setTimeout(syncLiveMt5Positions, 1000);
+      setTimeout(syncLiveMt5Positions, 3000);
     } catch (e) {
-      for (let i = 1; i <= 5; i++) {
-        const isRunnerOrder = (orderSplitMode === 'smart_split' && i >= 4);
-        const appliedTpDist = isRunnerOrder ? runnerTpDist : baseTpDist;
-        let subSl = side === 'buy' ? Number((entryP - baseSlDist - 0.20).toFixed(2)) : Number((entryP + baseSlDist + 0.20).toFixed(2));
-        let subTp = side === 'buy' ? Number((entryP + appliedTpDist + 0.20).toFixed(2)) : Number((entryP - appliedTpDist - 0.20).toFixed(2));
-
-        newSubOrders.push({
-          id: `${Date.now()}-${i}`,
-          subIndex: i,
-          ticket: Math.floor(100000 + Math.random() * 900000),
-          side: side,
-          entryPrice: entryP,
-          sl: subSl,
-          tp: subTp,
-          lot: selectedLot,
-          strategy: sweepStrategy,
-          type: isRunnerOrder ? 'RUNNER 🏆' : 'SCALP ⚡',
-          isRunner: isRunnerOrder,
-          wave: currentWave,
-          isBreakEven: false,
-          time: new Date().toLocaleTimeString('ar-EG')
-        });
-      }
-      setActiveSweepPositions(newSubOrders);
-      setOrderError(false);
-      setOrderStatus(`✅ تم إرسال أوامر حزمة الـ 5 صفقات للموجة [${currentWave}/5] للتنفيذ الفوري على MT5!`);
+      setOrderError(true);
+      setOrderStatus(`⚠️ تعذر الاتصال بالسيرفر السحابي أو MT5. يرجى التأكد من تشغيل الجسر على الـ VPS.`);
     } finally {
       setExecutingOrder(false);
     }
   };
 
-  // === 🛑 Close All Positions (إغلاق وحجز الأرباح للكل) ===
+  // === 🛑 Close All Real Positions (إغلاق وحجز الأرباح للكل) ===
   const handleCloseAllPositions = async () => {
     if (!activeSweepPositions || activeSweepPositions.length === 0) return;
     setExecutingOrder(true);
-    setOrderStatus(`جاري إغلاق جميع الصفقات الـ (${activeSweepPositions.length}) وحجز الأرباح...`);
+    setOrderStatus(`جاري إغلاق جميع الصفقات المفتوحة وحجز الأرباح في MT5...`);
 
     try {
       const ticketsToClose = activeSweepPositions.map(p => p.ticket);
@@ -306,19 +292,15 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         } catch (err) {}
       }
 
-      const isPosBuy = activeSweepPositions[0]?.side === 'buy';
-      const profitPerOrder = isPosBuy ? (price - activeSweepPositions[0]?.entryPrice) : (activeSweepPositions[0]?.entryPrice - price);
-      const totalEarned = (profitPerOrder * (selectedLot * activeSweepPositions.length * 100)).toFixed(2);
-      
-      if (parseFloat(totalEarned) > 0) {
-        setCycleProfit(prev => parseFloat((prev + parseFloat(totalEarned)).toFixed(2)));
+      const totalProfit = activeSweepPositions.reduce((acc, p) => acc + (p.profit || 0), 0);
+      if (totalProfit > 0) {
+        setCycleProfit(prev => parseFloat((prev + totalProfit).toFixed(2)));
       }
 
-      setOrderStatus(`💰 تم إغلاق وحجز أرباح جميع الصفقات بنجاح (+${totalEarned}$)!`);
-      setActiveSweepPositions([]);
+      setOrderStatus(`💰 تم إرسال أوامر إغلاق الصفقات بنجاح!`);
+      setTimeout(syncLiveMt5Positions, 1000);
     } catch (e) {
-      setOrderStatus(`💰 تم إرسال أمر إغلاق جميع الصفقات!`);
-      setActiveSweepPositions([]);
+      setOrderStatus(`💰 تم إرسال أمر إغلاق الصفقات!`);
     } finally {
       setExecutingOrder(false);
     }
@@ -338,7 +320,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     });
 
     setActiveSweepPositions(updated);
-    setOrderStatus(`🛡️ تم تأمين جميع الصفقات الـ (${activeSweepPositions.length}) بنجاح ونقل الستوب لنقطة الدخول (0 مخاطرة)!`);
+    setOrderStatus(`🛡️ تم طلب نقل الستوب لوز لنقطة الدخول (0 مخاطرة)!`);
   };
 
   const toggleAutoBot = (newState) => {
@@ -374,7 +356,7 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
   useEffect(() => {
     if (!autoSweepBot) return;
 
-    if (activeSweepPositions.length === 0 && !isAnalyzing && Date.now() - lastAutoTriggerTime > 4000) {
+    if (activeSweepPositions.length === 0 && !isAnalyzing && Date.now() - lastAutoTriggerTime > 5000) {
       setLastAutoTriggerTime(Date.now());
       setIsAnalyzing(true);
       setOrderStatus(`🔍 [تحليل السيولة] جاري فحص اتجاه تدفق السيولة والقمم والقيعان...`);
@@ -383,40 +365,6 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
         setIsAnalyzing(false);
         handleExecuteSweepOrder(isUp ? 'buy' : 'sell', `Auto Bot Wave [${scalpWave}/5]`, scalpWave);
       }, 2000);
-    }
-
-    if (activeSweepPositions.length > 0) {
-      const firstPos = activeSweepPositions[0];
-      const isPosBuy = firstPos.side === 'buy';
-      const profitPips = isPosBuy ? (price - firstPos.entryPrice) : (firstPos.entryPrice - price);
-
-      if (profitPips >= 0.85 && !firstPos.isBreakEven) {
-        handleBreakEvenAll();
-      }
-
-      if (profitPips >= 1.55 || (profitPips >= 1.25 && isTargetHit)) {
-        const totalProfitVal = (profitPips * (selectedLot * activeSweepPositions.length * 100)).toFixed(2);
-        setCycleProfit(prev => parseFloat((prev + parseFloat(totalProfitVal)).toFixed(2)));
-
-        handleCloseAllPositions().then(() => {
-          const nextWave = scalpWave >= 5 ? 1 : scalpWave + 1;
-          if (scalpWave >= 5) {
-            setCompletedCycles(c => c + 1);
-            setOrderStatus(`🏆 اكتملت الدورة الخماسية بنجاح لمضاعفة الحساب! 🚀 جاري بدء دورة جديدة...`);
-          } else {
-            setOrderStatus(`✅ تم حجز أرباح الموجة [${scalpWave}/5] (+${totalProfitVal}$)! جاري تحليل اتجاه الموجة [${nextWave}/5]...`);
-          }
-          setScalpWave(nextWave);
-          setIsAnalyzing(true);
-
-          setTimeout(() => {
-            setIsAnalyzing(false);
-            if (autoSweepBot) {
-              handleExecuteSweepOrder(isUp ? 'buy' : 'sell', `Auto Bot Wave ${nextWave}/5`, nextWave);
-            }
-          }, 2500);
-        });
-      }
     }
   }, [autoSweepBot, activeSweepPositions, price, isUp]);
 
@@ -488,12 +436,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
     };
   }, []);
 
-  const totalOpenLots = (activeSweepPositions.length * selectedLot).toFixed(2);
-  const totalLiveFloatingPnl = activeSweepPositions.reduce((acc, pos) => {
-    const isPosBuy = pos.side === 'buy';
-    const diff = isPosBuy ? (price - pos.entryPrice) : (pos.entryPrice - price);
-    return acc + (diff * (pos.lot * 100));
-  }, 0);
+  const totalRealProfit = activeSweepPositions.reduce((acc, p) => acc + (p.profit || 0), 0);
+  const totalOpenLots = activeSweepPositions.reduce((acc, p) => acc + (p.lot || 0), 0).toFixed(2);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} dir="rtl">
@@ -505,9 +449,27 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           <span style={{ fontSize: '18px', fontWeight: 'bold' }}>رجوع</span>
         </button>
 
-        <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Flame size={14} color="#f59e0b" />
-          <span>قسم الذهب 🥇</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ 
+            background: isMt5Connected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', 
+            border: `1px solid ${isMt5Connected ? '#10b981' : '#ef4444'}`, 
+            color: isMt5Connected ? '#10b981' : '#f87171', 
+            padding: '4px 10px', 
+            borderRadius: '20px', 
+            fontSize: '11px', 
+            fontWeight: 'bold', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '5px' 
+          }}>
+            {isMt5Connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+            <span>{isMt5Connected ? 'MT5 متصل ومزامن' : 'MT5 غير متصل بالـ VPS'}</span>
+          </div>
+
+          <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Flame size={14} color="#f59e0b" />
+            <span>قسم الذهب 🥇</span>
+          </div>
         </div>
       </div>
 
@@ -880,8 +842,8 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
           </div>
         </div>
 
-        {/* ACTIVE MULTI-ORDERS CARD & QUICK CONTROLS */}
-        {activeSweepPositions && activeSweepPositions.length > 0 && (
+        {/* REAL LIVE ACTIVE POSITIONS CARD (Strictly synced with MT5) */}
+        {activeSweepPositions && activeSweepPositions.length > 0 ? (
           <div style={{
             background: 'rgba(16, 185, 129, 0.08)',
             border: '1.5px solid #10b981',
@@ -891,16 +853,16 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
             flexDirection: 'column',
             gap: '10px'
           }}>
-            {/* Header: Count & Quick Control Buttons */}
+            {/* Header: Real Count & Quick Control Buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 12px #10b981' }}></span>
                 <div>
                   <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#fff' }}>
-                    حزمة الصفقات النشطة: ({activeSweepPositions.length} صفقات متزامنة)
+                    الصفقات المفتوحة فعلياً على MT5: ({activeSweepPositions.length} صفقات)
                   </div>
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    إجمالي اللوت: <b style={{ color: '#f59e0b' }}>{totalOpenLots}</b> | الأرباح الحية: <b style={{ color: totalLiveFloatingPnl >= 0 ? '#10b981' : '#f87171' }}>{totalLiveFloatingPnl >= 0 ? '+' : ''}{totalLiveFloatingPnl.toFixed(2)}$</b>
+                    إجمالي اللوت: <b style={{ color: '#f59e0b' }}>{totalOpenLots}</b> | الأرباح الحية في الحساب: <b style={{ color: totalRealProfit >= 0 ? '#10b981' : '#f87171' }}>{totalRealProfit >= 0 ? '+' : ''}{totalRealProfit.toFixed(2)}$</b>
                   </div>
                 </div>
               </div>
@@ -953,11 +915,10 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
               </div>
             </div>
 
-            {/* Sub-Orders Grid Display */}
+            {/* Real Sub-Orders Grid Display */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
               {activeSweepPositions.map((sub, idx) => {
                 const isBuy = sub.side === 'buy';
-                const subPnl = isBuy ? (price - sub.entryPrice) * (sub.lot * 100) : (sub.entryPrice - price) * (sub.lot * 100);
                 return (
                   <div 
                     key={sub.id || idx}
@@ -974,28 +935,40 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ color: isBuy ? '#10b981' : '#f87171', fontWeight: 'bold' }}>
-                        #{sub.ticket} [{sub.type}]
+                        #{sub.ticket} [{isBuy ? 'BUY' : 'SELL'}] ({sub.lot} لوت)
                       </span>
                       <span style={{ color: '#cbd5e1' }}>دخول: <b>${sub.entryPrice}</b></span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ color: '#f87171' }}>SL: ${sub.sl}</span>
-                      <span style={{ color: '#4ade80' }}>TP: ${sub.tp}</span>
+                      {sub.sl > 0 && <span style={{ color: '#f87171' }}>SL: ${sub.sl}</span>}
+                      {sub.tp > 0 && <span style={{ color: '#4ade80' }}>TP: ${sub.tp}</span>}
                       <span style={{ 
-                        color: subPnl >= 0 ? '#10b981' : '#f87171', 
+                        color: sub.profit >= 0 ? '#10b981' : '#f87171', 
                         fontWeight: 'bold',
-                        background: subPnl >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        background: sub.profit >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                         padding: '2px 6px',
                         borderRadius: '4px'
                       }}>
-                        {subPnl >= 0 ? '+' : ''}{subPnl.toFixed(2)}$
+                        {sub.profit >= 0 ? '+' : ''}{sub.profit.toFixed(2)}$
                       </span>
                     </div>
                   </div>
                 );
               })}
             </div>
+          </div>
+        ) : (
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px dashed rgba(255,255,255,0.1)',
+            borderRadius: '12px',
+            padding: '12px',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: '#94a3b8'
+          }}>
+            لا توجد صفقات ذهب نشطة حالياً في حساب MT5
           </div>
         )}
 
