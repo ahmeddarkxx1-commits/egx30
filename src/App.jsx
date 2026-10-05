@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bot, BarChart2, Bell, Shield, Activity, Zap, Lock, Key, CheckCircle, Send, Sparkles } from 'lucide-react';
+import { 
+  Bot, BarChart2, Shield, Activity, Zap, Lock, Key, 
+  Send, Sparkles, TrendingUp, Cpu, Globe, Crosshair, 
+  Layers, ArrowUpRight, DollarSign, RefreshCw, ChevronRight
+} from 'lucide-react';
 import { fetchLiveAssetTicker } from './utils/priceFetcher';
 import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
@@ -14,9 +18,8 @@ import TradingViewSparkline from './components/TradingViewSparkline';
 import PlatformsConnect from './components/PlatformsConnect';
 import './App.css';
 
-// Admin / Allowed User IDs or Master Activation Code
 const MASTER_VIP_CODE = 'TRADEN2026';
-const WHITELISTED_TELEGRAM_IDS = [1914514519, 12345678, 87654321]; // Admin Telegram ID added!
+const WHITELISTED_TELEGRAM_IDS = [1914514519, 12345678, 87654321];
 
 function LiveMarketWidget({ onOpenBot }) {
   const [activeAsset, setActiveAsset] = useState('BTC/USDT');
@@ -24,12 +27,11 @@ function LiveMarketWidget({ onOpenBot }) {
   const [loading, setLoading] = useState(true);
 
   const loadData = async (symbol) => {
-    setLoading(true);
     try {
       const data = await fetchLiveAssetTicker(symbol);
       setTickerData(data);
     } catch (e) {
-      console.error('Failed fetching live ticker for widget:', e);
+      console.error('Ticker fetch error:', e);
     } finally {
       setLoading(false);
     }
@@ -37,12 +39,14 @@ function LiveMarketWidget({ onOpenBot }) {
 
   useEffect(() => {
     loadData(activeAsset);
-    const interval = setInterval(() => loadData(activeAsset), 2500);
+    const interval = setInterval(() => loadData(activeAsset), 2000);
     return () => clearInterval(interval);
   }, [activeAsset]);
 
   const priceFormatted = tickerData?.price 
-    ? (tickerData.price >= 1000 ? '$' + tickerData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$' + tickerData.price)
+    ? (tickerData.price >= 1000 
+        ? '$' + tickerData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+        : '$' + tickerData.price)
     : '...';
 
   const changeVal = tickerData?.change24h || 0;
@@ -50,117 +54,82 @@ function LiveMarketWidget({ onOpenBot }) {
   const highVal = tickerData?.high24h ? '$' + tickerData.high24h.toLocaleString() : (tickerData?.price ? '$' + (tickerData.price * 1.012).toFixed(2) : '...');
   const lowVal = tickerData?.low24h ? '$' + tickerData.low24h.toLocaleString() : (tickerData?.price ? '$' + (tickerData.price * 0.988).toFixed(2) : '...');
   
-  const trendText = changeVal > 0.15 ? 'صاعد 📈' : changeVal < -0.15 ? 'هابط 📉' : 'عرضي ⚖️';
-  const trendColor = changeVal > 0.15 ? '#10b981' : changeVal < -0.15 ? '#ef4444' : '#f59e0b';
+  const trendText = changeVal > 0.15 ? 'BULLISH ↗' : changeVal < -0.15 ? 'BEARISH ↘' : 'SIDEWAYS ⇄';
+  const trendColor = changeVal > 0.15 ? '#10b981' : changeVal < -0.15 ? '#f43f5e' : '#f59e0b';
 
   return (
-    <section className="chart-container" style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
-      
-      {/* Asset Switcher Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #21262d', paddingBottom: '10px' }}>
+    <div className="hero-market-card">
+      {/* Asset Selector Tabs */}
+      <div className="asset-pill-group">
         {[
-          { symbol: 'BTC/USDT', label: '₿ البيتكوين' },
-          { symbol: 'XAU/USD', label: '🥇 الذهب' },
-          { symbol: 'EUR/USD', label: '💶 اليورو' },
+          { symbol: 'BTC/USDT', label: 'BTC' },
+          { symbol: 'XAU/USD', label: 'GOLD' },
+          { symbol: 'EUR/USD', label: 'EUR/USD' },
+          { symbol: 'ETH/USDT', label: 'ETH' },
+          { symbol: 'US30', label: 'US30' },
         ].map(item => (
           <button
             key={item.symbol}
             onClick={() => setActiveAsset(item.symbol)}
-            style={{
-              background: activeAsset === item.symbol ? '#1f6beb' : '#21262d',
-              color: '#fff',
-              border: activeAsset === item.symbol ? '1px solid #388bfd' : '1px solid #30363d',
-              borderRadius: '20px',
-              padding: '6px 14px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`asset-pill ${activeAsset === item.symbol ? 'active' : ''}`}
           >
             {item.label}
           </button>
         ))}
       </div>
 
-      {/* Main Header */}
-      <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Main Price & Trend Row */}
+      <div className="hero-price-row">
         <div>
-          <div className="price" style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#f0f6fc' }}>
-            {loading && !tickerData ? 'جاري التحميل...' : priceFormatted}
+          <div className="hero-price-big mono">
+            {loading && !tickerData ? 'SYNCING...' : priceFormatted}
           </div>
-          <div className="price-sub" style={{ fontSize: '0.85rem', color: '#8b949e', marginTop: '2px' }}>
-            {activeAsset} · أسعار لحظية (Live 24h)
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '600' }}>
+            {activeAsset} · REAL-TIME TICKER
           </div>
         </div>
-        <div 
-          className={isUp ? "trend-up" : "trend-down"}
-          style={{
-            background: isUp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-            color: isUp ? '#3fb950' : '#f85149',
-            border: `1px solid ${isUp ? '#2ea043' : '#f85149'}`,
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontWeight: 'bold',
-            fontSize: '0.85rem'
-          }}
-        >
+        <div className={`hero-pct-badge mono ${isUp ? 'pct-up' : 'pct-down'}`}>
           {isUp ? '▲ +' : '▼ '}{changeVal.toFixed(2)}%
         </div>
       </div>
       
-      {/* Dynamic Sparkline Wave SVG (TradingView Style) */}
-      <div style={{ height: '65px', width: '100%', margin: '12px 0 16px 0' }}>
+      {/* Wave Sparkline */}
+      <div style={{ height: '54px', width: '100%', margin: '6px 0 10px 0' }}>
         <TradingViewSparkline
           isUp={isUp}
-          height={65}
+          height={54}
           id={`home-widget-${activeAsset}`}
           seed={activeAsset}
-          strokeWidth={2.4}
+          strokeWidth={2.2}
         />
       </div>
 
-      {/* Stats Cards */}
-      <div className="chart-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
-          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>أدنى 24h</div>
-          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#c9d1d9', marginTop: '2px' }}>{lowVal}</div>
+      {/* 3 Metric Chips */}
+      <div className="hero-metrics-grid">
+        <div className="metric-chip">
+          <div className="metric-chip-label">24H LOW</div>
+          <div className="metric-chip-val mono">{lowVal}</div>
         </div>
-        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
-          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>أعلى 24h</div>
-          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#c9d1d9', marginTop: '2px' }}>{highVal}</div>
+        <div className="metric-chip">
+          <div className="metric-chip-label">24H HIGH</div>
+          <div className="metric-chip-val mono">{highVal}</div>
         </div>
-        <div className="stat-box" style={{ background: '#0d1117', padding: '10px', borderRadius: '8px', border: '1px solid #21262d', textAlign: 'center' }}>
-          <div className="stat-title" style={{ fontSize: '0.75rem', color: '#8b949e' }}>الاتجاه</div>
-          <div className="stat-val" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: trendColor, marginTop: '2px' }}>{trendText}</div>
+        <div className="metric-chip">
+          <div className="metric-chip-label">AI SENTIMENT</div>
+          <div className="metric-chip-val mono" style={{ color: trendColor }}>{trendText}</div>
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Instant Action Button */}
       <button
         onClick={() => onOpenBot(activeAsset)}
-        style={{
-          width: '100%',
-          marginTop: '15px',
-          background: 'linear-gradient(135deg, #1f6beb 0%, #238636 100%)',
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '10px',
-          padding: '12px',
-          fontWeight: 'bold',
-          fontSize: '0.9rem',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          boxShadow: '0 4px 12px rgba(31, 107, 235, 0.3)'
-        }}
+        className="hero-action-btn"
       >
-        <span>🤖 تحليل وتوليد صفقات لـ {activeAsset}</span>
+        <Zap size={16} />
+        <span>Analyze & Instant Trade {activeAsset}</span>
+        <ArrowUpRight size={16} style={{ marginLeft: 'auto' }} />
       </button>
-
-    </section>
+    </div>
   );
 }
 
@@ -168,12 +137,32 @@ function App() {
   const [tgUser, setTgUser] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
+  const [accountBalance, setAccountBalance] = useState(null);
   
   // Authorization state
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [activationInput, setActivationInput] = useState('');
   const [activationError, setActivationError] = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const res = await fetch('https://worker-production-f2a42.up.railway.app/api/account');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected && data.balance !== undefined) {
+            setAccountBalance(data.balance);
+          }
+        }
+      } catch (e) {
+        // silent fail
+      }
+    };
+    fetchBalance();
+    const bInterval = setInterval(fetchBalance, 6000);
+    return () => clearInterval(bInterval);
+  }, []);
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -186,14 +175,12 @@ function App() {
         const userStorageKey = `traden_user_authorized_${u.id}`;
         const storedUserAuth = localStorage.getItem(userStorageKey);
 
-        // Check if current user is admin OR previously activated this specific ID
         if (WHITELISTED_TELEGRAM_IDS.includes(u.id) || u.id === 1914514519 || storedUserAuth === 'true') {
           setIsAuthorized(true);
         } else {
           setIsAuthorized(false);
         }
       } else {
-        // Standalone browser without Telegram user context
         const storedAuth = localStorage.getItem('traden_user_authorized_browser');
         if (storedAuth === 'true') {
           setIsAuthorized(true);
@@ -204,8 +191,6 @@ function App() {
 
   const handleActivateWithCode = () => {
     const cleanInput = activationInput.trim().toUpperCase();
-
-    // Accept master key OR any key generated by Telegram Bot starting with TRADEN-
     const isValidKey = cleanInput === MASTER_VIP_CODE || 
                        cleanInput.startsWith('TRADEN-') || 
                        cleanInput.includes('TRADEN');
@@ -220,128 +205,148 @@ function App() {
     }
   };
 
-  // 🔒 RESTRICTED ACCESS SCREEN (If user is not authorized by Admin)
+  // 🔒 RESTRICTED ACCESS SCREEN
   if (!isAuthorized) {
     return (
       <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', textAlign: 'center', padding: '20px' }}>
-        
         <div style={{ 
-          width: '80px', height: '80px', borderRadius: '50%', 
-          background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto',
-          boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+          width: '72px', height: '72px', borderRadius: '50%', 
+          background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto',
+          boxShadow: '0 0 24px rgba(244, 63, 94, 0.2)'
         }}>
-          <Lock size={40} color="#f87171" />
+          <Lock size={34} color="#f43f5e" />
         </div>
 
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff', margin: '0 0 10px 0' }}>
-          الحساب غير مفعل 🔒
+        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 8px 0' }}>
+          Terminal Access Required 🔒
         </h2>
 
-        <p style={{ fontSize: '13px', color: '#9ca3af', lineHeight: '1.6', maxWidth: '340px', margin: '0 0 20px 0' }}>
-          عذراً، استخدام منصة <b>Traden AI</b> يتطلب إذن التفعيل المباشر من إدارة البوت.
+        <p style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: '1.5', maxWidth: '320px', margin: '0 0 18px 0' }}>
+          Traden Pro Terminal requires verified VIP activation to execute algorithmic trades.
         </p>
 
         {tgUser && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px 16px', fontSize: '12px', color: '#f59e0b', marginBottom: '20px' }}>
-            معرف الحساب: <b>@{tgUser.username || tgUser.first_name || tgUser.id}</b> (ID: {tgUser.id})
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '8px 14px', fontSize: '11.5px', color: '#f59e0b', marginBottom: '16px' }}>
+            ID: <b>{tgUser.id}</b> (@{tgUser.username || tgUser.first_name})
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '320px' }}>
-          
-          {/* Telegram Contact Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '300px' }}>
           <a 
-            href={tgUser ? `https://t.me/share/url?url=طلب%20تفعيل%20حساب%20Traden%20AI%20للمستخدم%20ID:%20${tgUser.id}` : 'https://t.me/'}
+            href={tgUser ? `https://t.me/share/url?url=Request%20Traden%20AI%20Access%20ID:${tgUser.id}` : 'https://t.me/'}
             target="_blank" 
             rel="noreferrer"
             style={{ 
               background: '#f59e0b', color: '#000', textDecoration: 'none', 
-              padding: '14px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px',
+              padding: '12px', borderRadius: '10px', fontWeight: '700', fontSize: '13px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)'
             }}
           >
-            <Send size={18} />
-            <span>تواصل مع الأدمن لتفعيل الحساب 📲</span>
+            <Send size={16} />
+            <span>Contact Admin for Activation</span>
           </a>
 
-          {/* Enter Code Toggle Button */}
           <button 
             onClick={() => setShowCodeInput(!showCodeInput)}
             style={{ 
               background: 'rgba(255,255,255,0.04)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
-              padding: '12px', borderRadius: '12px', fontSize: '13px', cursor: 'pointer',
+              padding: '10px', borderRadius: '10px', fontSize: '12px', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
-            <Key size={16} color="#a855f7" />
-            <span>أدخل كود تفعيل الأدمن (VIP)</span>
+            <Key size={14} color="#a855f7" />
+            <span>Enter License Key (VIP)</span>
           </button>
 
-          {/* Activation Code Input Box */}
           {showCodeInput && (
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '14px', padding: '14px', marginTop: '6px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '12px', padding: '12px', marginTop: '4px' }}>
               <input 
                 type="text"
-                placeholder="أدخل رمز كود التفعيل هُنا..."
+                placeholder="Enter License Key..."
                 value={activationInput}
                 onChange={(e) => { setActivationInput(e.target.value); setActivationError(false); }}
                 style={{
-                  width: '100%', background: 'rgba(0,0,0,0.4)', border: `1px solid ${activationError ? '#f87171' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '10px', padding: '10px', color: '#fff', fontSize: '13px', textAlign: 'center', outline: 'none', boxSizing: 'border-box'
+                  width: '100%', background: 'rgba(0,0,0,0.5)', border: `1px solid ${activationError ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: '8px', padding: '9px', color: '#fff', fontSize: '12px', textAlign: 'center', outline: 'none', boxSizing: 'border-box'
                 }}
               />
               {activationError && (
-                <div style={{ color: '#f87171', fontSize: '11px', marginTop: '6px' }}>كود التفعيل غير صحيح ❌</div>
+                <div style={{ color: '#f43f5e', fontSize: '11px', marginTop: '4px' }}>Invalid Key ❌</div>
               )}
               <button 
                 onClick={handleActivateWithCode}
                 style={{
                   width: '100%', background: '#a855f7', color: '#fff', border: 'none',
-                  borderRadius: '10px', padding: '10px', marginTop: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer'
+                  borderRadius: '8px', padding: '9px', marginTop: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer'
                 }}
               >
-                تفعيل الحساب الآن ✨
+                Activate Terminal ✨
               </button>
             </div>
           )}
-
         </div>
-
       </div>
     );
   }
 
-  const renderNav = () => (
-    <div className="sticky-nav">
-      {[
-        { id: 'home', label: '🏠 الرئيسية' },
-        { id: 'platforms_connect', label: '🔗 ربط المنصات' },
-        { id: 'egx_stocks', label: '🇪🇬 البورصة المصرية' },
-        { id: 'signal_bot', label: '🤖 التوصيات' },
-        { id: 'gold_liquidity', label: '🥇 سيولة الذهب' },
-        { id: 'traden_radar', label: '📡 رادار الأسواق' },
-        { id: 'market_scanner', label: '📊 فاحص المؤشرات' },
-        { id: 'investment_bot', label: '🌱 الاستثمار' },
-        { id: 'market_news', label: '📰 الأخبار' },
-      ].map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => setCurrentView(tab.id)}
-          className={`nav-tab ${currentView === tab.id ? 'active' : ''}`}
+  const renderHeaderNav = () => (
+    <div className="header-glass-wrapper">
+      <div className="top-navbar-row">
+        <div className="brand-logo" onClick={() => setCurrentView('home')}>
+          <div className="brand-icon-chip">
+            <Cpu size={16} color="#38bdf8" />
+          </div>
+          <span>TRADEN</span>
+          <span className="brand-badge">PRO AI</span>
+        </div>
+
+        <div 
+          className="account-pill"
+          onClick={() => setCurrentView('platforms_connect')}
         >
-          {tab.label}
-        </button>
-      ))}
+          <span className="pulse-dot"></span>
+          <span className="mono">
+            {accountBalance !== null ? `MT5: $${accountBalance.toFixed(2)}` : 'MT5 Live'}
+          </span>
+        </div>
+      </div>
+
+      <div className="sub-nav-tabs">
+        {[
+          { id: 'home', label: 'Terminal', icon: Activity },
+          { id: 'gold_liquidity', label: 'Gold Radar', icon: Crosshair },
+          { id: 'signal_bot', label: 'AI Signals', icon: Bot },
+          { id: 'traden_radar', label: 'Market Radar', icon: Zap },
+          { id: 'market_scanner', label: 'Scanner', icon: BarChart2 },
+          { id: 'egx_stocks', label: 'EGX Stocks', icon: Globe },
+          { id: 'platforms_connect', label: 'Broker Sync', icon: Shield },
+          { id: 'investment_bot', label: 'Investment', icon: TrendingUp },
+          { id: 'market_news', label: 'News', icon: Globe },
+        ].map(tab => {
+          const IconComponent = tab.icon;
+          const isActive = currentView === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentView(tab.id)}
+              className={`sub-nav-btn ${isActive ? 'active' : ''}`}
+            >
+              <IconComponent size={13} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 
-  // ✅ AUTHORIZED FULL APP VIEW
+  // VIEW ROUTING
   if (currentView === 'platforms_connect') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <PlatformsConnect onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -350,7 +355,7 @@ function App() {
   if (currentView === 'investment_bot') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <InvestmentBot onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -359,7 +364,7 @@ function App() {
   if (currentView === 'halal_guide') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <HalalGuide onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -368,7 +373,7 @@ function App() {
   if (currentView === 'precious_metals') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <PreciousMetals onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -377,7 +382,7 @@ function App() {
   if (currentView === 'traden_radar') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <TradenRadar 
           onBack={() => setCurrentView('home')} 
           onOpenBot={(symbol) => {
@@ -392,7 +397,7 @@ function App() {
   if (currentView === 'market_scanner') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <MarketScanner onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -401,7 +406,7 @@ function App() {
   if (currentView === 'signal_bot') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <SignalBot initialSymbol={selectedSymbol} onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -410,7 +415,7 @@ function App() {
   if (currentView === 'gold_liquidity') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <GoldLiquidityRadar 
           onBack={() => setCurrentView('home')} 
           onAnalyzeGold={(symbol) => {
@@ -425,7 +430,7 @@ function App() {
   if (currentView === 'egx_stocks') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <EgxAnalysis onBack={() => setCurrentView('home')} />
       </div>
     );
@@ -434,44 +439,18 @@ function App() {
   if (currentView === 'market_news') {
     return (
       <div className="app-container">
-        {renderNav()}
+        {renderHeaderNav()}
         <MarketNews onBack={() => setCurrentView('home')} />
       </div>
     );
   }
 
+  // DEFAULT DASHBOARD
   return (
     <div className="app-container">
-      {renderNav()}
+      {renderHeaderNav()}
 
-      {/* Header */}
-      <header className="header" style={{ padding: '8px 12px', gap: '2px', marginBottom: '2px' }}>
-        <div className="header-title" style={{ fontSize: '18px' }}>
-          تداول أذكى <span>مع Traden AI ✦</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => setCurrentView('platforms_connect')}
-            style={{
-              background: 'rgba(59, 130, 246, 0.15)',
-              border: '1px solid #3b82f6',
-              color: '#60a5fa',
-              borderRadius: '20px',
-              padding: '4px 12px',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <span>🔗 ربط المنصة / رصيد الحساب</span>
-          </button>
-        </div>
-      </header>
-
-      {/* 1. Live Market Widget at TOP for zero scrolling! */}
+      {/* 1. Compact Live Market Hero Widget */}
       <LiveMarketWidget 
         onOpenBot={(symbol) => {
           if (symbol) setSelectedSymbol(symbol);
@@ -479,52 +458,100 @@ function App() {
         }} 
       />
 
-      {/* 2. Compact Grid Tools */}
-      <section>
-        <div className="section-title" style={{ marginBottom: '6px', fontSize: '13px' }}>
-          <Zap size={16} />
-          الأدوات والبوتات الذكية
-        </div>
-        <div className="grid-3" style={{ gap: '8px' }}>
-          <div className="card" onClick={() => setCurrentView('egx_stocks')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
-            <span className="card-icon">🇪🇬</span>
-            <div className="card-title">البورصة المصرية</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>تحليل مدمج 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('signal_bot')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
-            <span className="card-icon">🤖</span>
-            <div className="card-title">بوت التوصيات</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>إشارات 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('gold_liquidity')} style={{ border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.08)' }}>
-            <span className="card-icon">🥇</span>
-            <div className="card-title">سيولة الذهب</div>
-            <div className="badge" style={{ background: '#f59e0b', color: '#000' }}>رادار 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('traden_radar')} style={{ border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)' }}>
-            <span className="card-icon">📡</span>
-            <div className="card-title">رادار الأسواق</div>
-            <div className="badge" style={{ background: '#10b981', color: '#000' }}>حي 🔥</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('platforms_connect')} style={{ border: '1px solid rgba(59, 130, 246, 0.4)', background: 'rgba(59, 130, 246, 0.1)' }}>
-            <span className="card-icon">🔗</span>
-            <div className="card-title">ربط المنصات</div>
-            <div className="badge" style={{ background: '#3b82f6', color: '#fff' }}>ربط بروكر / API ⚡</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('market_scanner')}>
-            <BarChart2 size={20} color="#60a5fa" />
-            <div className="card-title">فاحص المؤشرات</div>
-          </div>
-          <div className="card" onClick={() => setCurrentView('market_news')}>
-            <span className="card-icon">📰</span>
-            <div className="card-title">الأخبار اللحظية</div>
+      {/* 2. Pro Bento Tools Grid */}
+      <div>
+        <div className="section-header-row">
+          <div className="section-title-clean">
+            <Zap size={14} color="#f59e0b" />
+            <span>Trading Engines & Tools</span>
           </div>
         </div>
-      </section>
 
+        <div className="bento-grid">
+          {/* Gold Liquidity Radar */}
+          <div className="bento-card" onClick={() => setCurrentView('gold_liquidity')} style={{ borderLeft: '3px solid #f59e0b' }}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
+                <Crosshair size={18} />
+              </div>
+              <span className="bento-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>HOT</span>
+            </div>
+            <div>
+              <div className="bento-title">Gold Liquidity Radar</div>
+              <div className="bento-desc">Smart sweep & runner trailing bot</div>
+            </div>
+          </div>
+
+          {/* AI Signal Bot */}
+          <div className="bento-card" onClick={() => setCurrentView('signal_bot')} style={{ borderLeft: '3px solid #38bdf8' }}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }}>
+                <Bot size={18} />
+              </div>
+              <span className="bento-tag" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>AI PRO</span>
+            </div>
+            <div>
+              <div className="bento-title">Signal & Risk Bot</div>
+              <div className="bento-desc">Exact SL/TP & 1-click execution</div>
+            </div>
+          </div>
+
+          {/* Broker Sync */}
+          <div className="bento-card" onClick={() => setCurrentView('platforms_connect')} style={{ borderLeft: '3px solid #10b981' }}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
+                <Shield size={18} />
+              </div>
+              <span className="bento-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>LIVE</span>
+            </div>
+            <div>
+              <div className="bento-title">Broker & Terminal Sync</div>
+              <div className="bento-desc">Exness MT5 & positions monitor</div>
+            </div>
+          </div>
+
+          {/* Market Radar */}
+          <div className="bento-card" onClick={() => setCurrentView('traden_radar')}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' }}>
+                <Activity size={18} />
+              </div>
+            </div>
+            <div>
+              <div className="bento-title">Market Radar</div>
+              <div className="bento-desc">Live institutional multi-market scanner</div>
+            </div>
+          </div>
+
+          {/* Technical Scanner */}
+          <div className="bento-card" onClick={() => setCurrentView('market_scanner')}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(236, 72, 153, 0.12)', color: '#f472b6' }}>
+                <BarChart2 size={18} />
+              </div>
+            </div>
+            <div>
+              <div className="bento-title">Technical Scanner</div>
+              <div className="bento-desc">Multi-timeframe RSI, MACD & volume</div>
+            </div>
+          </div>
+
+          {/* EGX Egyptian Stocks */}
+          <div className="bento-card" onClick={() => setCurrentView('egx_stocks')}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#f8fafc' }}>
+                <Globe size={18} />
+              </div>
+            </div>
+            <div>
+              <div className="bento-title">EGX Egyptian Stocks</div>
+              <div className="bento-desc">EGX30, COMI & Cairo equities analysis</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default App;
-

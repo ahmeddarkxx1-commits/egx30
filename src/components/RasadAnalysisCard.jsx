@@ -542,6 +542,47 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       </div>
 
+      {/* 8.5 MULTI-AGENT AI DELIBERATION PANEL (مجلس الوكلاء والخبراء) */}
+      {data.multiAgent && data.multiAgent.agents && (
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.7)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: '14px',
+          padding: '12px',
+          marginBottom: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>🧠</span>
+              <span>تحليل مجلس وكلاء الذكاء الاصطناعي (AI Council):</span>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 'bold', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '10px' }}>
+              توافق العقل الجمعي: {data.multiAgent.consensusScore || 90}%
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+            {data.multiAgent.agents.map((agent, idx) => (
+              <div key={idx} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: agent.color || '#fff' }}>{agent.name}</span>
+                    {agent.model && <div style={{ fontSize: '0.58rem', color: '#64748b' }}>{agent.model}</div>}
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: agent.color, fontWeight: 'bold' }}>{agent.status}</span>
+                </div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', lineHeight: '1.4', marginTop: '2px' }}>
+                  {agent.insight}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 9. AI Full Report Accordion */}
       {data.fullReport && (
         <div style={{ marginTop: '10px' }}>
