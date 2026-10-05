@@ -13,6 +13,7 @@ import PreciousMetals from './components/PreciousMetals';
 import HalalGuide from './components/HalalGuide';
 import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
+import AutoPilotTrader from './components/AutoPilotTrader';
 import EgxAnalysis from './components/EgxAnalysis';
 import TradingViewSparkline from './components/TradingViewSparkline';
 import PlatformsConnect from './components/PlatformsConnect';
@@ -316,9 +317,10 @@ function App() {
       <div className="sub-nav-tabs">
         {[
           { id: 'home', label: 'Terminal', icon: Activity },
+          { id: 'autopilot_trader', label: 'Auto-Pilot 🤖', icon: Bot },
           { id: 'gold_liquidity', label: 'Gold Radar', icon: Crosshair },
-          { id: 'signal_bot', label: 'AI Signals', icon: Bot },
-          { id: 'traden_radar', label: 'Market Radar', icon: Zap },
+          { id: 'signal_bot', label: 'AI Signals', icon: Zap },
+          { id: 'traden_radar', label: 'Market Radar', icon: Activity },
           { id: 'market_scanner', label: 'Scanner', icon: BarChart2 },
           { id: 'egx_stocks', label: 'EGX Stocks', icon: Globe },
           { id: 'platforms_connect', label: 'Broker Sync', icon: Shield },
@@ -343,6 +345,15 @@ function App() {
   );
 
   // VIEW ROUTING
+  if (currentView === 'autopilot_trader') {
+    return (
+      <div className="app-container">
+        {renderHeaderNav()}
+        <AutoPilotTrader onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
   if (currentView === 'platforms_connect') {
     return (
       <div className="app-container">
@@ -468,6 +479,20 @@ function App() {
         </div>
 
         <div className="bento-grid">
+          {/* AI Auto-Pilot Intraday Trader */}
+          <div className="bento-card" onClick={() => setCurrentView('autopilot_trader')} style={{ borderLeft: '3px solid #10b981', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)' }}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                <Bot size={18} />
+              </div>
+              <span className="bento-tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: 'bold' }}>5 صفقات يومية 🚀</span>
+            </div>
+            <div>
+              <div className="bento-title">التداول الآلي الذكي (Auto-Pilot)</div>
+              <div className="bento-desc">تحليل يومي مستمر + 5 صفقات مدروسة بأرباح عالية</div>
+            </div>
+          </div>
+
           {/* Gold Liquidity Radar */}
           <div className="bento-card" onClick={() => setCurrentView('gold_liquidity')} style={{ borderLeft: '3px solid #f59e0b' }}>
             <div className="bento-card-top">
