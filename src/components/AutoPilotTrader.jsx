@@ -33,12 +33,24 @@ export default function AutoPilotTrader({ onBack }) {
     return parseFloat(localStorage.getItem('traden_autopilot_lot')) || 0.01;
   });
 
-  // Daily Quota ($20 Daily Target & Max 5 Trades)
+  // Daily Quota ($20 Daily Target & Max 5 Trades with legacy state compatibility)
   const [dailyQuota, setDailyQuota] = useState(() => {
     const today = new Date().toISOString().slice(0, 10);
     const savedData = localStorage.getItem(`traden_autopilot_quota_${today}`);
     if (savedData) {
-      try { return JSON.parse(savedData); } catch (e) {}
+      try {
+        const parsed = JSON.parse(savedData);
+        return { 
+          date: parsed.date || today, 
+          executedCount: Number(parsed.executedCount) || 0, 
+          maxDaily: Number(parsed.maxDaily) || 5, 
+          currentProfit: Number(parsed.currentProfit ?? parsed.totalProfit ?? 0.0), 
+          targetDaily: Number(parsed.targetDaily) || 20.0, 
+          maxLoss: Number(parsed.maxLoss) || 10.0,
+          targetReached: Boolean(parsed.targetReached),
+          stopLossLocked: Boolean(parsed.stopLossLocked)
+        };
+      } catch (e) {}
     }
     return { 
       date: today, 
@@ -61,7 +73,7 @@ export default function AutoPilotTrader({ onBack }) {
     return [];
   });
 
-  // Active Market Session Info
+  // Active Market Session Info with default fallbacks
   const [sessionInfo, setSessionInfo] = useState(() => {
     const nowUtc = new Date();
     const decHour = nowUtc.getUTCHours() + nowUtc.getUTCMinutes() / 60;
@@ -332,9 +344,10 @@ export default function AutoPilotTrader({ onBack }) {
     setShowAddPairModal(false);
   };
 
-  const isTargetAchieved = dailyQuota.targetReached || dailyQuota.currentProfit >= 20.0;
-  const isLossLocked = dailyQuota.stopLossLocked || dailyQuota.currentProfit <= -10.0;
-  const progressPercent = Math.min(100, Math.max(0, (dailyQuota.currentProfit / 20.0) * 100));
+  const currentProfitSafe = Number(dailyQuota?.currentProfit ?? dailyQuota?.totalProfit ?? 0.0);
+  const isTargetAchieved = Boolean(dailyQuota?.targetReached || currentProfitSafe >= 20.0);
+  const isLossLocked = Boolean(dailyQuota?.stopLossLocked || currentProfitSafe <= -10.0);
+  const progressPercent = Math.min(100, Math.max(0, (currentProfitSafe / 20.0) * 100));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
@@ -388,24 +401,24 @@ export default function AutoPilotTrader({ onBack }) {
             borderRadius: '20px',
             boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)'
           }}>
-            {sessionInfo.name}
+            {sessionInfo?.name || 'جلسة التداول المالية'}
           </span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '11.5px' }}>
           <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ color: '#94a3b8', fontSize: '10px' }}>🎯 الاستراتيجية المعتمدة للجلسة:</div>
-            <div style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '2px' }}>{sessionInfo.strategy}</div>
+            <div style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '2px' }}>{sessionInfo?.strategy || 'تتبع السيولة المؤسسية'}</div>
           </div>
           <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ color: '#94a3b8', fontSize: '10px' }}>⭐ نسبة العائد / المخاطرة (R:R):</div>
-            <div style={{ color: '#10b981', fontWeight: '900', marginTop: '2px' }}>{sessionInfo.rr_target} (عائد مضاعف)</div>
+            <div style={{ color: '#10b981', fontWeight: '900', marginTop: '2px' }}>{sessionInfo?.rr_target || '1:3.0'} (عائد مضاعف)</div>
           </div>
         </div>
 
         <div style={{ fontSize: '11px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Sparkles size={14} color="#f59e0b" />
-          <span><b>الأزواج المفضلة للجلسة الحالية:</b> {sessionInfo.optimal_pairs ? sessionInfo.optimal_pairs.join(' • ') : 'XAU/USD, EUR/USD'}</span>
+          <span><b>الأزواج المفضلة للجلسة الحالية:</b> {Array.isArray(sessionInfo?.optimal_pairs) ? sessionInfo.optimal_pairs.join(' • ') : 'XAU/USD, EUR/USD, GBP/USD'}</span>
         </div>
       </div>
 
@@ -486,7 +499,7 @@ export default function AutoPilotTrader({ onBack }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: '900', color: isTargetAchieved ? '#f59e0b' : '#10b981' }}>
-                ${dailyQuota.currentProfit.toFixed(2)} / $20.00
+                ${currentProfitSafe.toFixed(2)} / $20.00
               </span>
               <button 
                 onClick={handleResetDailyQuota}
@@ -513,7 +526,7 @@ export default function AutoPilotTrader({ onBack }) {
           {/* Quota Steps & Status */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
             <span style={{ color: '#94a3b8' }}>
-              عدد الصفقات المنفذة اليوم: <b>{dailyQuota.executedCount} من 5 صفقات</b>
+              عدد الصفقات المنفذة اليوم: <b>{Number(dailyQuota?.executedCount || 0)} من {Number(dailyQuota?.maxDaily || 5)} صفقات</b>
             </span>
             {isTargetAchieved ? (
               <span style={{ color: '#f59e0b', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
