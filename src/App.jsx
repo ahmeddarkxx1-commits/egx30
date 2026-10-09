@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Bot, BarChart2, Shield, Activity, Zap, Sparkles, TrendingUp, Cpu, Globe, Crosshair, 
   Layers, ArrowUpRight, DollarSign, RefreshCw, ChevronRight, BookOpen, Flame, 
-  ArrowLeft, LayoutDashboard, Compass
+  ArrowLeft, LayoutDashboard, Compass, ChevronDown, Grid, X
 } from 'lucide-react';
 import { fetchLiveAssetTicker } from './utils/priceFetcher';
 import SignalBot from './components/SignalBot';
@@ -14,6 +14,7 @@ import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
 import EgxAnalysis from './components/EgxAnalysis';
 import TradingViewSparkline from './components/TradingViewSparkline';
+import StocketaLandingPage from './components/StocketaLandingPage';
 import './App.css';
 
 function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
@@ -231,39 +232,86 @@ function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, setCurrentView] = useState('landing');
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('traden_theme') || 'dark';
+  });
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('traden_theme', theme);
+  }, [theme]);
 
   const navItems = [
+    { id: 'landing', label: 'LANDING ✨', icon: Sparkles },
     { id: 'home', label: 'DASHBOARD 📊', icon: LayoutDashboard },
     { id: 'signal_bot', label: 'AI SIGNALS 🤖', icon: Bot },
-    { id: 'gold_liquidity', label: 'SMC LIQUIDITY 🎯', icon: Crosshair },
-    { id: 'traden_radar', label: 'GLOBAL RADAR 🌐', icon: Activity },
+    { id: 'gold_liquidity', label: 'GOLD SMC 🎯', icon: Crosshair },
+    { id: 'traden_radar', label: 'RADAR 🌐', icon: Activity },
     { id: 'egx_stocks', label: 'EGX 30 🇪🇬', icon: Globe },
-    { id: 'market_news', label: 'NEWS & SENTIMENT 📰', icon: Zap },
-    { id: 'precious_metals', label: 'METALS (XAU/XAG) 🥇', icon: Layers },
-    { id: 'halal_guide', label: 'HALAL CHECK 🕌', icon: BookOpen },
+    { id: 'market_news', label: 'NEWS 📰', icon: Zap },
+    { id: 'precious_metals', label: 'METALS 🥇', icon: Layers },
+    { id: 'halal_guide', label: 'HALAL 🕌', icon: BookOpen },
   ];
+
+  const primaryMobileDockTabs = [
+    { id: 'home', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'signal_bot', label: 'Signals', icon: Bot },
+    { id: 'gold_liquidity', label: 'Gold SMC', icon: Crosshair },
+    { id: 'egx_stocks', label: 'EGX 30', icon: Globe },
+  ];
+
+  const secondaryMobileTabs = navItems.filter(item => 
+    !primaryMobileDockTabs.some(p => p.id === item.id) && item.id !== 'landing'
+  );
+
+  const isSecondaryActive = secondaryMobileTabs.some(item => item.id === currentView);
 
   const renderHeaderNav = () => (
     <div className="header-glass-wrapper">
       <div className="top-navbar-row">
-        <div className="brand-logo" onClick={() => setCurrentView('home')}>
+        <div className="brand-logo" onClick={() => setCurrentView('landing')}>
           <div className="brand-icon-chip">
-            <Cpu size={18} color="#38bdf8" />
+            <Cpu size={18} color={theme === 'light' ? '#ffffff' : '#38bdf8'} />
           </div>
           <span>TRADEN</span>
           <span className="brand-badge">PRO AI</span>
         </div>
 
-        <div className="header-status-group">
-          <div className="account-pill">
+        <div className="header-status-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+            className="theme-toggle-pill"
+            style={{
+              background: theme === 'dark' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(153, 91, 185, 0.15)',
+              border: theme === 'dark' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(153, 91, 185, 0.4)',
+              color: theme === 'dark' ? '#38bdf8' : '#995bb9',
+              borderRadius: '100px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+          </button>
+
+          <div className="account-pill hide-on-small">
             <span className="pulse-dot"></span>
             <span className="mono">LIVE STREAM CONNECTED 🟢</span>
           </div>
         </div>
       </div>
 
+      {/* Desktop Sub-Nav Tabs */}
       <div className="sub-nav-tabs">
         {navItems.map(tab => {
           const IconComponent = tab.icon;
@@ -283,7 +331,115 @@ function App() {
     </div>
   );
 
+  const renderMobileDock = () => (
+    <>
+      {/* Native Mobile Floating Glass Dock */}
+      <div className="mobile-floating-dock">
+        {primaryMobileDockTabs.map(tab => {
+          const IconComp = tab.icon;
+          const isActive = currentView === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentView(tab.id)}
+              className={`mobile-dock-btn ${isActive ? 'active' : ''}`}
+            >
+              <div className="dock-icon-wrapper">
+                <IconComp size={20} />
+              </div>
+              <span className="dock-label">{tab.label}</span>
+              {isActive && <div className="dock-active-indicator" />}
+            </button>
+          );
+        })}
+
+        {/* 'More' Button to Open iOS-Style Bottom Sheet */}
+        <button
+          onClick={() => setShowMobileSheet(true)}
+          className={`mobile-dock-btn ${isSecondaryActive || showMobileSheet ? 'active' : ''}`}
+        >
+          <div className="dock-icon-wrapper" style={{ position: 'relative' }}>
+            <Grid size={20} />
+            {isSecondaryActive && <div className="dock-badge-dot" />}
+          </div>
+          <span className="dock-label">More ✨</span>
+          {(isSecondaryActive || showMobileSheet) && <div className="dock-active-indicator" />}
+        </button>
+      </div>
+
+      {/* iOS Glass Bottom Sheet Drawer */}
+      {showMobileSheet && (
+        <div className="mobile-sheet-backdrop" onClick={() => setShowMobileSheet(false)}>
+          <div className="mobile-sheet-container" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-drag-handle" />
+
+            <div className="mobile-sheet-header">
+              <div>
+                <div className="mobile-sheet-title">TRADEN Workspaces</div>
+                <div className="mobile-sheet-subtitle">Select institutional AI tool or workspace</div>
+              </div>
+              <button 
+                className="sheet-close-btn"
+                onClick={() => setShowMobileSheet(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mobile-sheet-grid">
+              {navItems.map(tab => {
+                const IconComp = tab.icon;
+                const isActive = currentView === tab.id;
+                return (
+                  <div
+                    key={tab.id}
+                    onClick={() => {
+                      setCurrentView(tab.id);
+                      setShowMobileSheet(false);
+                    }}
+                    className={`mobile-sheet-card ${isActive ? 'active' : ''}`}
+                  >
+                    <div className="sheet-card-icon-box">
+                      <IconComp size={20} />
+                    </div>
+                    <div className="sheet-card-info">
+                      <div className="sheet-card-title">{tab.label}</div>
+                      <div className="sheet-card-sub">
+                        {tab.id === 'landing' && 'Landing page & Stocketa design'}
+                        {tab.id === 'home' && 'Live charts, market ticker & insights'}
+                        {tab.id === 'signal_bot' && 'TradingView charts & AI consensus'}
+                        {tab.id === 'gold_liquidity' && 'Liquidity sweeps, BSL/SSL & FVG'}
+                        {tab.id === 'traden_radar' && 'Multi-asset high-frequency scanner'}
+                        {tab.id === 'egx_stocks' && 'AZ Gold, Thndr & Egyptian stocks'}
+                        {tab.id === 'market_news' && 'Live news & AI sentiment scoring'}
+                        {tab.id === 'precious_metals' && 'Gold, Silver, Oil & Commodities'}
+                        {tab.id === 'halal_guide' && 'Sharia compliance & Halal screener'}
+                      </div>
+                    </div>
+                    {isActive && <span className="sheet-active-tag">Active</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   // VIEW ROUTING (Clean, dedicated views)
+  if (currentView === 'landing') {
+    return (
+      <StocketaLandingPage 
+        onLaunchApp={setCurrentView}
+        onOpenView={setCurrentView}
+        onSelectSymbol={setSelectedSymbol}
+        theme={theme}
+        setTheme={setTheme}
+      />
+    );
+  }
+
   if (currentView === 'gold_liquidity') {
     return (
       <div className="app-container">
@@ -299,6 +455,7 @@ function App() {
             setCurrentView('signal_bot');
           }}
         />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -311,6 +468,7 @@ function App() {
           initialSymbol={selectedSymbol} 
           onBack={() => setCurrentView('home')} 
         />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -326,6 +484,7 @@ function App() {
             setCurrentView('signal_bot');
           }}
         />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -335,6 +494,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <EgxAnalysis onBack={() => setCurrentView('home')} />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -344,6 +504,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <MarketNews onBack={() => setCurrentView('home')} />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -353,6 +514,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <PreciousMetals onBack={() => setCurrentView('home')} />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -362,6 +524,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <HalalGuide onBack={() => setCurrentView('home')} />
+        {renderMobileDock()}
       </div>
     );
   }
@@ -489,6 +652,7 @@ function App() {
           </div>
         </div>
       </div>
+      {renderMobileDock()}
     </div>
   );
 }

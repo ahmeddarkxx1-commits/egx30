@@ -358,13 +358,13 @@ export default function SignalBot({ onBack, initialSymbol }) {
         gap: '8px',
         boxShadow: '0 8px 30px rgba(0,0,0,0.35)'
       }}>
-        {/* Top Mini Header: Title + Back */}
+        {/* Top Header: Compact Title & Navigation */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
+              width: '26px',
+              height: '26px',
+              borderRadius: '7px',
               background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(37, 99, 235, 0.35))',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               display: 'flex',
@@ -372,40 +372,36 @@ export default function SignalBot({ onBack, initialSymbol }) {
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Bot size={16} color="#38bdf8" />
+              <Bot size={14} color="#38bdf8" />
             </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', fontWeight: '800', color: '#fff' }}>
-                  AI Signal Terminal & Global Market Scanner
-                </span>
-                <span style={{ fontSize: '9px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1px 5px', borderRadius: '4px', fontWeight: '800' }}>
-                  PRO AI
-                </span>
-              </div>
-            </div>
+            <span style={{ fontSize: '12.5px', fontWeight: '800', color: '#fff' }}>
+              Market Scanner
+            </span>
+            <span style={{ fontSize: '9px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1px 5px', borderRadius: '4px', fontWeight: '800' }}>
+              PRO AI
+            </span>
           </div>
 
           {onBack && (
             <button 
               onClick={onBack}
               style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#fff',
-                borderRadius: '8px',
-                padding: '4px 10px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#94a3b8',
+                borderRadius: '6px',
+                padding: '3px 8px',
                 cursor: 'pointer',
-                fontSize: '11px',
+                fontSize: '10.5px',
                 fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '3px',
                 flexShrink: 0
               }}
             >
-              <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} />
-              <span>Dashboard</span>
+              <ChevronRight size={12} style={{ transform: 'rotate(180deg)' }} />
+              <span>الرئيسية</span>
             </button>
           )}
         </div>
@@ -906,20 +902,20 @@ export default function SignalBot({ onBack, initialSymbol }) {
                 disabled={loading}
                 style={{
                   flex: 1,
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #059669 100%)',
-                  color: '#fff',
+                  background: '#3a4766',
+                  color: '#ffffff',
                   border: 'none',
-                  borderRadius: '8px',
-                  padding: '9px 12px',
-                  fontSize: '12.5px',
-                  fontWeight: '800',
+                  borderRadius: '100px',
+                  padding: '12px 18px',
+                  fontSize: '13px',
+                  fontWeight: '700',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)',
-                  transition: 'all 0.18s ease',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(58, 71, 102, 0.3)',
+                  transition: 'all 0.2s ease',
                   opacity: loading ? 0.75 : 1
                 }}
               >

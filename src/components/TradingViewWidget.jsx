@@ -144,6 +144,16 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
   };
 
   const studiesSerialized = JSON.stringify(studies || []);
+  const [activeTheme, setActiveTheme] = React.useState(() => document.body.getAttribute('data-theme') || 'light');
+
+  React.useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const current = document.body.getAttribute('data-theme') || 'light';
+      setActiveTheme(current);
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     // Clear the container first to avoid duplicate widgets
@@ -152,6 +162,10 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     }
     
     const tvInterval = getTvInterval(timeframe);
+    const isDark = activeTheme === 'dark';
+    const tvTheme = isDark ? 'dark' : 'light';
+    const tvBgColor = isDark ? '#0d0f14' : '#ffffff';
+    const tvGridColor = isDark ? '#1f2937' : '#f0f0f0';
 
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -165,19 +179,19 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
         "symbol": "${formattedSymbol}",
         "interval": "${tvInterval}",
         "timezone": "Etc/UTC",
-        "theme": "dark",
+        "theme": "${tvTheme}",
         "style": "1",
         "locale": "ar_AE",
         "enable_publishing": false,
-        "backgroundColor": "#0d0f14",
-        "gridColor": "#1f2937",
+        "backgroundColor": "${tvBgColor}",
+        "gridColor": "${tvGridColor}",
         "hide_top_toolbar": false,
         "hide_legend": false,
         "save_image": false,
         "studies": ${studiesSerialized}
       }`;
     container.current.appendChild(script);
-  }, [symbol, height, timeframe, studiesSerialized]);
+  }, [symbol, height, timeframe, studiesSerialized, activeTheme]);
 
   return (
     <div className="tradingview-widget-wrapper" style={{ width: "100%", position: "relative" }}>
@@ -186,15 +200,15 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#121721',
-          padding: '6px 12px',
+          background: 'var(--bg-card)',
+          padding: '5px 10px',
           borderRadius: '10px 10px 0 0',
-          border: '1px solid #1f2937',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
           borderBottom: 'none'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#9ca3af', fontWeight: 'bold' }}>
-            <span>📊 رمـز الشـارت:</span>
-            <span style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>{symbol}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8', fontWeight: '700' }}>
+            <span>📊 رمز الشارت:</span>
+            <span style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>{symbol}</span>
           </div>
           
           <button
@@ -202,23 +216,22 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              color: '#ffffff',
-              border: 'none',
-              padding: '6px 14px',
+              gap: '4px',
+              background: 'rgba(37, 99, 235, 0.2)',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              color: '#38bdf8',
+              padding: '3px 8px',
               borderRadius: '6px',
-              fontSize: '0.78rem',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
-              transition: 'all 0.2s ease',
-              cursor: 'pointer'
+              fontSize: '11px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-            title={`فتح ${symbol} في متصفح الجهاز خارجي بحجم شاشة كاملة`}
+            title={`فتح ${symbol} في متصفح خارجي`}
           >
-            <span>🖥️ فتح في متصفح TradingView ↗</span>
+            <span>TradingView</span>
+            <span style={{ fontSize: '10px' }}>↗</span>
           </button>
         </div>
       )}

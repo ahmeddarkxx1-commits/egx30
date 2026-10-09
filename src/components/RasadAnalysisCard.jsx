@@ -69,14 +69,14 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
   };
 
   return (
-    <div style={{
-      background: 'linear-gradient(180deg, #121721 0%, #0d1017 100%)',
+    <div className="stocketa-card-surface" style={{
+      background: 'var(--bg-card)',
       border: `1px solid ${signalColor}60`,
-      borderRadius: '14px',
-      padding: '12px 14px',
-      color: '#f8fafc',
-      boxShadow: `0 6px 24px ${signalColor}20`,
-      marginBottom: '10px',
+      borderRadius: '18px',
+      padding: '16px',
+      color: 'var(--text-primary)',
+      boxShadow: 'var(--shadow-md, 0px 4px 15px 0px rgba(97, 110, 124, 0.08))',
+      marginBottom: '12px',
       direction: 'ltr',
       position: 'relative'
     }}>
@@ -267,19 +267,19 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
         style={{
           width: '100%',
           marginBottom: '10px',
-          background: isSell ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.25) 100%)' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(4, 120, 87, 0.25) 100%)',
-          color: isSell ? '#f87171' : '#10b981',
-          border: `1px solid ${isSell ? '#ef4444' : '#10b981'}`,
-          borderRadius: '9px',
-          padding: '8px 10px',
-          fontWeight: 'bold',
-          fontSize: '0.82rem',
+          background: '#3a4766',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '100px',
+          padding: '12px 18px',
+          fontWeight: '700',
+          fontSize: '0.85rem',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '6px',
-          boxShadow: `0 3px 12px ${signalColor}20`
+          gap: '8px',
+          boxShadow: '0 4px 14px rgba(58, 71, 102, 0.3)'
         }}
       >
         <Copy size={14} />
