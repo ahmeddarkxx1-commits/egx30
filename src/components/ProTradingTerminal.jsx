@@ -16,6 +16,7 @@ export default function ProTradingTerminal({ onBack }) {
   const [recentTrades, setRecentTrades] = useState([]);
   const [activeTab, setActiveTab] = useState('orderbook'); // 'orderbook' | 'trades'
   const [bottomTab, setBottomTab] = useState('positions'); // 'positions' | 'signals' | 'analytics'
+  const [mobileViewTab, setMobileViewTab] = useState('chart'); // 'chart' | 'orderbook' | 'orderform'
   
   // Order Form State
   const [orderSide, setOrderSide] = useState('buy'); // 'buy' (Long) | 'sell' (Short)
@@ -293,7 +294,7 @@ export default function ProTradingTerminal({ onBack }) {
             ))}
           </select>
 
-          <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+          <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
             عقود دائمة (Perpetual)
           </span>
         </div>
@@ -360,13 +361,35 @@ export default function ProTradingTerminal({ onBack }) {
         </button>
       </div>
 
+      {/* Mobile Tab Switcher */}
+      <div className="mobile-terminal-tabs">
+        <button
+          onClick={() => setMobileViewTab('chart')}
+          className={`terminal-tab-btn ${mobileViewTab === 'chart' ? 'active' : ''}`}
+        >
+          📊 الشارت (Chart)
+        </button>
+        <button
+          onClick={() => setMobileViewTab('orderbook')}
+          className={`terminal-tab-btn ${mobileViewTab === 'orderbook' ? 'active' : ''}`}
+        >
+          📑 دفتر الأوامر (Book)
+        </button>
+        <button
+          onClick={() => setMobileViewTab('orderform')}
+          className={`terminal-tab-btn ${mobileViewTab === 'orderform' ? 'active' : ''}`}
+        >
+          ⚡ تنفيذ الصفقة (Form)
+        </button>
+      </div>
+
       {/* ========================================================================= */}
       {/* 2️⃣ MAIN 3-COLUMN PRO TRADING GRID (ORDERBOOK | CHART | ORDER FORM) */}
       {/* ========================================================================= */}
       <div className="pro-terminal-grid">
         
         {/* --- COLUMN 1: LIVE ORDER BOOK & TRADES (Bybit Style) --- */}
-        <div style={{
+        <div className={`pro-col-orderbook ${mobileViewTab === 'orderbook' ? 'mobile-show' : ''}`} style={{
           background: '#121721',
           border: '1px solid #21262d',
           borderRadius: '10px',
@@ -440,7 +463,7 @@ export default function ProTradingTerminal({ onBack }) {
                   ${ticker.price.toLocaleString()} {isUp ? '↑' : '↓'}
                 </span>
                 <span style={{ fontSize: '0.68rem', color: '#9ca3af' }}>
-                  الفارق: ${orderBook.spread}
+                  الفارق: ${typeof orderBook.spread === 'number' ? orderBook.spread.toFixed(2) : orderBook.spread}
                 </span>
               </div>
 
@@ -487,7 +510,7 @@ export default function ProTradingTerminal({ onBack }) {
         </div>
 
         {/* --- COLUMN 2: ADVANCED TRADINGVIEW CHART WITH TIMEFRAME SELECTOR --- */}
-        <div style={{
+        <div className={`pro-col-chart ${mobileViewTab === 'chart' ? 'mobile-show' : ''}`} style={{
           background: '#121721',
           border: '1px solid #21262d',
           borderRadius: '10px',
@@ -536,7 +559,7 @@ export default function ProTradingTerminal({ onBack }) {
         </div>
 
         {/* --- COLUMN 3: BYBIT PRO ORDER EXECUTION & AI FORM --- */}
-        <div style={{
+        <div className={`pro-col-orderform ${mobileViewTab === 'orderform' ? 'mobile-show' : ''}`} style={{
           background: '#121721',
           border: '1px solid #21262d',
           borderRadius: '10px',
@@ -547,6 +570,7 @@ export default function ProTradingTerminal({ onBack }) {
           height: '520px',
           overflowY: 'auto'
         }}>
+
           {/* Long / Short Toggle */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <button
