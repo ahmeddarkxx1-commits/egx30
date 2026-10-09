@@ -391,7 +391,7 @@ function App() {
 
         <div className="bento-grid">
           {/* Unified AI Signal Bot & Technical Scanner */}
-          <div className="bento-card" onClick={() => setCurrentView('signal_bot')} style={{ borderLeft: '3px solid #38bdf8', gridColumn: 'span 2' }}>
+          <div className="bento-card bento-card-featured" onClick={() => setCurrentView('signal_bot')} style={{ borderLeft: '3px solid #38bdf8' }}>
             <div className="bento-card-top">
               <div className="bento-icon-box" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
                 <Bot size={22} />
