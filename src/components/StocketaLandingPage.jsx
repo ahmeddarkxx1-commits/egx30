@@ -161,7 +161,7 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
             </button>
 
             <button 
-              onClick={() => onLaunchApp('home')} 
+              onClick={() => onLaunchApp('terminal')} 
               className="stocketa-btn-primary stocketa-launch-btn"
             >
               <span>Terminal</span> <ArrowUpRight size={15} />
