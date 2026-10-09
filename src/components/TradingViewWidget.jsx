@@ -123,12 +123,16 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
       return `BINANCE:${clean.includes('USDT') ? clean : clean + 'USDT'}`;
     }
 
-    // Default: If 3-5 uppercase letters with no colon, check if it's EGX stock
+    // Default: If 3-6 uppercase letters with no colon
     if (/^[A-Z]{3,6}$/.test(clean)) {
+      const forexPairs = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP', 'EURJPY', 'GBPJPY', 'EURAUD', 'EURCAD', 'GBPCHF', 'AUDJPY', 'CADJPY', 'USDMXN', 'USDTRY', 'USDZAR', 'USDSEK', 'USDNOK'];
+      if (forexPairs.includes(clean)) {
+        return `OANDA:${clean}`;
+      }
       return `EGX:${clean}`;
     }
 
-    return `FX:${clean}`;
+    return `OANDA:${clean}`;
   };
 
   const formattedSymbol = formatTvSymbol(symbol);

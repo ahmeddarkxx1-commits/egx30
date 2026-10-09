@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Bot, Crosshair, Globe, Shield, Activity, Zap, TrendingUp, ChevronRight, 
+  Bot, Crosshair, Globe, Shield, Activity, Zap, TrendingUp, ChevronRight, ChevronLeft,
   ArrowUpRight, CheckCircle2, Layers, BookOpen, Star, RefreshCw, Sparkles,
-  BarChart2, ArrowRight, DollarSign, Lock, Play
+  BarChart2, ArrowRight, DollarSign, Lock, Play, Sun, Moon
 } from 'lucide-react';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 import TradingViewSparkline from './TradingViewSparkline';
@@ -13,6 +13,7 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
   const [ticker, setTicker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
 
   const featureItems = [
     {
@@ -51,6 +52,32 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
       view: 'halal_guide'
     }
   ];
+
+  const handlePrevFeature = () => {
+    setActiveFeatureIndex((prev) => (prev - 1 + featureItems.length) % featureItems.length);
+  };
+
+  const handleNextFeature = () => {
+    setActiveFeatureIndex((prev) => (prev + 1) % featureItems.length);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        handleNextFeature();
+      } else {
+        handlePrevFeature();
+      }
+    }
+    setTouchStartX(null);
+  };
 
   // Auto-rotate active feature step every 4.5 seconds
   useEffect(() => {
@@ -121,13 +148,16 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
           </nav>
 
           <div className="stocketa-nav-actions">
-            {/* Theme Switcher Button */}
+            {/* Theme Switcher Toggle Pill */}
             <button 
               onClick={() => setTheme && setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className="stocketa-btn-ghost stocketa-theme-btn"
+              className="stocketa-theme-toggle-pill"
+              aria-label="Toggle theme"
             >
-              <span className="desktop-theme-text">{theme === 'dark' ? '☀️ Light' : '🌙 Dark'}</span>
-              <span className="mobile-theme-text">{theme === 'dark' ? '☀️' : '🌙'}</span>
+              <div className={`theme-toggle-thumb ${theme === 'dark' ? 'dark' : 'light'}`}>
+                {theme === 'dark' ? <Moon size={12} color="#38bdf8" /> : <Sun size={12} color="#f59e0b" />}
+              </div>
+              <span className="theme-toggle-label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
             </button>
 
             <button 
@@ -203,7 +233,27 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
 
           {/* Right Column: Dynamic iPhone Mockup Screen & Floating Stock Tickers */}
           <div className="stocketa-hero-right">
-            <div className="stocketa-phone-wrapper">
+            <div 
+              className="stocketa-phone-wrapper"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Mobile Carousel Glass Arrow Buttons (Stocketa Mobile Style) */}
+              <button 
+                className="mobile-slider-arrow prev-arrow"
+                onClick={handlePrevFeature}
+                aria-label="Previous feature"
+              >
+                <ChevronLeft size={22} />
+              </button>
+
+              <button 
+                className="mobile-slider-arrow next-arrow"
+                onClick={handleNextFeature}
+                aria-label="Next feature"
+              >
+                <ChevronRight size={22} />
+              </button>
               
               {/* Floating Stock Card 1 (AAPL - Top Left) */}
               <div 
@@ -595,10 +645,34 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
                     </>
                   )}
 
-                </div>
-              </div>
+            </div>
+            {/* Signature Stocketa Floating Squircle App Badge */}
+            <div className="phone-bottom-app-badge">
+              <TrendingUp size={24} color="#ffffff" />
             </div>
           </div>
+        </div>
+
+        {/* Mobile Active Feature Card Indicator under Phone */}
+        <div className="mobile-feature-indicator-card">
+          <div className="mobile-indicator-top">
+            <div className="mobile-indicator-icon">
+              {React.createElement(featureItems[activeFeatureIndex].icon, { size: 18, color: '#ffffff' })}
+            </div>
+            <div className="mobile-indicator-dots">
+              {featureItems.map((_, idx) => (
+                <span 
+                  key={idx}
+                  onClick={() => setActiveFeatureIndex(idx)}
+                  className={`indicator-dot ${activeFeatureIndex === idx ? 'active' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+          <h3 className="mobile-indicator-title">{featureItems[activeFeatureIndex].title}</h3>
+          <p className="mobile-indicator-desc">{featureItems[activeFeatureIndex].desc}</p>
+        </div>
+      </div>
         </div>
       </section>
 

@@ -485,21 +485,36 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, userCapitalEgp =
   const signal = liveChange < -2 ? 'شراء ارتدادي وتجميع (DIP BUY)' : 'شراء استثماري ومتابعة الزخم (BUY)';
   const signalColor = '#10b981';
 
+  const highVal = liveHigh || Number((entryPrice * 1.025).toFixed(2));
+  const lowVal = liveLow || Number((entryPrice * 0.975).toFixed(2));
+
   return {
     code: stock.code,
+    symbol: stock.code,
+    pair: stock.code,
+    asset: stock.code,
     name: stock.name,
     sector: stock.sector,
     icon: stock.icon,
     tvSymbol: stock.tvSymbol,
-    unit: stock.unit || 'ج.م / سهم',
+    unit: stock.unit || 'ج.م',
+    price: `${entryPrice.toLocaleString()} ج.م`,
+    rawPrice: entryPrice,
+    entry: `${entryPrice.toLocaleString()} ج.م`,
     entryPrice: entryPrice,
     change24h: liveChange,
-    liveHigh: liveHigh || Number((entryPrice * 1.025).toFixed(2)),
-    liveLow: liveLow || Number((entryPrice * 0.975).toFixed(2)),
+    changePercent: `${liveChange >= 0 ? '+' : ''}${liveChange}%`,
+    high24: `${highVal.toLocaleString()} ج.م`,
+    low24: `${lowVal.toLocaleString()} ج.م`,
+    liveHigh: highVal,
+    liveLow: lowVal,
     volume: liveVolume,
-    tp1: tp1,
-    tp2: tp2,
-    sl: sl,
+    tp1: `${tp1.toLocaleString()} ج.م`,
+    tp2: `${tp2.toLocaleString()} ج.م`,
+    sl: `${sl.toLocaleString()} ج.م`,
+    rawTp1: tp1,
+    rawTp2: tp2,
+    rawSl: sl,
     expectedReturnTp1: '+8.5%',
     expectedReturnTp2: '+16.8%',
     maxRiskPct: '-5.0%',
@@ -515,7 +530,7 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, userCapitalEgp =
     riskRewardRatio: '1:3.2',
     shariahStatus: stock.shariahCompliant ? 'متوافق مع الضوابط الشرعية 🕌' : 'غير مصنف شرعياً',
     dollarStatus: stock.dollarEarner ? 'إيرادات وتدفقات دولارية تصديرية 💵' : 'إيرادات محلية',
-    technicalAnalysis: `السعر الحالي ${entryPrice} ج.م يتداول فوق المتوسطات المتحركة الرئيسية مع استقرار مؤشر القوة النسبية RSI عند مستويات تدعم استمرار الصعود نحو الهدف الأول ${tp1} ج.م ثم الهدف الثاني ${tp2} ج.م مع التزام صارم بوقف الخسارة ${sl} ج.م.`,
+    technicalAnalysis: `السعر الحالي ${entryPrice.toLocaleString()} ج.م يتداول فوق المتوسطات المتحركة الرئيسية مع استقرار مؤشر القوة النسبية RSI عند مستويات تدعم استمرار الصعود نحو الهدف الأول ${tp1.toLocaleString()} ج.م ثم الهدف الثاني ${tp2.toLocaleString()} ج.م مع التزام صارم بوقف الخسارة ${sl.toLocaleString()} ج.م.`,
     macroOutlook: 'السيولة المؤسسية في البورصة المصرية تشهد تدفقات إيجابية قوية مع جاذبية تقييمات الشركات المقيدة مقارنة بأسعار الصرف والتضخم.'
   };
 }

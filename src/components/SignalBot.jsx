@@ -455,7 +455,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
                 borderRadius: '8px',
                 background: 'rgba(255,255,255,0.05)',
                 border: search ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 outline: 'none',
                 fontSize: '11.5px',
                 boxSizing: 'border-box'
@@ -518,7 +518,7 @@ export default function SignalBot({ onBack, initialSymbol }) {
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '7px',
                 padding: '6px 10px',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 fontSize: '11.5px',
                 fontWeight: '700',
                 outline: 'none'
@@ -885,11 +885,11 @@ export default function SignalBot({ onBack, initialSymbol }) {
                 placeholder="Capital ($)..."
                 style={{
                   width: '85px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.2)',
                   borderRadius: '8px',
                   padding: '7px 8px',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: '12.5px',
                   fontWeight: '700',
                   outline: 'none',
@@ -902,30 +902,30 @@ export default function SignalBot({ onBack, initialSymbol }) {
                 disabled={loading}
                 style={{
                   flex: 1,
-                  background: '#3a4766',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '100px',
                   padding: '12px 18px',
                   fontSize: '13px',
-                  fontWeight: '700',
+                  fontWeight: '800',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 14px rgba(58, 71, 102, 0.3)',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.75 : 1
                 }}
               >
-                <Zap size={15} />
-                <span>
+                <Zap size={15} color="#ffffff" />
+                <span style={{ color: '#ffffff' }}>
                   {loading 
                     ? `Scanning ${selectedAsset.pair}...` 
                     : `Generate ${selectedAsset.pair} AI Setup ⚡`}
                 </span>
-                <ArrowUpRight size={14} style={{ marginLeft: 'auto' }} />
+                <ArrowUpRight size={14} color="#ffffff" style={{ marginLeft: 'auto' }} />
               </button>
             </div>
           </div>
@@ -945,21 +945,21 @@ export default function SignalBot({ onBack, initialSymbol }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div className="pulse-dot" style={{ width: '10px', height: '10px', background: '#38bdf8' }}></div>
-                  <span style={{ fontSize: '12.5px', fontWeight: '800', color: '#fff' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: '800', color: 'var(--text-primary)' }}>
                     Scanning {selectedAsset.pair} ({timeframe})
                   </span>
                 </div>
-                <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: '800' }}>
+                <span style={{ fontSize: '11px', color: '#0284c7', fontWeight: '800' }}>
                   {analysisStep === 1 ? '25%' : analysisStep === 2 ? '50%' : analysisStep === 3 ? '75%' : '100%'}
                 </span>
               </div>
 
               {/* Progress Bar */}
-              <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '5px', background: 'rgba(148,163,184,0.2)', borderRadius: '10px', overflow: 'hidden' }}>
                 <div style={{
                   width: analysisStep === 1 ? '25%' : analysisStep === 2 ? '50%' : analysisStep === 3 ? '75%' : '100%',
                   height: '100%',
-                  background: 'linear-gradient(90deg, #38bdf8 0%, #10b981 100%)',
+                  background: 'linear-gradient(90deg, #0284c7 0%, #10b981 100%)',
                   borderRadius: '10px',
                   transition: 'width 0.4s ease'
                 }}></div>
@@ -967,19 +967,19 @@ export default function SignalBot({ onBack, initialSymbol }) {
 
               {/* Timeline Items */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 1 ? 1 : 0.4, fontSize: '11px', color: analysisStep === 1 ? '#38bdf8' : '#e2e8f0', fontWeight: analysisStep === 1 ? '800' : '600' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 1 ? 1 : 0.7, fontSize: '11.5px', color: analysisStep === 1 ? '#0284c7' : 'var(--text-primary)', fontWeight: analysisStep === 1 ? '800' : '600' }}>
                   <span>{analysisStep > 1 ? '✅' : '📡'}</span>
                   <span>Fetching live candles, market structure, and liquidity pools</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 2 ? 1 : 0.4, fontSize: '11px', color: analysisStep === 2 ? '#38bdf8' : '#e2e8f0', fontWeight: analysisStep === 2 ? '800' : '600' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 2 ? 1 : 0.7, fontSize: '11.5px', color: analysisStep === 2 ? '#0284c7' : 'var(--text-primary)', fontWeight: analysisStep === 2 ? '800' : '600' }}>
                   <span>{analysisStep > 2 ? '✅' : '📊'}</span>
                   <span>Computing indicators & oscillators (RSI, MACD, EMA 200)</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 3 ? 1 : 0.4, fontSize: '11px', color: analysisStep === 3 ? '#38bdf8' : '#e2e8f0', fontWeight: analysisStep === 3 ? '800' : '600' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 3 ? 1 : 0.7, fontSize: '11.5px', color: analysisStep === 3 ? '#0284c7' : 'var(--text-primary)', fontWeight: analysisStep === 3 ? '800' : '600' }}>
                   <span>{analysisStep > 3 ? '✅' : '🤖'}</span>
                   <span>Evaluating Institutional Multi-Engine Consensus Matrix</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 4 ? 1 : 0.4, fontSize: '11px', color: analysisStep === 4 ? '#10b981' : '#e2e8f0', fontWeight: analysisStep === 4 ? '800' : '600' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: analysisStep >= 4 ? 1 : 0.7, fontSize: '11.5px', color: analysisStep === 4 ? '#047857' : 'var(--text-primary)', fontWeight: analysisStep === 4 ? '800' : '600' }}>
                   <span>{analysisStep === 4 ? '✅' : '🛡️'}</span>
                   <span>Calculating precision entry, TP1/TP2 targets, SL & lot size</span>
                 </div>

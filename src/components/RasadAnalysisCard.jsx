@@ -38,11 +38,16 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
   const ema200 = data.ema200 || data.indicators?.ema200 || (isSell ? 'Below' : isBuy ? 'Above' : 'At EMA');
   const vwap = data.vwap || data.indicators?.vwap || (isSell ? 'Below' : isBuy ? 'Above' : 'At VWAP');
 
-  // Key Levels
-  const support = data.support || data.sl || '---';
-  const resistance = data.resistance || data.tp1 || '---';
-  const high24 = data.high24 || '---';
-  const low24 = data.low24 || '---';
+  // Key Levels & Smart Price Formatting
+  const rawPriceVal = data.entryPrice || data.price || data.entry || data.rawPrice;
+  const displayPrice = typeof rawPriceVal === 'number' 
+    ? `${rawPriceVal.toLocaleString()} ${data.unit || 'ج.م'}` 
+    : (rawPriceVal || '---');
+
+  const support = data.support || (data.sl ? `${data.sl}` : '---');
+  const resistance = data.resistance || (data.tp1 ? `${data.tp1}` : '---');
+  const high24 = data.high24 || (data.liveHigh ? `${data.liveHigh} ${data.unit || ''}` : '---');
+  const low24 = data.low24 || (data.liveLow ? `${data.liveLow} ${data.unit || ''}` : '---');
 
   // 1-Click Copy Helper for SL & TP
   const handleCopy = (label, value) => {
@@ -129,7 +134,7 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
         {/* Real Symbol Info & Logo */}
         <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-start' }}>
+            <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-start' }}>
               <span>{assetSymbol}</span>
             </div>
             <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '1px' }}>
@@ -145,8 +150,8 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
 
       {/* 2. Large Price & 24h Change */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.3px' }}>
-          {data.entry || data.price || '---'}
+        <div style={{ fontSize: '1.55rem', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+          {displayPrice}
         </div>
         {data.changePercent && (
           <div style={{

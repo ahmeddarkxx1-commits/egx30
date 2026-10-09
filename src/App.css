@@ -21,22 +21,200 @@
 }
 
 :root[data-theme="light"] {
-  --bg-main: #e0dde2;
+  --bg-main: #e8e5ec;
   --bg-card: #ffffff;
-  --bg-card-hover: #f8f6f9;
-  --bg-card-subtle: rgba(153, 91, 185, 0.05);
-  --border-subtle: rgba(165, 175, 203, 0.4);
+  --bg-card-hover: #f1f5f9;
+  --bg-card-subtle: rgba(153, 91, 185, 0.08);
+  --border-subtle: rgba(148, 163, 184, 0.4);
   --border-active: #995bb9;
-  --accent-gold: #d97706;
-  --accent-cyan: #995bb9;
-  --accent-green: #2e7d32;
-  --accent-red: #e53935;
-  --accent-purple: #5b638c;
-  --text-primary: #1d2630;
-  --text-secondary: #3a4766;
-  --text-muted: #6b7280;
+  --accent-gold: #b45309;
+  --accent-cyan: #0284c7;
+  --accent-green: #15803d;
+  --accent-red: #dc2626;
+  --accent-purple: #7e22ce;
+  --text-primary: #0f172a;
+  --text-secondary: #1e293b;
+  --text-muted: #334155;
   --font-sans: 'Plus Jakarta Sans', 'Tajawal', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ==========================================================================
+   ULTRA-HIGH CONTRAST LIGHT THEME TEXT & CARD OVERRIDES (AAA READABILITY)
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  color: #0f172a;
+}
+
+/* Transform all Dashboard Cards, Bento Cards, Side Cards to White in Light Mode */
+:root[data-theme="light"] .hero-market-card,
+:root[data-theme="light"] .hero-side-card,
+:root[data-theme="light"] .bento-card,
+:root[data-theme="light"] .glance-chip,
+:root[data-theme="light"] .mobile-workbench-tabs {
+  background: #ffffff !important;
+  border: 1px solid rgba(165, 175, 203, 0.5) !important;
+  box-shadow: 0 8px 25px rgba(97, 110, 124, 0.08) !important;
+}
+
+:root[data-theme="light"] .hero-market-card::before {
+  background: linear-gradient(90deg, transparent, #995bb9, transparent) !important;
+}
+
+:root[data-theme="light"] .bento-card:hover,
+:root[data-theme="light"] .hero-side-card:hover,
+:root[data-theme="light"] .glance-chip:hover {
+  background: #f8fafc !important;
+  border-color: #995bb9 !important;
+  box-shadow: 0 12px 35px rgba(153, 91, 185, 0.15) !important;
+}
+
+:root[data-theme="light"] .hero-price-big,
+:root[data-theme="light"] .bento-title,
+:root[data-theme="light"] .section-title-clean,
+:root[data-theme="light"] .side-card-title,
+:root[data-theme="light"] .glance-price {
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .asset-pill {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+:root[data-theme="light"] .asset-pill:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .asset-pill.active {
+  background: #995bb9 !important;
+  border-color: #995bb9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(153, 91, 185, 0.3) !important;
+}
+
+:root[data-theme="light"] .glance-sym,
+:root[data-theme="light"] .bento-desc,
+:root[data-theme="light"] .pulse-stat-label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .side-card-header {
+  border-bottom: 1px solid rgba(203, 213, 225, 0.6) !important;
+}
+
+:root[data-theme="light"] .pulse-stat-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+:root[data-theme="light"] [style*="color: #94a3b8"],
+:root[data-theme="light"] [style*="color: #64748b"],
+:root[data-theme="light"] [style*="color: #9aa1b2"],
+:root[data-theme="light"] [style*="color: #a5afcb"],
+:root[data-theme="light"] [style*="color: #cbd5e1"],
+:root[data-theme="light"] [style*="color: #6b7280"] {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+:root[data-theme="light"] [style*="color: #10b981"] {
+  color: #047857 !important;
+}
+
+:root[data-theme="light"] [style*="color: #f87171"],
+:root[data-theme="light"] [style*="color: #f43f5e"] {
+  color: #b91c1c !important;
+}
+
+:root[data-theme="light"] [style*="color: #38bdf8"] {
+  color: #0284c7 !important;
+}
+
+:root[data-theme="light"] [style*="color: #f59e0b"] {
+  color: #b45309 !important;
+}
+
+/* Light mode overrides for transparent dark boxes in cards */
+:root[data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
+:root[data-theme="light"] [style*="background: rgba(0,0,0,0.35)"],
+:root[data-theme="light"] [style*="background: rgba(0,0,0,0.4)"],
+:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.3)"],
+:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.35)"],
+:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.4)"] {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Light mode overrides for header gradients in Gold SMC and Hub views */
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.92)"],
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.85)"],
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.9)"],
+:root[data-theme="light"] [style*="background: rgba(13, 18, 28, 0.75)"] {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(97, 110, 124, 0.08) !important;
+}
+
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.92)"] span[style*="color: #fff"],
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.85)"] span[style*="color: #fff"],
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.9)"] span[style*="color: #fff"],
+:root[data-theme="light"] [style*="background: rgba(13, 18, 28, 0.75)"] span[style*="color: #fff"] {
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   UNIVERSAL INPUT & TEXT CONTRAST OVERRIDES FOR LIGHT MODE
+   ========================================================================== */
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28"],
+:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(17, 24, 39"],
+:root[data-theme="light"] [style*="background: rgba(13, 18, 28"],
+:root[data-theme="light"] [style*="background: #161b22"],
+:root[data-theme="light"] [style*="background: #0d121c"],
+:root[data-theme="light"] [style*="background: #1e293b"] {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(97, 110, 124, 0.08) !important;
+}
+
+:root[data-theme="light"] [style*="color: #fff"],
+:root[data-theme="light"] [style*="color: #ffffff"],
+:root[data-theme="light"] [style*="color: white"] {
+  color: #0f172a !important;
+}
+
+/* Primary action buttons & active pill overrides (keep white text on colored bg) */
+:root[data-theme="light"] button[style*="background: linear-gradient"],
+:root[data-theme="light"] button[style*="background: #995bb9"],
+:root[data-theme="light"] button[style*="background: #2563eb"],
+:root[data-theme="light"] button[style*="background: #10b981"],
+:root[data-theme="light"] .asset-pill.active,
+:root[data-theme="light"] .mobile-sheet-card.active {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] button[style*="background: linear-gradient"] *,
+:root[data-theme="light"] button[style*="background: #2563eb"] * {
+  color: #ffffff !important;
 }
 
 * {
@@ -1060,13 +1238,22 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 
 .stocketa-landing-root {
   background-color: #e0dde2;
-  background-image: radial-gradient(140% 119% at 50% 0%, rgba(105, 201, 102, 0.4) 14%, rgba(39, 187, 219, 0.33) 36%, rgba(139, 71, 206, 0.2) 52%, rgba(218, 64, 134, 0.1) 70%, rgba(255, 149, 116, 0) 82%, rgba(0, 0, 0, 0) 100%);
+  background-image: 
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(153, 91, 185, 0.22) 0%, rgba(91, 99, 140, 0.12) 40%, rgba(105, 201, 102, 0.08) 65%, rgba(224, 221, 226, 0) 90%);
   color: #1d2630;
   min-height: 100vh;
   width: 100%;
   font-family: var(--font-sans);
   line-height: 1.4;
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+:root[data-theme="dark"] .stocketa-landing-root {
+  background-color: #090d16 !important;
+  background-image: 
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(153, 91, 185, 0.35) 0%, rgba(56, 189, 248, 0.22) 40%, rgba(16, 185, 129, 0.1) 70%, rgba(9, 13, 22, 0) 90%) !important;
+  color: #f8fafc !important;
 }
 
 /* Stocketa Navbar */
@@ -1082,12 +1269,19 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 100px;
-  box-shadow: 0px 4px 15px 0px rgba(97, 110, 124, 0.08), inset 0px 1px 1px 0px rgba(255, 255, 255, 0.6);
+  box-shadow: 0px 8px 25px 0px rgba(97, 110, 124, 0.12), inset 0px 1px 1px 0px rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(165, 175, 203, 0.4);
+  transition: all 0.3s ease;
+}
+
+:root[data-theme="dark"] .stocketa-navbar-inner {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.12) !important;
 }
 
 .stocketa-brand-group {
@@ -1098,14 +1292,20 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 .stocketa-brand-logo-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, #995bb9 0%, #5b638c 50%, #3a4766 100%);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 35%, #995bb9 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(153, 91, 185, 0.35);
+  box-shadow: 0 6px 16px rgba(153, 91, 185, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stocketa-brand-group:hover .stocketa-brand-logo-icon {
+  transform: scale(1.08) rotate(4deg);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.5);
 }
 
 .stocketa-brand-name {
@@ -1113,6 +1313,11 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   font-weight: 800;
   letter-spacing: -0.6px;
   color: #1d2630;
+  transition: color 0.3s ease;
+}
+
+:root[data-theme="dark"] .stocketa-brand-name {
+  color: #ffffff;
 }
 
 .stocketa-brand-sub {
@@ -1120,9 +1325,14 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   font-weight: 700;
   color: #995bb9;
   background: rgba(153, 91, 185, 0.12);
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 100px;
   letter-spacing: -0.2px;
+}
+
+:root[data-theme="dark"] .stocketa-brand-sub {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
 }
 
 .stocketa-nav-links {
@@ -1139,8 +1349,16 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   transition: color 0.2s ease;
 }
 
+:root[data-theme="dark"] .stocketa-nav-link {
+  color: #cbd5e1;
+}
+
 .stocketa-nav-link:hover {
   color: #995bb9;
+}
+
+:root[data-theme="dark"] .stocketa-nav-link:hover {
+  color: #38bdf8;
 }
 
 .stocketa-nav-actions {
@@ -1149,48 +1367,141 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   gap: 12px;
 }
 
+/* Theme Switcher Toggle Pill */
+.stocketa-theme-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(165, 175, 203, 0.4);
+  border-radius: 100px;
+  padding: 4px 12px 4px 5px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(97, 110, 124, 0.08);
+}
+
+:root[data-theme="dark"] .stocketa-theme-toggle-pill {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.stocketa-theme-toggle-pill:hover {
+  transform: translateY(-1px);
+  border-color: #995bb9;
+  box-shadow: 0 6px 18px rgba(153, 91, 185, 0.25);
+}
+
+:root[data-theme="dark"] .stocketa-theme-toggle-pill:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 6px 18px rgba(56, 189, 248, 0.3);
+}
+
+.theme-toggle-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle-thumb.dark {
+  background: #0f172a;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+}
+
+.theme-toggle-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d2630;
+  letter-spacing: -0.2px;
+}
+
+:root[data-theme="dark"] .theme-toggle-label {
+  color: #f8fafc;
+}
+
 /* Stocketa Pill Buttons (100px Radius) */
 .stocketa-btn-primary {
-  background: #3a4766;
+  background: linear-gradient(135deg, #1d2630 0%, #3a4766 100%);
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
   padding: 12px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 20px rgba(29, 38, 48, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.stocketa-btn-primary:hover {
+  background: linear-gradient(135deg, #2b3650 0%, #4a5980 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(58, 71, 102, 0.35);
+}
+
+:root[data-theme="dark"] .stocketa-btn-primary {
+  background: linear-gradient(135deg, #995bb9 0%, #5b638c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 25px rgba(153, 91, 185, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+:root[data-theme="dark"] .stocketa-btn-primary:hover {
+  background: linear-gradient(135deg, #a86cc7 0%, #6c75a3 100%) !important;
+  box-shadow: 0 12px 32px rgba(153, 91, 185, 0.6) !important;
+  transform: translateY(-2px);
+}
+
+.stocketa-btn-ghost {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #1d2630;
+  border: 1px solid rgba(154, 161, 178, 0.5);
+  border-radius: 100px;
+  padding: 12px 24px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(58, 71, 102, 0.25);
-}
-
-.stocketa-btn-primary:hover {
-  background: #2b3650;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(58, 71, 102, 0.35);
-}
-
-.stocketa-btn-ghost {
-  background: transparent;
-  color: #1d2630;
-  border: 1px solid #9aa1b2;
-  border-radius: 100px;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .stocketa-btn-ghost:hover {
-  border-color: #3a4766;
-  background: rgba(255, 255, 255, 0.5);
-  color: #000000;
+  border-color: #995bb9;
+  background: rgba(255, 255, 255, 0.95);
+  color: #995bb9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(153, 91, 185, 0.2);
+}
+
+:root[data-theme="dark"] .stocketa-btn-ghost {
+  background: rgba(30, 41, 59, 0.65) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+:root[data-theme="dark"] .stocketa-btn-ghost:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.3) !important;
 }
 
 /* Stocketa Hero Section */
@@ -2577,18 +2888,266 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   color: #94a3b8;
 }
 
-@media (max-width: 768px) {
-  .aurora-text-line {
-    font-size: 42px;
-  }
-  .line-1 { font-size: 38px; }
-  .line-2 { font-size: 40px; }
-  .line-3 { font-size: 46px; }
+/* ==========================================================================
+   STOCKETA DESIGN SYSTEM TOKENS & ULTRA-PROFESSIONAL MOBILE HERO SLIDER
+   ========================================================================== */
 
-  .stocketa-blur-signature-section {
-    padding: 60px 16px;
+:root {
+  --aurora-magenta: #995bb9;
+  --deep-iris: #5b638c;
+  --midnight-ink: #1d2630;
+  --obsidian: #000000;
+  --lavender-mist: #e0dde2;
+  --paper-white: #ffffff;
+  --frost-shadow: #f0f0f0;
+  --pebble: #9aa1b2;
+  --silver-lining: #a5afcb;
+  --cloud-veil: #abbdcf;
+  --tidewater-navy: #3a4766;
+  --aurora-green: #69c966;
+  --font-averta: "averta standard", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Phone Bottom Floating Squircle App Badge (Stocketa Signature Icon) */
+.phone-bottom-app-badge {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 40%, #995bb9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.4), 0 0 0 4px #ffffff;
+  z-index: 30;
+}
+
+:root[data-theme="dark"] .phone-bottom-app-badge {
+  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.6), 0 0 0 4px #1e293b;
+}
+
+.mobile-slider-arrow {
+  display: none;
+}
+
+.mobile-feature-indicator-card {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Hide the 5-item desktop vertical feature list on mobile */
+  .stocketa-feature-list {
+    display: none !important;
+  }
+
+  .stocketa-hero-section {
+    padding: 16px 16px 40px 16px !important;
+  }
+
+  /* Flex column for mobile hero: Phone Mockup on top, Card below */
+  .stocketa-hero-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 32px !important;
+  }
+
+  .stocketa-hero-right {
+    order: 1 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+  }
+
+  .stocketa-phone-wrapper {
+    width: 285px !important;
+    height: 560px !important;
+    margin: 0 auto !important;
+    position: relative !important;
+  }
+
+  .stocketa-phone-frame {
+    width: 275px !important;
+    height: 540px !important;
+    border-radius: 40px !important;
+    padding: 10px !important;
+  }
+
+  .stocketa-phone-stack-shadow {
+    width: 260px !important;
+    height: 520px !important;
+    border-radius: 38px !important;
+  }
+
+  /* Side Arrow Buttons floating on edges of iPhone frame */
+  .mobile-slider-arrow {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 48%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    color: #1d2630;
+    box-shadow: 0 10px 30px rgba(97, 110, 124, 0.2);
+    z-index: 35;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-slider-arrow:active {
+    transform: translateY(-50%) scale(0.9);
+  }
+
+  :root[data-theme="dark"] .mobile-slider-arrow {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #38bdf8;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  .prev-arrow {
+    left: -18px !important;
+  }
+
+  .next-arrow {
+    right: -18px !important;
+  }
+
+  /* Floating stock cards hidden on mobile to avoid clutter */
+  .stocketa-floating-card {
+    display: none !important;
+  }
+
+  /* Mobile Active Feature Card placed under the Phone mockup */
+  .stocketa-hero-left {
+    order: 2 !important;
+    width: 100% !important;
+    max-width: 360px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    align-items: center !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+    padding: 32px 24px 28px 24px !important;
+    border-radius: 34px !important;
+    box-shadow: 0 20px 60px rgba(97, 110, 124, 0.14) !important;
+  }
+
+  :root[data-theme="dark"] .stocketa-hero-left {
+    background: rgba(15, 23, 42, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .stocketa-display-headline {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    letter-spacing: -0.8px !important;
+  }
+
+  .stocketa-hero-lead {
+    font-size: 15px !important;
+    text-align: center !important;
+    line-height: 1.45 !important;
+  }
+
+  .stocketa-hero-btn-row {
+    justify-content: center !important;
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .stocketa-btn-primary, .stocketa-btn-ghost {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .mobile-feature-indicator-card {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(165, 175, 203, 0.3);
+    text-align: center;
+    align-items: center;
+  }
+
+  .mobile-indicator-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .mobile-indicator-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #995bb9 0%, #5b638c 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-indicator-dots {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(154, 161, 178, 0.4);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .indicator-dot.active {
+    width: 22px;
+    border-radius: 100px;
+    background: #995bb9;
+  }
+
+  :root[data-theme="dark"] .indicator-dot.active {
+    background: #38bdf8;
+  }
+
+  .mobile-indicator-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 4px 0 0 0;
+  }
+
+  .mobile-indicator-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0;
   }
 }
+
 
 
 

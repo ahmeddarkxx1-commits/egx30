@@ -231,13 +231,75 @@ function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
   );
 }
 
+const viewToPathMap = {
+  landing: '#landing',
+  home: '#dashboard',
+  signal_bot: '#signals',
+  market_scanner: '#signals',
+  gold_liquidity: '#gold-smc',
+  traden_radar: '#radar',
+  egx_stocks: '#egx30',
+  market_news: '#news',
+  precious_metals: '#metals',
+  halal_guide: '#halal',
+};
+
+const pathToViewMap = {
+  '#landing': 'landing',
+  '#dashboard': 'home',
+  '#signals': 'signal_bot',
+  '#gold-smc': 'gold_liquidity',
+  '#radar': 'traden_radar',
+  '#egx30': 'egx_stocks',
+  '#news': 'market_news',
+  '#metals': 'precious_metals',
+  '#halal': 'halal_guide',
+};
+
+const getViewFromUrl = () => {
+  const hash = window.location.hash.toLowerCase();
+  if (hash && pathToViewMap[hash]) {
+    return pathToViewMap[hash];
+  }
+  return 'landing';
+};
+
 function App() {
-  const [currentView, setCurrentView] = useState('landing');
+  const [currentView, setCurrentViewRaw] = useState(() => getViewFromUrl());
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('traden_theme') || 'dark';
   });
+
+  const setCurrentView = (newView) => {
+    setCurrentViewRaw(newView);
+    const targetHash = viewToPathMap[newView] || '#landing';
+    if (window.location.hash !== targetHash) {
+      window.history.pushState(null, '', targetHash);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const viewFromHash = getViewFromUrl();
+      setCurrentViewRaw(viewFromHash);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+
+    if (!window.location.hash) {
+      window.history.replaceState(null, '', viewToPathMap[currentView] || '#landing');
+    }
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, []);
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -246,15 +308,15 @@ function App() {
   }, [theme]);
 
   const navItems = [
-    { id: 'landing', label: 'LANDING ✨', icon: Sparkles },
-    { id: 'home', label: 'DASHBOARD 📊', icon: LayoutDashboard },
-    { id: 'signal_bot', label: 'AI SIGNALS 🤖', icon: Bot },
-    { id: 'gold_liquidity', label: 'GOLD SMC 🎯', icon: Crosshair },
-    { id: 'traden_radar', label: 'RADAR 🌐', icon: Activity },
-    { id: 'egx_stocks', label: 'EGX 30 🇪🇬', icon: Globe },
-    { id: 'market_news', label: 'NEWS 📰', icon: Zap },
-    { id: 'precious_metals', label: 'METALS 🥇', icon: Layers },
-    { id: 'halal_guide', label: 'HALAL 🕌', icon: BookOpen },
+    { id: 'landing', label: 'LANDING ✨', icon: Sparkles, path: '#landing' },
+    { id: 'home', label: 'DASHBOARD 📊', icon: LayoutDashboard, path: '#dashboard' },
+    { id: 'signal_bot', label: 'AI SIGNALS 🤖', icon: Bot, path: '#signals' },
+    { id: 'gold_liquidity', label: 'GOLD SMC 🎯', icon: Crosshair, path: '#gold-smc' },
+    { id: 'traden_radar', label: 'RADAR 🌐', icon: Activity, path: '#radar' },
+    { id: 'egx_stocks', label: 'EGX 30 🇪🇬', icon: Globe, path: '#egx30' },
+    { id: 'market_news', label: 'NEWS 📰', icon: Zap, path: '#news' },
+    { id: 'precious_metals', label: 'METALS 🥇', icon: Layers, path: '#metals' },
+    { id: 'halal_guide', label: 'HALAL 🕌', icon: BookOpen, path: '#halal' },
   ];
 
   const primaryMobileDockTabs = [

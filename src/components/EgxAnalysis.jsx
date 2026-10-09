@@ -648,8 +648,10 @@ export default function EgxAnalysis({ onBack }) {
       {/* ========================================================================= */}
       {/* 3️⃣ المنتجات الاستثمارية السريعة */}
       {/* ========================================================================= */}
-      <div style={{ marginBottom: '10px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
+      {/* 3️⃣ المنتجات الاستثمارية السريعة (الذهب - الأسهم - الصناديق) */}
+      {/* ========================================================================= */}
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
           {/* Gold Card */}
           <div 
             onClick={() => {
@@ -657,28 +659,53 @@ export default function EgxAnalysis({ onBack }) {
               setSelectedProduct(newProd);
               setSelectedCategory(newProd === 'gold' ? 'traden_hedge' : 'all');
               setActiveTab('screener');
+              setActiveSelectedIdx('24k gold');
             }}
+            className={`product-select-card ${selectedProduct === 'gold' ? 'active' : ''}`}
             style={{
               background: selectedProduct === 'gold' 
-                ? 'linear-gradient(145deg, #eab308 0%, #ca8a04 100%)' 
-                : 'linear-gradient(145deg, rgba(234, 179, 8, 0.12) 0%, rgba(202, 138, 4, 0.2) 100%)',
-              border: selectedProduct === 'gold' ? '1.5px solid #fff' : '1px solid rgba(234, 179, 8, 0.35)',
-              color: selectedProduct === 'gold' ? '#000' : '#fef08a',
-              borderRadius: '8px',
-              padding: '6px 4px',
+                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+                : 'rgba(245, 158, 11, 0.12)',
+              border: selectedProduct === 'gold' 
+                ? '2px solid #ffffff' 
+                : '1px solid rgba(245, 158, 11, 0.4)',
+              color: selectedProduct === 'gold' ? '#ffffff' : '#b45309',
+              borderRadius: '10px',
+              padding: '8px 4px',
               cursor: 'pointer',
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '2px',
-              transition: 'all 0.18s ease'
+              gap: '3px',
+              boxShadow: selectedProduct === 'gold' 
+                ? '0 0 0 3.5px rgba(245, 158, 11, 0.45), 0 10px 25px rgba(245, 158, 11, 0.4)' 
+                : 'none',
+              transform: selectedProduct === 'gold' ? 'scale(1.05) translateY(-2px)' : 'none',
+              transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              position: 'relative'
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>🪙</span>
-            <div style={{ fontSize: '0.74rem', fontWeight: '900', lineHeight: 1.1 }}>الذهب</div>
-            <div style={{ fontSize: '0.58rem', opacity: 0.85, fontWeight: '700' }}>سبائك 24k</div>
+            {selectedProduct === 'gold' && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-4px',
+                background: '#ffffff',
+                color: '#b45309',
+                fontSize: '8px',
+                fontWeight: '900',
+                padding: '1px 5px',
+                borderRadius: '100px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+              }}>
+                ✓ نشط
+              </span>
+            )}
+            <span style={{ fontSize: '1.3rem' }}>🪙</span>
+            <div style={{ fontSize: '0.78rem', fontWeight: '900', lineHeight: 1.1 }}>الذهب</div>
+            <div style={{ fontSize: '0.6rem', fontWeight: '800', opacity: selectedProduct === 'gold' ? 0.95 : 0.85 }}>سبائك 24k</div>
           </div>
 
           {/* Stocks Card */}
@@ -688,28 +715,53 @@ export default function EgxAnalysis({ onBack }) {
               setSelectedProduct(newProd);
               setSelectedCategory('all');
               setActiveTab('screener');
+              setActiveSelectedIdx(null);
             }}
+            className={`product-select-card ${selectedProduct === 'stocks' ? 'active' : ''}`}
             style={{
               background: selectedProduct === 'stocks'
-                ? 'linear-gradient(145deg, #059669 0%, #047857 100%)'
-                : 'linear-gradient(145deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.2) 100%)',
-              border: selectedProduct === 'stocks' ? '1.5px solid #fff' : '1px solid rgba(16, 185, 129, 0.35)',
-              color: selectedProduct === 'stocks' ? '#fff' : '#6ee7b7',
-              borderRadius: '8px',
-              padding: '6px 4px',
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                : 'rgba(16, 185, 129, 0.12)',
+              border: selectedProduct === 'stocks' 
+                ? '2px solid #ffffff' 
+                : '1px solid rgba(16, 185, 129, 0.4)',
+              color: selectedProduct === 'stocks' ? '#ffffff' : '#047857',
+              borderRadius: '10px',
+              padding: '8px 4px',
               cursor: 'pointer',
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '2px',
-              transition: 'all 0.18s ease'
+              gap: '3px',
+              boxShadow: selectedProduct === 'stocks' 
+                ? '0 0 0 3.5px rgba(16, 185, 129, 0.45), 0 10px 25px rgba(16, 185, 129, 0.4)' 
+                : 'none',
+              transform: selectedProduct === 'stocks' ? 'scale(1.05) translateY(-2px)' : 'none',
+              transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              position: 'relative'
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>📈</span>
-            <div style={{ fontSize: '0.74rem', fontWeight: '900', lineHeight: 1.1 }}>الأسهم</div>
-            <div style={{ fontSize: '0.58rem', opacity: 0.85, fontWeight: '700' }}>300+ سهم</div>
+            {selectedProduct === 'stocks' && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-4px',
+                background: '#ffffff',
+                color: '#047857',
+                fontSize: '8px',
+                fontWeight: '900',
+                padding: '1px 5px',
+                borderRadius: '100px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+              }}>
+                ✓ نشط
+              </span>
+            )}
+            <span style={{ fontSize: '1.3rem' }}>📈</span>
+            <div style={{ fontSize: '0.78rem', fontWeight: '900', lineHeight: 1.1 }}>الأسهم</div>
+            <div style={{ fontSize: '0.6rem', fontWeight: '800', opacity: selectedProduct === 'stocks' ? 0.95 : 0.85 }}>300+ سهم</div>
           </div>
 
           {/* Funds Card */}
@@ -719,28 +771,53 @@ export default function EgxAnalysis({ onBack }) {
               setSelectedProduct(newProd);
               setSelectedCategory(newProd === 'funds' ? 'traden_funds' : 'all');
               setActiveTab('screener');
+              setActiveSelectedIdx(null);
             }}
+            className={`product-select-card ${selectedProduct === 'funds' ? 'active' : ''}`}
             style={{
               background: selectedProduct === 'funds'
-                ? 'linear-gradient(145deg, #0284c7 0%, #0369a1 100%)'
-                : 'linear-gradient(145deg, rgba(14, 165, 233, 0.12) 0%, rgba(2, 132, 199, 0.2) 100%)',
-              border: selectedProduct === 'funds' ? '1.5px solid #fff' : '1px solid rgba(14, 165, 233, 0.35)',
-              color: selectedProduct === 'funds' ? '#fff' : '#7dd3fc',
-              borderRadius: '8px',
-              padding: '6px 4px',
+                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                : 'rgba(14, 165, 233, 0.12)',
+              border: selectedProduct === 'funds' 
+                ? '2px solid #ffffff' 
+                : '1px solid rgba(14, 165, 233, 0.4)',
+              color: selectedProduct === 'funds' ? '#ffffff' : '#0369a1',
+              borderRadius: '10px',
+              padding: '8px 4px',
               cursor: 'pointer',
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '2px',
-              transition: 'all 0.18s ease'
+              gap: '3px',
+              boxShadow: selectedProduct === 'funds' 
+                ? '0 0 0 3.5px rgba(2, 132, 199, 0.45), 0 10px 25px rgba(2, 132, 199, 0.4)' 
+                : 'none',
+              transform: selectedProduct === 'funds' ? 'scale(1.05) translateY(-2px)' : 'none',
+              transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              position: 'relative'
             }}
           >
-            <span style={{ fontSize: '1.2rem' }}>🏦</span>
-            <div style={{ fontSize: '0.74rem', fontWeight: '900', lineHeight: 1.1 }}>الصناديق</div>
-            <div style={{ fontSize: '0.58rem', opacity: 0.85, fontWeight: '700' }}>سيولة ونمو</div>
+            {selectedProduct === 'funds' && (
+              <span style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-4px',
+                background: '#ffffff',
+                color: '#0369a1',
+                fontSize: '8px',
+                fontWeight: '900',
+                padding: '1px 5px',
+                borderRadius: '100px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+              }}>
+                ✓ نشط
+              </span>
+            )}
+            <span style={{ fontSize: '1.3rem' }}>🏦</span>
+            <div style={{ fontSize: '0.78rem', fontWeight: '900', lineHeight: 1.1 }}>الصناديق</div>
+            <div style={{ fontSize: '0.6rem', fontWeight: '800', opacity: selectedProduct === 'funds' ? 0.95 : 0.85 }}>سيولة ونمو</div>
           </div>
         </div>
       </div>
@@ -748,11 +825,11 @@ export default function EgxAnalysis({ onBack }) {
       {/* ========================================================================= */}
       {/* 4️⃣ المؤشرات الحية التفاعلية */}
       {/* ========================================================================= */}
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ marginBottom: '12px' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '5px',
+          gap: '6px',
           textAlign: 'center'
         }}>
           {[
@@ -764,6 +841,7 @@ export default function EgxAnalysis({ onBack }) {
             { code: '24k gold', name: 'Gold 24k', val: '4,125.00', change: '+0.16%', isUp: true, sub: 'الذهب' }
           ].map(idx => {
             const isCardActive = activeSelectedIdx === idx.code;
+            const isGoldCard = idx.code === '24k gold';
 
             return (
               <div 
@@ -771,32 +849,37 @@ export default function EgxAnalysis({ onBack }) {
                 onClick={() => handleIndexCardClick(idx.code)}
                 style={{
                   background: isCardActive 
-                    ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)' 
-                    : 'linear-gradient(180deg, #111827 0%, #0d121c 100%)',
-                  border: isCardActive ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '8px',
-                  padding: '6px 3px',
+                    ? (isGoldCard ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #995bb9 0%, #5b638c 100%)')
+                    : 'var(--bg-card)',
+                  border: isCardActive 
+                    ? '2px solid #ffffff' 
+                    : '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '7px 4px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1px',
+                  gap: '2px',
                   cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                  boxShadow: isCardActive ? '0 0 10px rgba(245, 158, 11, 0.3)' : 'none'
+                  transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  boxShadow: isCardActive 
+                    ? (isGoldCard ? '0 0 0 3px rgba(245, 158, 11, 0.45), 0 8px 22px rgba(245, 158, 11, 0.4)' : '0 0 0 3px rgba(153, 91, 185, 0.45), 0 8px 22px rgba(153, 91, 185, 0.4)')
+                    : '0 2px 8px rgba(0,0,0,0.04)',
+                  transform: isCardActive ? 'scale(1.05) translateY(-2px)' : 'none'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 2px' }}>
-                  <span style={{ fontSize: '0.66rem', fontWeight: '800', color: isCardActive ? '#f59e0b' : '#94a3b8' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: '900', color: isCardActive ? '#ffffff' : (isGoldCard ? '#b45309' : 'var(--text-primary)') }}>
                     {idx.code}
                   </span>
-                  <span style={{ fontSize: '0.55rem', color: '#64748b' }}>{idx.sub}</span>
+                  <span style={{ fontSize: '0.58rem', color: isCardActive ? 'rgba(255,255,255,0.9)' : 'var(--text-muted)', fontWeight: '700' }}>{idx.sub}</span>
                 </div>
-                <div style={{ fontSize: '0.78rem', fontWeight: '900', color: '#fff', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: '900', color: isCardActive ? '#ffffff' : 'var(--text-primary)', fontFamily: 'monospace' }}>
                   {idx.val}
                 </div>
                 <div style={{
-                  fontSize: '0.62rem',
+                  fontSize: '0.64rem',
                   fontWeight: '800',
-                  color: idx.isUp ? '#10b981' : '#f87171',
+                  color: isCardActive ? '#ffffff' : (idx.isUp ? '#047857' : '#b91c1c'),
                   fontFamily: 'monospace'
                 }}>
                   {idx.isUp ? '▲ ' : '▼ '}{idx.change}
