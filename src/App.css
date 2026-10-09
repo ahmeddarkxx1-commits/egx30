@@ -2325,6 +2325,19 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   display: none;
 }
 
+.pro-terminal-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr 310px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1024px) {
+  .pro-terminal-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (max-width: 640px) {
   .desktop-theme-text {
     display: none !important;
@@ -2332,19 +2345,42 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   .mobile-theme-text {
     display: inline !important;
   }
+  .stocketa-navbar-container {
+    padding: 10px 10px 0 10px !important;
+  }
+  .stocketa-navbar-inner {
+    padding: 6px 10px !important;
+  }
+  .stocketa-brand-group {
+    gap: 6px !important;
+  }
+  .stocketa-brand-logo-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 9px !important;
+  }
+  .stocketa-brand-name {
+    font-size: 16.5px !important;
+    letter-spacing: -0.4px !important;
+  }
   .stocketa-brand-sub {
     display: none !important;
   }
-  .stocketa-navbar-inner {
-    padding: 8px 12px !important;
+  .stocketa-nav-actions {
+    gap: 6px !important;
   }
-  .stocketa-theme-btn {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
+  .stocketa-theme-toggle-pill {
+    padding: 3px 8px 3px 4px !important;
+    gap: 4px !important;
   }
-  .stocketa-launch-btn {
-    padding: 8px 14px !important;
-    font-size: 13px !important;
+  .theme-toggle-label {
+    font-size: 11.5px !important;
+  }
+  .stocketa-btn-primary.stocketa-launch-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
   }
 
   .stocketa-nav-links {
@@ -2371,6 +2407,28 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   .stocketa-footer-links {
     gap: 30px;
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .stocketa-navbar-container {
+    padding: 8px 6px 0 6px !important;
+  }
+  .stocketa-navbar-inner {
+    padding: 5px 8px !important;
+  }
+  .stocketa-brand-name {
+    font-size: 15px !important;
+  }
+  .theme-toggle-label {
+    display: none !important;
+  }
+  .stocketa-theme-toggle-pill {
+    padding: 3px !important;
+  }
+  .stocketa-btn-primary.stocketa-launch-btn {
+    padding: 5px 9px !important;
+    font-size: 11px !important;
   }
 }
 
