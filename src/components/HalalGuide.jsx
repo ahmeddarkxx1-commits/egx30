@@ -11,9 +11,9 @@ const halalAssetsData = [
     icon: '₿',
     category: 'crypto',
     status: 'differs',
-    statusLabel: 'مختلف فيه ⚠️',
-    explanation: 'أجازه كثير من العلماء المعاصرين كالمفتي شبير أحمد. أقرب للجواز عند من يعتبره وسيلة تبادل مالية حقيقية ولامركزية.',
-    aaoifi: 'متوافق جزئياً مع معايير السلع الرقمية',
+    statusLabel: 'Scholar Difference ⚠️',
+    explanation: 'Approved by numerous contemporary Shariah scholars (e.g. Mufti Shabbir Ahmad) as a legitimate decentralized medium of financial exchange and digital store of value.',
+    aaoifi: 'Partially mapped under digital commodity standards',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -25,9 +25,9 @@ const halalAssetsData = [
     icon: 'Ξ',
     category: 'crypto',
     status: 'differs',
-    statusLabel: 'مختلف فيه ⚠️',
-    explanation: 'له استخدامات حقيقية في DeFi والعقود الذكية. بعض العلماء يجيزه لوجود منفعة تقنية حقيقية بدون التعامل بـ Staking ربوي.',
-    aaoifi: 'تحت مراجعة المجامع الفقهية',
+    statusLabel: 'Scholar Difference ⚠️',
+    explanation: 'Substantial utility in decentralized computing, smart contracts, and Web3 infrastructure. Permissible when avoiding interest-bearing lending staking pools.',
+    aaoifi: 'Under review by contemporary Islamic jurisprudence councils',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -39,9 +39,9 @@ const halalAssetsData = [
     icon: '◎',
     category: 'crypto',
     status: 'differs',
-    statusLabel: 'مختلف فيه ⚠️',
-    explanation: 'له استخدامات تقنية حقيقية في التطبيقات اللامركزية وسرعة المعاملات وتكاليف شبكة منخفضة.',
-    aaoifi: 'شبكة مبادلة تقنية معتمدة',
+    statusLabel: 'Scholar Difference ⚠️',
+    explanation: 'High-throughput Layer 1 network with real technological utility for dApps, micropayments, and high-speed validator consensus.',
+    aaoifi: 'Technological network utility approved',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -53,9 +53,9 @@ const halalAssetsData = [
     icon: '⬡',
     category: 'crypto',
     status: 'differs',
-    statusLabel: 'مختلف فيه ⚠️',
-    explanation: 'يُستخدم في بورصة Binance وله منافع عملية متعددة كرسوم تداول وحوكمة، لكن يحتوي بعض الأنشطة الربوية بالمنصة.',
-    aaoifi: 'يتطلب تجنب خدمات الإقراض الربوي',
+    statusLabel: 'Scholar Difference ⚠️',
+    explanation: 'Used for transaction fees and governance on BNB Chain. Caution required regarding margin/lending activities associated with exchange operations.',
+    aaoifi: 'Requires avoidance of interest-bearing margin services',
     debtRatio: '0.0%',
     impureIncome: '1.5%',
     purification: '1.5%'
@@ -67,9 +67,9 @@ const halalAssetsData = [
     icon: '✕',
     category: 'crypto',
     status: 'halal',
-    statusLabel: 'حلال ✅',
-    explanation: 'بروتوكول تسوية ومدفوعات بنكية بين المؤسسات بدون فوائد ربوية أو عقود إقراض.',
-    aaoifi: 'مجاز كشبكة تسوية مدفوعات',
+    statusLabel: 'Shariah Compliant ✅',
+    explanation: 'Institutional cross-border payment settlement network facilitating fiat transfers without interest-bearing debt contracts.',
+    aaoifi: 'Approved as institutional payment settlement protocol',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -81,9 +81,9 @@ const halalAssetsData = [
     icon: '₳',
     category: 'crypto',
     status: 'halal',
-    statusLabel: 'حلال ✅',
-    explanation: 'مشروع بحثي أكاديمي مبني على إثبات الحصة النقي وبدون بروتوكولات ربوية.',
-    aaoifi: 'متوافق مع المعايير الشريعة للشبكات',
+    statusLabel: 'Shariah Compliant ✅',
+    explanation: 'Peer-reviewed, evidence-based Proof-of-Stake blockchain built without embedded usurious lending protocols.',
+    aaoifi: 'Compliant with Shariah network standards',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -95,9 +95,9 @@ const halalAssetsData = [
     icon: '💧',
     category: 'crypto',
     status: 'precaution',
-    statusLabel: 'يحتاج احتياط 🔵',
-    explanation: 'شبكة بلوكتشين حديثة عالية السرعة. يتطلب التأكد من عدم استخدام بروتوكولات الإقراض الربوي التابعة للشبكة.',
-    aaoifi: 'متوافق مع الاحتياط من DeFi الربوي',
+    statusLabel: 'Requires Precaution 🔵',
+    explanation: 'Next-generation high-speed Layer 1. Must ensure native staking avoids leveraged lending protocols with fixed interest rates.',
+    aaoifi: 'Compliant with precaution regarding leveraged DeFi',
     debtRatio: '0.0%',
     impureIncome: '0.8%',
     purification: '0.8%'
@@ -109,9 +109,9 @@ const halalAssetsData = [
     icon: 'Ⓝ',
     category: 'crypto',
     status: 'precaution',
-    statusLabel: 'يحتاج احتياط 🔵',
-    explanation: 'منصة عقود ذكية وسحابية لامركزية ذات استخدامات نافعة ولكن تستوجب الحذر من تطبيقات الـ Staking المزودة بعوائد ثابتة.',
-    aaoifi: 'مباح للتحويل بدون Staking ربوي',
+    statusLabel: 'Requires Precaution 🔵',
+    explanation: 'Decentralized cloud computing and developer platform. Permissible for network validation while avoiding guaranteed-yield lending pools.',
+    aaoifi: 'Permissible for transfers without usurious staking',
     debtRatio: '0.0%',
     impureIncome: '1.1%',
     purification: '1.1%'
@@ -123,25 +123,25 @@ const halalAssetsData = [
     icon: '👻',
     category: 'crypto',
     status: 'doubtful',
-    statusLabel: 'مشكوك فيه ❌',
-    explanation: 'بروتوكول إقراض واقتراض بالفوائد الربوية صراحة في التمويل اللامركزي (DeFi).',
-    aaoifi: 'غير جائز شرعاً لربويتها المباشرة',
+    statusLabel: 'Doubtful / Impermissible ❌',
+    explanation: 'Explicit decentralized interest-bearing liquidity and lending market protocol involving interest (Riba).',
+    aaoifi: 'Impermissible due to direct interest-based lending operations',
     debtRatio: '100%',
     impureIncome: '100%',
-    purification: 'غير جائز'
+    purification: 'Impermissible'
   },
 
   // Stocks & Commodities
   {
     id: 'XAU',
     pair: 'XAU/USD',
-    name: 'الذهب (Gold)',
+    name: 'Gold (Physical Spot)',
     icon: '🥇',
     category: 'stocks',
     status: 'halal',
-    statusLabel: 'حلال ✅',
-    explanation: 'معدن ثمين وأصل عيني متوافق مع الشريعة 100% للتداول المباشر بالتسليم الفوري بدون روافع ربا.',
-    aaoifi: 'معيار الذهب شرعي 100% (AAOIFI Standard 57)',
+    statusLabel: 'Shariah Compliant ✅',
+    explanation: 'Precious metal and tangible physical asset 100% Shariah compliant under spot delivery and physical allocation standards.',
+    aaoifi: '100% Shariah Compliant (AAOIFI Standard #57 on Gold)',
     debtRatio: '0.0%',
     impureIncome: '0.0%',
     purification: '0.0%'
@@ -153,9 +153,9 @@ const halalAssetsData = [
     icon: '🍎',
     category: 'stocks',
     status: 'halal',
-    statusLabel: 'حلال ✅',
-    explanation: 'تنشط في التكنولوجيا والأجهزة. نسبة الديون بفائدة والفوائد المحرمة أقل من 5% من معايير الشريعة (AAOIFI).',
-    aaoifi: 'متوافق طبقاً لمعايير AAOIFI',
+    statusLabel: 'Shariah Compliant ✅',
+    explanation: 'Technology and consumer electronics. Interest-bearing debt and prohibited financial income are strictly below AAOIFI 5% and 33% threshold limits.',
+    aaoifi: 'Compliant under AAOIFI Financial Screening Criteria',
     debtRatio: '14.2%',
     impureIncome: '0.4%',
     purification: '0.4%'
@@ -465,20 +465,20 @@ export default function HalalGuide({ onBack }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', direction: 'ltr', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>دليل الحلال 🕌</h2>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>Halal & Shariah Audit Engine 🕌</h2>
           </div>
           <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
-            فحص شرعي معتمد للأصول والعملات والأسهم والفوركس
+            AAOIFI & Islamic Fiqh screening for Crypto, Equities, Commodities & Forex
           </div>
         </div>
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
-          <ChevronRight size={28} />
+          <ChevronRight size={28} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
 
@@ -494,7 +494,7 @@ export default function HalalGuide({ onBack }) {
         >
           <div style={{ color: '#10b981', fontSize: '20px', marginBottom: '2px' }}>✅</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>{dynamicHalalCount}</div>
-          <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>حلال</div>
+          <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>Compliant</div>
         </div>
 
         <div 
@@ -507,7 +507,7 @@ export default function HalalGuide({ onBack }) {
         >
           <div style={{ color: '#f59e0b', fontSize: '20px', marginBottom: '2px' }}>⚠️</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f59e0b' }}>{dynamicDiffersCount}</div>
-          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>مختلف</div>
+          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>Difference</div>
         </div>
 
         <div 
@@ -520,7 +520,7 @@ export default function HalalGuide({ onBack }) {
         >
           <div style={{ color: '#60a5fa', fontSize: '20px', marginBottom: '2px' }}>🔵</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#60a5fa' }}>{dynamicPrecautionCount}</div>
-          <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 'bold' }}>يحتاج احتياط</div>
+          <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 'bold' }}>Precaution</div>
         </div>
 
         <div 
@@ -533,18 +533,28 @@ export default function HalalGuide({ onBack }) {
         >
           <div style={{ color: '#f87171', fontSize: '20px', marginBottom: '2px' }}>❌</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#f87171' }}>{dynamicDoubtfulCount}</div>
-          <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 'bold' }}>مشكوك</div>
+          <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 'bold' }}>Doubtful</div>
         </div>
       </div>
 
       {/* AI Sharia Search Box */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', padding: '16px' }}>
         <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', color: '#fff', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-          <span>ابحث عن أي أصل بالذكاء الاصطناعي</span>
+          <span>Search Any Global Asset via AI Shariah Auditor</span>
           <Sparkles size={16} color="#a855f7" />
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
+          <input 
+            type="text"
+            placeholder="e.g. EUR/USD, Coinbase, AAPL, BTC, Solana, NVDA, XAU/USD..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAiSearchTrigger()}
+            style={{
+              flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '13px', direction: 'ltr', outline: 'none'
+            }}
+          />
           <button 
             onClick={() => handleAiSearchTrigger()}
             disabled={isAiSearching}
@@ -552,37 +562,27 @@ export default function HalalGuide({ onBack }) {
           >
             {isAiSearching ? <Sparkles size={18} className="spin" /> : <Search size={18} />}
           </button>
-          <input 
-            type="text"
-            placeholder="مثال: EUR/USD, Coinbase, AAPL, BTC, Solana..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAiSearchTrigger()}
-            style={{
-              flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '13px', direction: 'rtl', outline: 'none'
-            }}
-          />
         </div>
 
         {/* Custom AI Analysis Box if searched non-listed symbol */}
         {aiCustomResult && (
           <div style={{ marginTop: '12px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '14px', padding: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>تحليل AI شرعي: {aiCustomResult.pair}</span>
+              <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>AI Shariah Screening: {aiCustomResult.pair}</span>
               <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '3px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>{aiCustomResult.statusLabel}</span>
             </div>
-            <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#e5e7eb', lineHeight: '1.5', direction: 'rtl' }}>{aiCustomResult.explanation}</p>
+            <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#e5e7eb', lineHeight: '1.5', direction: 'ltr' }}>{aiCustomResult.explanation}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '11px', textAlign: 'center' }}>
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-                <div style={{ color: '#9ca3af' }}>نسبة الديون</div>
+                <div style={{ color: '#9ca3af' }}>Debt Ratio</div>
                 <div style={{ fontWeight: 'bold', color: '#10b981' }}>{aiCustomResult.debtRatio}</div>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-                <div style={{ color: '#9ca3af' }}>الإيراد المحرم</div>
+                <div style={{ color: '#9ca3af' }}>Impure Income</div>
                 <div style={{ fontWeight: 'bold', color: '#f59e0b' }}>{aiCustomResult.impureIncome}</div>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '8px' }}>
-                <div style={{ color: '#9ca3af' }}>نسبة التطهير</div>
+                <div style={{ color: '#9ca3af' }}>Purification</div>
                 <div style={{ fontWeight: 'bold', color: '#a855f7' }}>{aiCustomResult.purification}</div>
               </div>
             </div>
@@ -592,13 +592,13 @@ export default function HalalGuide({ onBack }) {
 
       {/* Filter Tabs (Category & Status) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* Category Tabs: الكل | 🟠 كريبتو | 📈 أسهم | 💱 فوركس */}
+        {/* Category Tabs */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {[
-            { id: 'all', label: 'الكل' },
-            { id: 'crypto', label: '🟠 كريبتو' },
-            { id: 'stocks', label: '📈 أسهم' },
-            { id: 'forex', label: '💱 فوركس' }
+            { id: 'all', label: 'All Markets' },
+            { id: 'crypto', label: '🟠 Crypto Assets' },
+            { id: 'stocks', label: '📈 Equities & ETFs' },
+            { id: 'forex', label: '💱 Forex & Currencies' }
           ].map(c => (
             <button
               key={c.id}
@@ -618,11 +618,11 @@ export default function HalalGuide({ onBack }) {
         {/* Status Tabs */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {[
-            { id: 'all', label: '✦ جميع الأحكام' },
-            { id: 'halal', label: `حلال (${dynamicHalalCount})` },
-            { id: 'differs', label: `مختلف فيه (${dynamicDiffersCount})` },
-            { id: 'precaution', label: `يحتاج احتياط (${dynamicPrecautionCount})` },
-            { id: 'doubtful', label: `مشكوك فيه (${dynamicDoubtfulCount})` }
+            { id: 'all', label: '✦ All Classifications' },
+            { id: 'halal', label: `Compliant (${dynamicHalalCount})` },
+            { id: 'differs', label: `Difference (${dynamicDiffersCount})` },
+            { id: 'precaution', label: `Precaution (${dynamicPrecautionCount})` },
+            { id: 'doubtful', label: `Doubtful (${dynamicDoubtfulCount})` }
           ].map(s => (
             <button
               key={s.id}
@@ -640,13 +640,13 @@ export default function HalalGuide({ onBack }) {
         </div>
       </div>
 
-      {/* Educational Banner ("دليل المتداول المسلم 🕌") */}
+      {/* Educational Banner */}
       <div style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '14px', padding: '14px', display: 'flex', gap: '12px', alignItems: 'center' }}>
         <div style={{ fontSize: '28px' }}>🕌</div>
         <div>
-          <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#10b981' }}>دليل المتداول المسلم</div>
+          <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#10b981' }}>Muslim Trader Guidance & Standards</div>
           <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', lineHeight: '1.4' }}>
-            بناءً على معايير AAOIFI ومجالس الفقه الإسلامي. التداول بالفوركس مسموح بالحسابات الإسلامية الخالية من فوائد التبييت (Swap Free).
+            Audited per AAOIFI Standards & Islamic Fiqh Councils. Forex spot trading is permitted exclusively via Swap-Free Islamic accounts without overnight rollover interest.
           </div>
         </div>
       </div>
@@ -655,7 +655,7 @@ export default function HalalGuide({ onBack }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredAssets.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '30px', color: '#9ca3af', fontSize: '13px' }}>
-            لا توجد أصول مطابقة في هذا الفلتر حالياً. يمكنك البحث عن أي رمز بالذكاء الاصطناعي أعلاه 🔍
+            No assets match the current filter. You can search any global symbol via the AI Auditor above 🔍
           </div>
         ) : (
           filteredAssets.map(asset => (
@@ -672,6 +672,14 @@ export default function HalalGuide({ onBack }) {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AssetLogo symbol={asset.pair} fallbackIcon={asset.icon} containerSize={36} size={22} />
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{asset.pair}</div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>{asset.name}</div>
+                  </div>
+                </div>
+
                 <span style={{ 
                   background: asset.status === 'halal' ? 'rgba(16,185,129,0.15)' : asset.status === 'differs' ? 'rgba(245,158,11,0.15)' : asset.status === 'precaution' ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.15)',
                   color: asset.status === 'halal' ? '#10b981' : asset.status === 'differs' ? '#f59e0b' : asset.status === 'precaution' ? '#60a5fa' : '#f87171',
@@ -680,17 +688,9 @@ export default function HalalGuide({ onBack }) {
                 }}>
                   {asset.statusLabel}
                 </span>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{asset.pair}</div>
-                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>{asset.name}</div>
-                  </div>
-                  <AssetLogo symbol={asset.pair} fallbackIcon={asset.icon} containerSize={36} size={22} />
-                </div>
               </div>
 
-              <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', direction: 'rtl' }}>
+              <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', direction: 'ltr' }}>
                 {asset.explanation}
               </p>
 
@@ -711,7 +711,7 @@ export default function HalalGuide({ onBack }) {
                   gap: '6px'
                 }}
               >
-                <span>تحليل AI شرعي تفصيلي</span>
+                <span>Full AAOIFI Compliance Breakdown</span>
                 <span>🤖</span>
               </button>
             </div>
@@ -725,7 +725,7 @@ export default function HalalGuide({ onBack }) {
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '16px', zIndex: 9999
+          padding: '16px', zIndex: 9999, direction: 'ltr'
         }}>
           <div style={{
             background: '#0f172a', border: '1px solid rgba(168, 85, 247, 0.4)',
@@ -734,7 +734,7 @@ export default function HalalGuide({ onBack }) {
           }}>
             <button 
               onClick={() => setActiveModalAsset(null)}
-              style={{ position: 'absolute', top: '14px', left: '14px', background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '14px', right: '14px', background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
             >
               <X size={20} />
             </button>
@@ -748,25 +748,25 @@ export default function HalalGuide({ onBack }) {
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>حكم هيئة AAOIFI وتوصية الذكاء الاصطناعي</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>AAOIFI Standard & Shariah Board Assessment</div>
               <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#a855f7' }}>{activeModalAsset.aaoifi}</div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', textAlign: 'center' }}>
               <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '10px', padding: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#9ca3af' }}>نسبة الديون الربوية</div>
+                <div style={{ fontSize: '10px', color: '#9ca3af' }}>Interest Debt</div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#10b981', marginTop: '2px' }}>{activeModalAsset.debtRatio}</div>
-                <div style={{ fontSize: '9px', color: '#6b7280' }}>أقل من 33%</div>
+                <div style={{ fontSize: '9px', color: '#6b7280' }}>Max 33%</div>
               </div>
               <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '10px', padding: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#9ca3af' }}>الإيرادات غير المشروعة</div>
+                <div style={{ fontSize: '10px', color: '#9ca3af' }}>Impure Revenue</div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>{activeModalAsset.impureIncome}</div>
-                <div style={{ fontSize: '9px', color: '#6b7280' }}>أقل من 5%</div>
+                <div style={{ fontSize: '9px', color: '#6b7280' }}>Max 5%</div>
               </div>
               <div style={{ background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.2)', borderRadius: '10px', padding: '10px' }}>
-                <div style={{ fontSize: '10px', color: '#9ca3af' }}>نسبة التطهير الواجبة</div>
+                <div style={{ fontSize: '10px', color: '#9ca3af' }}>Purification</div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#c084fc', marginTop: '2px' }}>{activeModalAsset.purification}</div>
-                <div style={{ fontSize: '9px', color: '#6b7280' }}>من الأرباح</div>
+                <div style={{ fontSize: '9px', color: '#6b7280' }}>Of Dividends</div>
               </div>
             </div>
 
@@ -778,7 +778,7 @@ export default function HalalGuide({ onBack }) {
               onClick={() => setActiveModalAsset(null)}
               style={{ width: '100%', background: '#a855f7', color: '#fff', border: 'none', borderRadius: '12px', padding: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
             >
-              حسناً، فهمت
+              Acknowledge & Close
             </button>
           </div>
         </div>

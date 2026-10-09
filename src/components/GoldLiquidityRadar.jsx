@@ -22,115 +22,48 @@ import {
   DollarSign,
   XCircle,
   Wifi,
-  WifiOff,
   Compass,
   TrendingDown,
   Info,
   Award,
   AlertCircle,
   RotateCcw,
-  Check
+  Crosshair,
+  Sparkles,
+  BarChart2,
+  Copy,
+  Eye
 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
+import { AssetLogo } from '../utils/assetLogos';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 
-export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
-  const [goldTicker, setGoldTicker] = useState({ price: 4236.50, change24h: -1.02, isUp: false });
+// Master Liquidity Hub Assets with accurate base fallbacks
+const liquidityAssets = [
+  { pair: 'XAU/USD', name: 'Gold (Spot Gold)', symbol: 'OANDA:XAUUSD', binanceSymbol: 'PAXGUSDT', icon: '🥇', category: 'metals', basePrice: 4164.50, unit: '$', step: 0.1 },
+  { pair: 'BTC/USDT', name: 'Bitcoin (BTC)', symbol: 'BINANCE:BTCUSDT', binanceSymbol: 'BTCUSDT', icon: '₿', category: 'crypto', basePrice: 64250.00, unit: '$', step: 1 },
+  { pair: 'EUR/USD', name: 'EUR / USD', symbol: 'FX:EURUSD', binanceSymbol: 'EURUSDT', icon: '💶', category: 'forex', basePrice: 1.1385, unit: '$', step: 0.0001 },
+  { pair: 'US30', name: 'Dow Jones (US30)', symbol: 'FOREXCOM:US30', binanceSymbol: null, icon: '📈', category: 'indices', basePrice: 42850.00, unit: 'pts', step: 1 },
+  { pair: 'NAS100', name: 'Nasdaq 100 (NAS100)', symbol: 'FOREXCOM:NAS100', binanceSymbol: null, icon: '💻', category: 'indices', basePrice: 19850.00, unit: 'pts', step: 1 },
+  { pair: 'XAG/USD', name: 'Silver (Spot Silver)', symbol: 'OANDA:XAGUSD', binanceSymbol: null, icon: '🥈', category: 'metals', basePrice: 31.85, unit: '$', step: 0.01 },
+  { pair: 'WTI', name: 'Crude Oil (WTI)', symbol: 'TVC:USOIL', binanceSymbol: null, icon: '🛢️', category: 'metals', basePrice: 71.40, unit: '$', step: 0.01 },
+  { pair: 'SOL/USDT', name: 'Solana (SOL)', symbol: 'BINANCE:SOLUSDT', binanceSymbol: 'SOLUSDT', icon: '⚡', category: 'crypto', basePrice: 154.20, unit: '$', step: 0.05 }
+];
+
+export default function GoldLiquidityRadar({ onBack, onAnalyzeAsset }) {
+  const [selectedAsset, setSelectedAsset] = useState(liquidityAssets[0]);
+  const [liveTicker, setLiveTicker] = useState({ 
+    price: liquidityAssets[0].basePrice, 
+    change24h: 0.25, 
+    isUp: true,
+    high24h: liquidityAssets[0].basePrice * 1.01,
+    low24h: liquidityAssets[0].basePrice * 0.99,
+    provider: 'Live Data'
+  });
   const [currentTimeUTC, setCurrentTimeUTC] = useState(new Date().toUTCString().slice(17, 25));
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1m');
-  const [activeStudies, setActiveStudies] = useState([]);
-  const [showAdvancedIndicators, setShowAdvancedIndicators] = useState(false);
-  const [recentTicks, setRecentTicks] = useState([]);
-  const [wsConnected, setWsConnected] = useState(false);
-  const wsRef = useRef(null);
-  const [priceHistory, setPriceHistory] = useState([]);
-  const [signalMode, setSignalMode] = useState('auto'); // 'auto' | 'buy' | 'sell'
-
-  // === 🛡️ EXECUTION MUTEX & DEBOUNCE REFS (Prevents any duplicate loop calls) ===
-  const isExecutingRef = useRef(false);
-  const lastOrderTimestampRef = useRef(0);
-
-  // === 🎯 DAILY TARGET & RISK RULES ($20 Target / $10 Max Loss) ===
-  const DAILY_TARGET = 20.0;
-  const DAILY_MAX_LOSS = 10.0;
-
-  const getTodayKey = () => {
-    return new Date().toISOString().slice(0, 10);
-  };
-
-  const [dailyPnL, setDailyPnL] = useState(() => {
-    const today = getTodayKey();
-    const storedDate = localStorage.getItem('traden_gold_daily_date');
-    if (storedDate === today) {
-      return parseFloat(localStorage.getItem('traden_gold_daily_pnl')) || 0.0;
-    }
-    localStorage.setItem('traden_gold_daily_date', today);
-    localStorage.setItem('traden_gold_daily_pnl', '0.0');
-    return 0.0;
-  });
-
-  const [dailyLocked, setDailyLocked] = useState(() => {
-    const today = getTodayKey();
-    const storedDate = localStorage.getItem('traden_gold_daily_date');
-    if (storedDate === today) {
-      return localStorage.getItem('traden_gold_daily_locked') || null;
-    }
-    return null;
-  });
-
-  // Save Daily PnL changes & Trigger Daily Lock when limits reached
-  useEffect(() => {
-    const today = getTodayKey();
-    localStorage.setItem('traden_gold_daily_date', today);
-    localStorage.setItem('traden_gold_daily_pnl', String(dailyPnL));
-    
-    if (dailyPnL >= DAILY_TARGET) {
-      setDailyLocked('target_reached');
-      localStorage.setItem('traden_gold_daily_locked', 'target_reached');
-    } else if (dailyPnL <= -DAILY_MAX_LOSS) {
-      setDailyLocked('max_loss_hit');
-      localStorage.setItem('traden_gold_daily_locked', 'max_loss_hit');
-    }
-  }, [dailyPnL]);
-
-  // === ⏱️ COOLDOWN TIMER (20 Minutes on SL Hit) ===
-  const [cooldownUntil, setCooldownUntil] = useState(() => {
-    return parseInt(localStorage.getItem('traden_gold_cooldown_until')) || 0;
-  });
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (cooldownUntil > now) {
-        setCooldownRemaining(Math.ceil((cooldownUntil - now) / 1000));
-      } else {
-        setCooldownRemaining(0);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [cooldownUntil]);
-
-  const triggerCooldown = () => {
-    const until = Date.now() + 20 * 60 * 1000; // 20 minutes
-    setCooldownUntil(until);
-    localStorage.setItem('traden_gold_cooldown_until', String(until));
-  };
-
-  const clearCooldown = () => {
-    setCooldownUntil(0);
-    localStorage.removeItem('traden_gold_cooldown_until');
-    setCooldownRemaining(0);
-  };
-
-  const handleResetDailyLock = () => {
-    setDailyLocked(null);
-    localStorage.removeItem('traden_gold_daily_locked');
-    setDailyPnL(0.0);
-    localStorage.setItem('traden_gold_daily_pnl', '0.0');
-    clearCooldown();
-    setOrderStatus('🔄 تم إعادة ضبط عداد اليوم بنجاح.');
-  };
+  const [sessionInfo, setSessionInfo] = useState({ title: '', status: 'peak', color: '#10b981', badge: '', desc: '', volumeLevel: 95 });
+  const [copyToast, setCopyToast] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Dynamic Real-time Session Calculator
   const computeSessionInfo = (now = new Date()) => {
@@ -140,1369 +73,717 @@ export default function GoldLiquidityRadar({ onBack, onAnalyzeGold }) {
 
     if (timeVal >= 12 && timeVal < 16) {
       return {
-        title: 'تداخل لندن ونيويورك',
-        enTag: 'Peak Overlap',
+        title: 'London & NY Overlap (Peak Hours)',
+        enTag: 'London & NY Overlap',
         status: 'peak',
         color: '#10b981',
-        badge: 'ذروة السيولة 🔥',
-        desc: 'أقوى وأعلى فترة حركة وسيولة للذهب على مدار اليوم. فرصة عالية جداً للسكالبينج والصفقات السريعة.',
-        volumeLevel: 95
+        badge: 'Global Peak Liquidity 🔥',
+        desc: 'Highest volume window of the trading day. Heavy institutional bank flow and fast order sweeps.',
+        volumeLevel: 98,
+        activeHubs: ['London 🇬🇧', 'New York 🇺🇸', 'Frankfurt 🇩🇪']
       };
     }
     if (timeVal >= 7 && timeVal < 12) {
       return {
-        title: 'جلسة لندن الأوروبية',
+        title: 'London European Session',
         enTag: 'London Session',
         status: 'high',
         color: '#3b82f6',
-        badge: 'سيولة عالية ⚡',
-        desc: 'افتتاح وتداول البنوك الأوروبية ولندن. نشاط وحركة اتجاهية قوية في الذهب والعملات.',
-        volumeLevel: 85
+        badge: 'High European Volume ⚡',
+        desc: 'London & European banks open. Sweeps of Asian session highs/lows and initiation of true daily directional trend.',
+        volumeLevel: 85,
+        activeHubs: ['London 🇬🇧', 'Zurich 🇨🇭', 'Frankfurt 🇩🇪']
       };
     }
     if (timeVal >= 16 && timeVal < 21) {
       return {
-        title: 'جلسة نيويورك الأمريكية',
+        title: 'New York Wall Street Session',
         enTag: 'New York Session',
         status: 'high',
         color: '#f59e0b',
-        badge: 'نشاط أمريكي 🇺🇸',
-        desc: 'جلسة التداول الأمريكية بعد إغلاق لندن. تحركات قوية مع تداولات وول ستريت.',
-        volumeLevel: 80
+        badge: 'Wall Street & Futures 🇺🇸',
+        desc: 'US hedge funds and COMEX/CME commodity floor activity. Sharp reactions to macro economic data releases.',
+        volumeLevel: 82,
+        activeHubs: ['New York 🇺🇸', 'Chicago 🇺🇸']
       };
     }
     if (timeVal >= 21 && timeVal < 23) {
       return {
-        title: 'إغلاق نيويورك وبداية سيدني',
-        enTag: 'Late NY / Sydney Open',
+        title: 'Late NY Close & Sydney Open',
+        enTag: 'Late NY / Sydney',
         status: 'moderate',
         color: '#a855f7',
-        badge: 'سيولة متوسطة 🌙',
-        desc: 'فترة ختام التداولات الأمريكية وافتتاح السوق الأسترالي. الحركة تتجه للهدوء النسبي.',
-        volumeLevel: 45
+        badge: 'Moderate Liquidity 🌙',
+        desc: 'US market wrap-up and Pacific open. Spreads consolidate ahead of Tokyo Asian liquidity build-up.',
+        volumeLevel: 45,
+        activeHubs: ['Sydney 🇦🇺', 'Wellington 🇳🇿']
       };
     }
     return {
-      title: 'الجلسة الآسيوية (طوكيو)',
+      title: 'Asian Session (Tokyo & HK)',
       enTag: 'Asian Session',
       status: 'low',
       color: '#64748b',
-      badge: 'سيولة هادئة 💤',
-      desc: 'تداولات هادئة ونطاقات تذبذب ضيقة (Consolidation) بانتظار افتتاح لندن.',
-      volumeLevel: 30
+      badge: 'Range Accumulation 💤',
+      desc: 'Tight consolidation range. Institutional market makers build liquidity pools ahead of the London open (07:00 UTC).',
+      volumeLevel: 35,
+      activeHubs: ['Tokyo 🇯🇵', 'Singapore 🇸🇬', 'Hong Kong 🇭🇰']
     };
   };
 
-  const [sessionInfo, setSessionInfo] = useState(() => computeSessionInfo());
-
-  // === 🎯 Scout & Scale-in Auto Bot State ===
-  const [autoSweepBot, setAutoSweepBot] = useState(() => {
-    return localStorage.getItem('traden_gold_scout_bot_active') === 'true';
-  });
-  const [executingOrder, setExecutingOrder] = useState(false);
-  const [orderStatus, setOrderStatus] = useState('');
-  const [orderError, setOrderError] = useState(false);
-
-  // REAL LIVE MT5 POSITIONS (Synced with /api/account)
-  const [activeSweepPositions, setActiveSweepPositions] = useState([]);
-  const [isMt5Connected, setIsMt5Connected] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  // 1-Min Scalping Liquidity Magnet Target System
-  const price = (goldTicker && typeof goldTicker.price === 'number' && !isNaN(goldTicker.price)) ? goldTicker.price : 4236.50;
-  let isUp = goldTicker ? goldTicker.isUp : false;
-  if (signalMode === 'buy') isUp = true;
-  if (signalMode === 'sell') isUp = false;
-
-  // Spread-Aware Calculation on Gold (Typical standard spread 0.20 USD)
-  const spreadGold = 0.20;
-  const bslTarget = Number((price + 2.80).toFixed(2));
-  const sslTarget = Number((price - 2.80).toFixed(2));
-  const targetPrice = isUp ? bslTarget : sslTarget;
-  
-  const recommendedAction = isUp ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
-  const actionColor = isUp ? '#10b981' : '#ef4444';
-  const arrowSymbol = isUp ? '⬆️' : '⬇️';
-
-  // Bias indicator
-  const sweepBiasTitle = isUp ? 'سحب سيولة القاع (Liquidity Sweep Low)' : 'سحب سيولة القمة (Liquidity Sweep High)';
-  const sweepBiasTag = isUp ? 'Sweep Low / Bullish Reaction' : 'Sweep High / Bearish Reaction';
-  const sweepKeyLevel = isUp ? sslTarget : bslTarget;
-
-  const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
-
-  const fetchWithCloudFallback = async (endpoint, options = {}) => {
-    let cloudUrl = (localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL).trim();
-    if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
-      cloudUrl = `https://${cloudUrl}`;
-    }
-    const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
-    const hosts = [cloudUrl, DEFAULT_RAILWAY_URL, currentOrigin, '', 'http://localhost:5000', 'http://127.0.0.1:5000'].filter(Boolean);
-
-    for (const host of hosts) {
-      try {
-        const url = host.endsWith('/') ? `${host.slice(0, -1)}${endpoint}` : `${host}${endpoint}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(url, { ...options, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res) return res;
-      } catch (e) {}
-    }
-    throw new Error('Cloud server unreachable');
-  };
-
-  // === 🔄 REAL-TIME SYNC WITH REAL MT5 ACCOUNT POSITIONS (Matches XAUUSDm / GOLD / All pairs) ===
-  const syncLiveMt5Positions = async () => {
-    try {
-      const response = await fetchWithCloudFallback('/api/account');
-      if (response && response.ok) {
-        const data = await response.json();
-        setIsMt5Connected(Boolean(data.connected));
-        
-        const rawPositions = Array.isArray(data.positions) ? data.positions : [];
-        
-        // Match Gold positions (XAUUSDm, XAUUSD, GOLD, etc.) and other account pairs
-        const formatted = rawPositions.map((p, idx) => {
-          const side = String(p.type || '').toLowerCase().includes('buy') || p.type === 0 ? 'buy' : 'sell';
-          const sym = String(p.symbol || '').toUpperCase();
-          const isGold = sym.includes('XAU') || sym.includes('GOLD');
-          const isScout = idx === 0 && rawPositions.length === 1;
-          const isScaleIn = idx > 0;
-          
-          let tradeBadge = 'SCALP ⚡';
-          if (isGold) {
-            tradeBadge = isScout ? 'اختبار 🎯 (0.01)' : isScaleIn ? 'تعزيز 🚀 (0.01)' : 'GOLD 🥇';
-          } else {
-            tradeBadge = `${sym.slice(0, 7)} 🌐`;
-          }
-
-          return {
-            id: String(p.ticket || idx),
-            ticket: p.ticket,
-            symbol: p.symbol || 'XAU/USD',
-            side: side,
-            entryPrice: Number(p.price_open || p.price || price),
-            sl: Number(p.sl || 0),
-            tp: Number(p.tp || 0),
-            lot: Number(p.volume || 0.01),
-            profit: Number(p.profit || 0),
-            type: tradeBadge,
-            isBreakEven: false
-          };
-        });
-
-        setActiveSweepPositions(formatted);
-      }
-    } catch (err) {
-      // Offline fallback
-    }
-  };
-
-  // Fast live MT5 polling every 2.5 seconds
+  // Update clock & session every second
   useEffect(() => {
-    syncLiveMt5Positions();
-    const interval = setInterval(syncLiveMt5Positions, 2500);
-    return () => clearInterval(interval);
-  }, [price]);
-
-  // Derived Position Metrics
-  const totalRealProfit = activeSweepPositions.reduce((acc, p) => acc + (p.profit || 0), 0);
-  const totalOpenLots = activeSweepPositions.reduce((acc, p) => acc + (p.lot || 0), 0).toFixed(2);
-  const goldPositions = activeSweepPositions.filter(p => {
-    const s = String(p.symbol || '').toUpperCase();
-    return s.includes('XAU') || s.includes('GOLD');
-  });
-  
-  const hasScoutTrade = goldPositions.length === 1;
-  const hasScaleInTrades = goldPositions.length >= 2;
-  const isScoutInProfit = hasScoutTrade && totalRealProfit >= 1.50;
-
-  // Compute Active Cycle Stage (1 to 4)
-  let currentCycleStage = 1;
-  if (dailyLocked === 'target_reached') {
-    currentCycleStage = 4;
-  } else if (hasScaleInTrades) {
-    currentCycleStage = 3;
-  } else if (hasScoutTrade && isScoutInProfit) {
-    currentCycleStage = 2;
-  } else if (hasScoutTrade) {
-    currentCycleStage = 1;
-  }
-
-  // === 🎯 1. SCOUT TRADE (فتح صفقة اختبار 0.01 لوت بستوب وقائي 3.0$) ===
-  const handleExecuteScoutTrade = async (overrideSide = null) => {
-    const now = Date.now();
-    
-    // Front-end Mutex & Debounce Guard: 15s minimum spacing
-    if (isExecutingRef.current || (now - lastOrderTimestampRef.current < 15000)) {
-      const waitSec = Math.ceil((15000 - (now - lastOrderTimestampRef.current)) / 1000);
-      setOrderStatus(`⏳ جاري معالجة الأوامر السابقة. يرجى الانتظار ${waitSec > 0 ? waitSec : 1} ثواني.`);
-      return;
-    }
-
-    if (dailyLocked) {
-      setOrderStatus(`🛑 التداول مقفل اليوم: ${dailyLocked === 'target_reached' ? 'تم تحقيق الهدف $20 🎉' : 'تم بلوغ حد الخسارة -$10 🛡️'}`);
-      setOrderError(true);
-      return;
-    }
-
-    if (cooldownRemaining > 0) {
-      setOrderStatus(`⏱️ النظام في وضع التهدئة. يتبقى ${Math.floor(cooldownRemaining / 60)} دقيقة و ${cooldownRemaining % 60} ثانية.`);
-      setOrderError(true);
-      return;
-    }
-
-    if (goldPositions.length >= 1) {
-      setOrderStatus(`⚠️ توجد صفقة ذهب مفتوحة بالفعل في حسابك على MT5. لا يمكن فتح صفقة اختبار جديدة.`);
-      setOrderError(true);
-      return;
-    }
-
-    isExecutingRef.current = true;
-    lastOrderTimestampRef.current = now;
-    setExecutingOrder(true);
-
-    const side = overrideSide || (isUp ? 'buy' : 'sell');
-    const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
-    const entryP = price;
-    
-    // Logical Stop Loss ($3.00 on Gold to survive spread) and TP ($3.80)
-    const slDist = 3.00;
-    const tpDist = 3.80;
-
-    const subSl = side === 'buy' 
-      ? Number((entryP - slDist - spreadGold).toFixed(2)) 
-      : Number((entryP + slDist + spreadGold).toFixed(2));
-    
-    const subTp = side === 'buy' 
-      ? Number((entryP + tpDist + spreadGold).toFixed(2)) 
-      : Number((entryP - tpDist - spreadGold).toFixed(2));
-
-    setOrderStatus(`🎯 جاري إرسال صفقة اختبار السوق (Scout Trade: 0.01 Lot - ${actionLabel}) إلى MT5...`);
-    setOrderError(false);
-
-    try {
-      const res = await fetchWithCloudFallback('/api/orders/place', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: 'XAUUSDm',
-          side: side,
-          lot: 0.01,
-          sl: subSl,
-          tp: subTp,
-          comment: 'Traden Scout 0.01'
-        })
-      });
-
-      const resData = await res.json();
-      if (res.ok && resData.success !== false) {
-        setOrderError(false);
-        setOrderStatus(`✅ تم فتح صفقة الاختبار (0.01 Lot) بنجاح! نراقب تأكيد الاتجاه وتأمين الدخول.`);
-      } else {
-        setOrderError(true);
-        setOrderStatus(`⚠️ ${resData.message || 'تعذر فتح الصفقة.'}`);
-      }
-
-      setTimeout(syncLiveMt5Positions, 1000);
-      setTimeout(syncLiveMt5Positions, 3000);
-    } catch (e) {
-      setOrderError(true);
-      setOrderStatus(`⚠️ تعذر إرسال صفقة الاختبار إلى MT5. تأكد من تشغيل الجسر على الـ VPS.`);
-    } finally {
-      setTimeout(() => {
-        isExecutingRef.current = false;
-        setExecutingOrder(false);
-      }, 2000);
-    }
-  };
-
-  // === 🚀 2. SCALE-IN (تعزيز بصفقتين 0.01 بعد تأمين صفقة الاختبار) ===
-  const handleExecuteScaleIn = async () => {
-    const now = Date.now();
-    if (isExecutingRef.current || (now - lastOrderTimestampRef.current < 15000)) {
-      setOrderStatus(`⏳ يرجى الانتظار قليلاً قبل إرسال أمر التعزيز.`);
-      return;
-    }
-
-    if (dailyLocked) {
-      setOrderStatus(`🛑 التداول مقفل اليوم.`);
-      setOrderError(true);
-      return;
-    }
-
-    if (goldPositions.length >= 3) {
-      setOrderStatus(`⚠️ تم بلوغ الحد الأقصى للصفقات (3 صفقات كحد أقصى).`);
-      setOrderError(true);
-      return;
-    }
-
-    isExecutingRef.current = true;
-    lastOrderTimestampRef.current = now;
-    setExecutingOrder(true);
-
-    const side = isUp ? 'buy' : 'sell';
-    const actionLabel = side === 'buy' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)';
-    const entryP = price;
-    const slDist = 2.50;
-    const tpDist = 4.20;
-
-    setOrderStatus(`🚀 جاري تأمين صفقة الاختبار وتعزيز بصفقتين (0.01x2 - ${actionLabel}) على MT5...`);
-    setOrderError(false);
-
-    try {
-      // 1. Break-Even existing Scout trade
-      await handleBreakEvenAll();
-
-      // 2. Open 2 Scale-In sub-orders (0.01 lot each)
-      for (let i = 1; i <= 2; i++) {
-        const subSl = side === 'buy' 
-          ? Number((entryP - slDist - spreadGold).toFixed(2)) 
-          : Number((entryP + slDist + spreadGold).toFixed(2));
-        
-        const subTp = side === 'buy' 
-          ? Number((entryP + tpDist + spreadGold).toFixed(2)) 
-          : Number((entryP - tpDist - spreadGold).toFixed(2));
-
-        await fetchWithCloudFallback('/api/orders/place', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            symbol: 'XAUUSDm',
-            side: side,
-            lot: 0.01,
-            sl: subSl,
-            tp: subTp,
-            comment: `Traden ScaleIn-${i} 0.01`
-          })
-        });
-      }
-
-      setOrderError(false);
-      setOrderStatus(`✅ تم تأمين الاختبار وفتح صفقتي التعزيز (0.01x2) بنجاح! جاري متابعة الهدف.`);
-      setTimeout(syncLiveMt5Positions, 1000);
-      setTimeout(syncLiveMt5Positions, 3000);
-    } catch (e) {
-      setOrderError(true);
-      setOrderStatus(`⚠️ تعذر تنفيذ التعزيز.`);
-    } finally {
-      setTimeout(() => {
-        isExecutingRef.current = false;
-        setExecutingOrder(false);
-      }, 2000);
-    }
-  };
-
-  // === 🛑 CLOSE ALL & HARVEST (إغلاق وحجز الأرباح + تحديث الهدف اليومي) ===
-  const handleCloseAllPositions = async () => {
-    if (!activeSweepPositions || activeSweepPositions.length === 0) return;
-    setExecutingOrder(true);
-    setOrderStatus(`جاري إغلاق جميع الصفقات وحجز الأرباح في MT5...`);
-
-    try {
-      const ticketsToClose = activeSweepPositions.map(p => p.ticket);
-      for (const t of ticketsToClose) {
-        try {
-          await fetchWithCloudFallback('/api/control/close_position', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticket: t })
-          });
-        } catch (err) {}
-      }
-
-      const closedProfit = totalRealProfit;
-      if (closedProfit !== 0) {
-        setDailyPnL(prev => {
-          const nextVal = parseFloat((prev + closedProfit).toFixed(2));
-          return nextVal;
-        });
-
-        // If closed at loss -> trigger 20 min cooldown
-        if (closedProfit < -1.0) {
-          triggerCooldown();
-        }
-      }
-
-      setOrderStatus(`💰 تم حجز الأرباح وإغلاق الصفقات بنجاح (${closedProfit >= 0 ? '+' : ''}${closedProfit.toFixed(2)}$)!`);
-      setTimeout(syncLiveMt5Positions, 1000);
-    } catch (e) {
-      setOrderStatus(`💰 تم إرسال أمر إغلاق الصفقات!`);
-    } finally {
-      setExecutingOrder(false);
-    }
-  };
-
-  // === 🛡️ BREAK-EVEN ALL (نقل الستوب للدخول) ===
-  const handleBreakEvenAll = async () => {
-    if (!activeSweepPositions || activeSweepPositions.length === 0) return;
-    
-    setOrderStatus(`🛡️ جاري نقل الستوب لنقطة الدخول (Break-Even)...`);
-    try {
-      for (const pos of activeSweepPositions) {
-        if (pos.ticket) {
-          const bePrice = pos.side === 'buy' 
-            ? Number((pos.entryPrice + 0.15).toFixed(2)) 
-            : Number((pos.entryPrice - 0.15).toFixed(2));
-
-          await fetchWithCloudFallback('/api/orders/modify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ticket: pos.ticket,
-              sl: bePrice,
-              tp: pos.tp
-            })
-          });
-        }
-      }
-      setOrderStatus(`🛡️ تم تأمين جميع الصفقات على نقطة الدخول بنجاح!`);
-      setTimeout(syncLiveMt5Positions, 1000);
-    } catch (e) {
-      setOrderStatus(`🛡️ تم إرسال أمر تأمين الدخول.`);
-    }
-  };
-
-  // Toggle Auto Bot (Single Unified Controller)
-  const toggleAutoBot = (newState) => {
-    if (dailyLocked) {
-      setOrderStatus(`🛑 لا يمكن تشغيل البوت اليوم بسبب بلوغ سقف الهدف ($20) أو الخسارة (-$10).`);
-      setOrderError(true);
-      return;
-    }
-    setAutoSweepBot(newState);
-    localStorage.setItem('traden_gold_scout_bot_active', String(newState));
-    setOrderStatus(newState ? '🟢 تم تفعيل قناص Scout & Scale-in الآلي بنجاح.' : '⚪ تم إيقاف القناص الآلي.');
-  };
-
-  // Live Auto Scout Engine Loop (Strictly Gated with Debounce & Max 1 Scout)
-  useEffect(() => {
-    if (!autoSweepBot || dailyLocked || cooldownRemaining > 0) return;
-    const now = Date.now();
-
-    // 1. Only open Scout (0.01) if ZERO gold positions exist
-    if (goldPositions.length === 0 && !isAnalyzing && !isExecutingRef.current && (now - lastOrderTimestampRef.current > 20000)) {
-      setIsAnalyzing(true);
-      setOrderStatus(`🔍 [فحص السيولة] جاري تأكيد شمعة الانعكاس وفتح صفقة الاختبار (0.01 Lot)...`);
-
-      const timer = setTimeout(() => {
-        setIsAnalyzing(false);
-        if (goldPositions.length === 0 && !isExecutingRef.current && !dailyLocked) {
-          handleExecuteScoutTrade(isUp ? 'buy' : 'sell');
-        }
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-    // 2. Auto Scale-In only when Scout in profit >= $1.50
-    else if (goldPositions.length === 1 && totalRealProfit >= 1.50 && !isAnalyzing && !isExecutingRef.current && (now - lastOrderTimestampRef.current > 20000)) {
-      setIsAnalyzing(true);
-      setOrderStatus(`🚀 [تعزيز الأرباح] صفقة الاختبار في ربح (+${totalRealProfit.toFixed(2)}$) - جاري التأمين والتعزيز بصفقتين...`);
-
-      const timer = setTimeout(() => {
-        setIsAnalyzing(false);
-        if (goldPositions.length === 1 && !isExecutingRef.current) {
-          handleExecuteScaleIn();
-        }
-      }, 2500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [autoSweepBot, goldPositions.length, totalRealProfit, dailyLocked, cooldownRemaining, isUp]);
-
-  // Live Binance WebSocket for XAU/USD
-  useEffect(() => {
-    const clockInterval = setInterval(() => {
+    const timer = setInterval(() => {
       const now = new Date();
       setCurrentTimeUTC(now.toUTCString().slice(17, 25));
       setSessionInfo(computeSessionInfo(now));
     }, 1000);
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const t = await fetchLiveAssetTicker('XAU/USD');
-        if (t && typeof t.price === 'number') {
-          setGoldTicker(prev => ({
-            price: t.price,
-            change24h: t.change24h || prev.change24h,
-            isUp: t.isUp !== undefined ? t.isUp : prev.isUp
-          }));
-        }
-      } catch (e) {}
-    }, 2500);
-
-    const connectWs = () => {
-      const wsUrl = 'wss://stream.binance.com:9443/ws/paxgusdt@trade';
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => setWsConnected(true);
-      ws.onclose = () => {
-        setWsConnected(false);
-        setTimeout(connectWs, 3000);
-      };
-      ws.onerror = () => ws.close();
-
-      ws.onmessage = (evt) => {
-        try {
-          const d = JSON.parse(evt.data);
-          if (!d.p) return;
-          const newPrice = parseFloat(d.p);
-          const now = new Date();
-          const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-
-          setPriceHistory(h => {
-            const updated = [...h.slice(-19), newPrice];
-            const avg = updated.reduce((a, b) => a + b, 0) / updated.length;
-            const isUpTrend = newPrice >= avg;
-
-            setGoldTicker(prev => {
-              const change24h = prev.change24h || 0;
-              setRecentTicks(ticks => [
-                { price: newPrice.toFixed(2), isUp: isUpTrend, time: timeStr },
-                ...ticks.slice(0, 5)
-              ]);
-              return { price: newPrice, change24h, isUp: isUpTrend };
-            });
-
-            return updated;
-          });
-        } catch (e) {}
-      };
-    };
-
-    connectWs();
-
-    return () => {
-      clearInterval(clockInterval);
-      clearInterval(pollInterval);
-      if (wsRef.current) wsRef.current.close();
-    };
+    return () => clearInterval(timer);
   }, []);
 
-  // Daily target progress percentage (0% to 100%)
-  const dailyProgressPct = Math.min(100, Math.max(0, Math.round((dailyPnL / DAILY_TARGET) * 100)));
-  const dailyRemaining = Math.max(0, DAILY_TARGET - dailyPnL).toFixed(2);
+  // Direct Live Ticker Fetcher with Instant Multi-Provider Fallbacks
+  const loadTicker = async (asset) => {
+    if (!asset) return;
+    setIsRefreshing(true);
+    try {
+      // 1. If asset has direct Binance symbol, fetch live 24hr ticker in real-time
+      if (asset.binanceSymbol) {
+        try {
+          const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${asset.binanceSymbol}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.lastPrice) {
+              const p = parseFloat(data.lastPrice);
+              const c = parseFloat(data.priceChangePercent);
+              setLiveTicker({
+                price: p,
+                change24h: c,
+                isUp: c >= 0,
+                high24h: parseFloat(data.highPrice),
+                low24h: parseFloat(data.lowPrice),
+                provider: 'Binance Live Feed'
+              });
+              setIsRefreshing(false);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. Fetch from priceFetcher
+      const ticker = await fetchLiveAssetTicker(asset.pair);
+      if (ticker && ticker.price && !isNaN(ticker.price)) {
+        setLiveTicker({
+          price: ticker.price,
+          change24h: ticker.change24h || 0.25,
+          isUp: ticker.isUp ?? true,
+          high24h: ticker.high24h || ticker.price * 1.01,
+          low24h: ticker.low24h || ticker.price * 0.99,
+          provider: ticker.provider || 'Live Stream'
+        });
+      }
+    } catch (e) {
+      console.log('Ticker fetch error:', e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Switch Asset Handler: Immediately changes state and triggers live fetch
+  const handleSelectAsset = (asset) => {
+    setSelectedAsset(asset);
+    setLiveTicker({
+      price: asset.basePrice,
+      change24h: 0.25,
+      isUp: true,
+      high24h: asset.basePrice * 1.01,
+      low24h: asset.basePrice * 0.99,
+      provider: 'Connecting...'
+    });
+    loadTicker(asset);
+  };
+
+  useEffect(() => {
+    loadTicker(selectedAsset);
+    const interval = setInterval(() => loadTicker(selectedAsset), 3000);
+    return () => clearInterval(interval);
+  }, [selectedAsset]);
+
+  const currentPrice = (liveTicker && !isNaN(liveTicker.price) && liveTicker.price > 0) ? liveTicker.price : selectedAsset.basePrice;
+  const isUp = liveTicker?.isUp ?? true;
+  const changePct = parseFloat(liveTicker?.change24h || 0.25);
+
+  // Format Helper according to asset type
+  const formatPrice = (val) => {
+    if (typeof val !== 'number') val = parseFloat(val) || 0;
+    if (selectedAsset.pair.includes('EUR') || selectedAsset.pair.includes('GBP')) {
+      return val.toFixed(4);
+    }
+    if (val > 1000) {
+      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return val.toFixed(2);
+  };
+
+  // Dynamic SMC Liquidity Calculations based ON THIS EXACT ASSET's price
+  const priceDelta = (pct) => currentPrice * (pct / 100);
+
+  // Buy-Side Liquidity (BSL) Pools - Above current price (Short Stop-Loss Clusters)
+  const bsl1 = currentPrice + priceDelta(0.28);
+  const bsl2 = currentPrice + priceDelta(0.70);
+
+  // Sell-Side Liquidity (SSL) Pools - Below current price (Long Stop-Loss Clusters)
+  const ssl1 = currentPrice - priceDelta(0.28);
+  const ssl2 = currentPrice - priceDelta(0.70);
+
+  // Fair Value Gap (FVG) and Institutional Order Blocks (OB)
+  const fvgTop = currentPrice + priceDelta(0.18);
+  const fvgBottom = currentPrice - priceDelta(0.15);
+  const demandOB = currentPrice - priceDelta(0.45);
+  const supplyOB = currentPrice + priceDelta(0.50);
+
+  // Scalp trade setup
+  const scalpDirection = isUp ? 'BUY' : 'SELL';
+  const scalpEntry = currentPrice;
+  const scalpTp1 = isUp ? bsl1 : ssl1;
+  const scalpTp2 = isUp ? bsl2 : ssl2;
+  const scalpSl = isUp ? (currentPrice - priceDelta(0.22)) : (currentPrice + priceDelta(0.22));
+
+  // Dynamic Real-time Orderflow Bias Calculation based on live price change
+  const calcBuyPercent = isUp 
+    ? Math.min(88, Math.max(54, Math.round(52 + Math.abs(changePct) * 3.5))) 
+    : Math.max(14, Math.min(46, Math.round(48 - Math.abs(changePct) * 3.5)));
+  const buyPressure = calcBuyPercent;
+  const sellPressure = 100 - buyPressure;
+  const orderflowStatus = buyPressure >= 55 ? 'BUY EXPANSION 🟢' : sellPressure >= 55 ? 'SELL SWEEP 🔴' : 'EQUILIBRIUM ⚖️';
+  const orderflowDesc = buyPressure >= 55 
+    ? `Active institutional buying volume (+${Math.abs(changePct).toFixed(2)}%) targeting Buy-Side Liquidity (BSL) and short stop clusters above.` 
+    : `Institutional selling pressure (-${Math.abs(changePct).toFixed(2)}%) sweeping Sell-Side Liquidity (SSL) and resting stops below.`;
+
+  // 1-Click Copy
+  const handleCopy = (label, text) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+    }
+    setCopyToast(`${label} copied to clipboard 📋`);
+    setTimeout(() => setCopyToast(''), 2200);
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', direction: 'ltr' }}>
       
-      {/* Top Navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <ChevronRight size={24} />
-          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>رجوع</span>
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ 
-            background: isMt5Connected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', 
-            border: `1px solid ${isMt5Connected ? '#10b981' : '#ef4444'}`, 
-            color: isMt5Connected ? '#10b981' : '#f87171', 
-            padding: '4px 10px', 
-            borderRadius: '20px', 
-            fontSize: '11px', 
-            fontWeight: 'bold', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '5px' 
-          }}>
-            {isMt5Connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-            <span>{isMt5Connected ? 'MT5 متصل ومزامن' : 'MT5 غير متصل بالـ VPS'}</span>
-          </div>
-
-          <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Flame size={14} color="#f59e0b" />
-            <span>قناص الذهب 🥇</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header Banner */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%)', 
-        border: '1px solid rgba(245, 158, 11, 0.3)', 
-        borderRadius: '16px', 
-        padding: '16px', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '10px',
-        boxShadow: '0 0 25px rgba(245, 158, 11, 0.1)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-              سعر الذهب اللحظي المباشر <span dir="ltr" className="font-mono inline-block" style={{ unicodeBidi: 'isolate' }}>(XAU/USD)</span>
-            </div>
-            <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-              <span dir="ltr" className="font-mono">
-                ${goldTicker.price > 1000 ? Number(goldTicker.price.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2 }) : goldTicker.price}
-              </span>
-              <span dir="ltr" style={{ fontSize: '13px', color: goldTicker.isUp ? '#10b981' : '#f87171', background: goldTicker.isUp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(248, 113, 113, 0.15)', padding: '2px 8px', borderRadius: '10px', unicodeBidi: 'isolate' }}>
-                {goldTicker.isUp ? '▲' : '▼'} {goldTicker.change24h}%
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={() => onAnalyzeGold && onAnalyzeGold('XAU/USD')}
-            style={{ 
-              background: '#f59e0b', color: '#000', border: 'none', padding: '10px 16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)'
-            }}
-          >
-            <Zap size={16} />
-            <span>تحليل الذهب الآن 🤖</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 🏆 DAILY TARGET ($20) & RISK MANAGEMENT SHIELD ($10 MAX LOSS) */}
-      {/* ============================================================ */}
+      {/* 1. Header & Asset Selector Bar */}
       <div style={{
-        background: dailyLocked === 'target_reached' 
-          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%)'
-          : dailyLocked === 'max_loss_hit'
-          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%)'
-          : 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)',
-        border: `1.5px solid ${dailyLocked === 'target_reached' ? '#10b981' : dailyLocked === 'max_loss_hit' ? '#ef4444' : 'rgba(245, 158, 11, 0.4)'}`,
+        background: 'linear-gradient(135deg, rgba(13, 18, 28, 0.92) 0%, rgba(17, 24, 39, 0.98) 100%)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: '16px',
-        padding: '16px',
+        padding: '12px 14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '10px',
         boxShadow: '0 8px 30px rgba(0,0,0,0.35)'
       }}>
-        {/* Header with Title & Rules */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        
+        {/* Top Mini Header: Title + Session Time + Back */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Award size={20} color={dailyLocked === 'target_reached' ? '#10b981' : '#f59e0b'} />
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.35))',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Crosshair size={18} color="#f59e0b" />
+            </div>
             <div>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>
-                الهدف اليومي وإدارة المخاطر الصارمة
-              </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                هدف الربح: <b style={{ color: '#10b981' }}>+$20.00</b> | أقصى خسارة: <b style={{ color: '#f87171' }}>-$10.00</b>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#fff' }}>
+                  Institutional Liquidity Radar & SMC Order Flow Hub
+                </span>
+                <span style={{ fontSize: '9px', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1px 5px', borderRadius: '4px', fontWeight: '800' }}>
+                  INSTITUTIONAL
+                </span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {dailyLocked ? (
-              <span style={{
-                background: dailyLocked === 'target_reached' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                color: dailyLocked === 'target_reached' ? '#10b981' : '#f87171',
-                border: `1px solid ${dailyLocked === 'target_reached' ? '#10b981' : '#ef4444'}`,
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <Lock size={12} />
-                {dailyLocked === 'target_reached' ? '🎉 تم حجز الهدف (قفل الحساب)' : '🛑 تم وقف التداول (حماية)'}
-              </span>
-            ) : (
-              <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                يوم تداول نشط ⚡
-              </span>
-            )}
-
-            <button
-              onClick={handleResetDailyLock}
-              title="إعادة ضبط العداد واليوم يدوياً"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#94a3b8',
-                borderRadius: '8px',
-                padding: '4px 8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px'
-              }}
-            >
-              <RotateCcw size={12} />
-              <span>إعادة ضبط</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Daily Profit Progress Bar */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', marginBottom: '6px' }}>
-            <span style={{ color: '#cbd5e1' }}>
-              الربح المحقق اليوم: <b style={{ color: dailyPnL >= 0 ? '#10b981' : '#f87171' }}>{dailyPnL >= 0 ? '+' : ''}${dailyPnL.toFixed(2)} USD</b>
-            </span>
-            <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
-              {dailyProgressPct}% (متبقي ${dailyRemaining})
-            </span>
-          </div>
-          <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.4)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
-              width: `${dailyProgressPct}%`,
-              height: '100%',
-              background: dailyPnL >= 0 ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' : '#ef4444',
-              transition: 'width 0.5s ease'
-            }}></div>
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontSize: '11px',
+              color: '#38bdf8',
+              fontFamily: 'monospace'
+            }}>
+              <Clock size={12} color="#38bdf8" />
+              <span>{currentTimeUTC} UTC</span>
+            </div>
+
+            {onBack && (
+              <button 
+                onClick={onBack}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} />
+                <span>Dashboard</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Lock Warning or Celebratory Message */}
-        {dailyLocked === 'target_reached' && (
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: '10px', padding: '10px', fontSize: '12px', color: '#10b981', textAlign: 'center', fontWeight: 'bold' }}>
-            🎉 تهانينا! تم تحقيق هدف الربح اليومي ($20.00). تم قفل القناص تلقائياً لمنع الإفراط في التداول وحماية أرباحك لليوم التالي.
-          </div>
-        )}
-        {dailyLocked === 'max_loss_hit' && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '10px', padding: '10px', fontSize: '12px', color: '#f87171', textAlign: 'center', fontWeight: 'bold' }}>
-            🛑 تم بلوغ الحد الأقصى للخسارة اليومية (-$10.00). تم إيقاف التداول اليوم لحماية رأس مالك واستئناف التداول غداً بعقلية جديدة.
-          </div>
-        )}
+        {/* Multi-Asset Quick Selector Strip */}
+        <div className="no-scrollbar" style={{
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+          paddingBottom: '2px',
+          width: '100%'
+        }}>
+          {liquidityAssets.map(item => {
+            const isSelected = selectedAsset.pair === item.pair;
+            return (
+              <button
+                key={item.pair}
+                onClick={() => handleSelectAsset(item)}
+                style={{
+                  background: isSelected 
+                    ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(17, 24, 39, 0.95) 100%)' 
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: isSelected ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.07)',
+                  borderRadius: '8px',
+                  padding: '5px 10px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <AssetLogo symbol={item.pair} containerSize={18} size={12} fallbackIcon={item.icon} />
+                <span style={{ fontSize: '11.5px', fontWeight: '800', color: isSelected ? '#f59e0b' : '#fff' }}>
+                  {item.pair}
+                </span>
+                <span style={{ fontSize: '9.5px', color: isSelected ? '#fef08a' : 'var(--text-muted)' }}>
+                  {item.name.split('(')[0]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Cooldown Mode Banner (20 Minutes on SL Hit) */}
-      {cooldownRemaining > 0 && (
+      {/* Toast Alert */}
+      {copyToast && (
         <div style={{
-          background: 'rgba(239, 68, 68, 0.15)',
-          border: '1.5px solid #ef4444',
-          borderRadius: '14px',
-          padding: '12px 16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '8px'
+          background: 'rgba(16, 185, 129, 0.2)',
+          border: '1px solid #10b981',
+          color: '#34d399',
+          padding: '6px 12px',
+          borderRadius: '8px',
+          fontSize: '11.5px',
+          fontWeight: '700',
+          textAlign: 'center'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AlertCircle size={20} color="#f87171" />
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f87171' }}>
-                وضع التهدئة نَشِط (Cooldown Mode - 20 دقيقة)
-              </div>
-              <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
-                لتفادي التداول الانتقامي بعد الستوب. استئناف الصفقات بعد: <b style={{ color: '#fff' }}>{Math.floor(cooldownRemaining / 60)} دقيقة و {cooldownRemaining % 60} ثانية</b>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={clearCooldown}
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-              padding: '4px 10px',
-              borderRadius: '8px',
-              fontSize: '11px',
-              cursor: 'pointer'
-            }}
-          >
-            تخطي التهدئة
-          </button>
+          {copyToast}
         </div>
       )}
 
-      {/* Live Session Status Card */}
-      <div style={{ 
-        background: 'rgba(255,255,255,0.03)', 
-        border: `1px solid ${sessionInfo.color}`, 
-        borderRadius: '16px', 
-        padding: '16px', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '12px',
-        boxShadow: `0 0 20px ${sessionInfo.color}20`
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={20} color={sessionInfo.color} />
-            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>حالة سيولة الذهب الآن</span>
-          </div>
-          <span style={{ background: `${sessionInfo.color}25`, color: sessionInfo.color, border: `1px solid ${sessionInfo.color}50`, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-            {sessionInfo.badge}
-          </span>
-        </div>
-
-        <div style={{ fontSize: '18px', fontWeight: 'bold', color: sessionInfo.color, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>{sessionInfo.title}</span>
-          <span dir="ltr" style={{ fontSize: '13px', color: '#94a3b8', unicodeBidi: 'isolate' }}>({sessionInfo.enTag})</span>
-        </div>
-
-        <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6', margin: 0 }}>
-          {sessionInfo.desc}
-        </p>
-
-        {/* Volume Level Bar */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
-            <span>مستوى السيولة الحجمية <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>(Volume Index)</span></span>
-            <span style={{ color: sessionInfo.color, fontWeight: 'bold' }}>{sessionInfo.volumeLevel}%</span>
-          </div>
-          <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${sessionInfo.volumeLevel}%`, height: '100%', background: sessionInfo.color, transition: 'width 0.5s ease' }}></div>
-          </div>
-        </div>
-
-        <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'left', marginTop: '4px' }}>
-          الوقت اللحظي: <b style={{ color: '#fff' }} dir="ltr">{currentTimeUTC}</b>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 🏹 SCOUT & SCALE-IN PIPELINE ENGINE (4 STAGES) */}
-      {/* ============================================================ */}
+      {/* 2. Top Summary KPI Row: Live Price + Active Session + Orderflow Pressure */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(16, 24, 39, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%)',
-        border: '2px solid rgba(245, 158, 11, 0.6)',
-        borderRadius: '16px',
-        padding: '18px 16px',
-        boxShadow: '0 10px 35px rgba(245, 158, 11, 0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px'
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '10px'
       }}>
-        {/* Header & Single Unified Toggle Bot Switch */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Compass size={24} color="#f59e0b" />
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>قناص السكالبينج الذكي 🏹</span>
-                <span dir="ltr" style={{ fontSize: '12px', color: '#f59e0b', unicodeBidi: 'isolate' }}>(Scout & Scale-in Engine)</span>
-              </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                اختبار بـ 0.01 ➔ تأمين الدخول ➔ تعزيز بصفقتين ➔ حجز الهدف $20
-              </div>
-            </div>
-          </div>
-
-          {/* Unified Auto Bot Toggle Switch */}
-          <button
-            onClick={() => toggleAutoBot(!autoSweepBot)}
-            disabled={Boolean(dailyLocked)}
-            style={{
-              background: autoSweepBot ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.08)',
-              border: `1px solid ${autoSweepBot ? '#10b981' : 'rgba(255,255,255,0.2)'}`,
-              color: '#fff',
-              padding: '8px 16px',
-              borderRadius: '24px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              cursor: dailyLocked ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: autoSweepBot ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
-              transition: 'all 0.2s ease',
-              opacity: dailyLocked ? 0.5 : 1
-            }}
-          >
-            {autoSweepBot ? <Pause size={15} /> : <Play size={15} />}
-            <span>{autoSweepBot ? '🟢 القناص الآلي نَشِط (ON)' : '⚪ تشغيل القناص الآلي'}</span>
-          </button>
-        </div>
-
-        {/* 4-Stage Cycle Pipeline Visualizer */}
+        
+        {/* Card 1: Selected Asset Live Price */}
         <div style={{
-          background: 'rgba(0,0,0,0.4)',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
-          borderRadius: '12px',
-          padding: '12px',
+          background: 'linear-gradient(135deg, rgba(13, 18, 28, 0.85) 0%, rgba(17, 24, 39, 0.95) 100%)',
+          border: '1px solid rgba(245, 158, 11, 0.35)',
+          borderRadius: '14px',
+          padding: '12px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          justifyContent: 'space-between',
+          gap: '6px'
         }}>
-          <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Zap size={16} />
-            <span>مراحل دورة التداول الذكية (4 مراحل):</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AssetLogo symbol={selectedAsset.pair} containerSize={20} size={13} fallbackIcon={selectedAsset.icon} />
+              <span style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1' }}>
+                {selectedAsset.name}
+              </span>
+            </div>
+            <span style={{ fontSize: '9.5px', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '1px 5px', borderRadius: '4px', fontWeight: '800' }}>
+              {isRefreshing ? 'REFRESHING ⌛' : 'LIVE 🟢'}
+            </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-            {[
-              { num: 1, title: '1. اختبار الاتجاه', sub: 'Scout 0.01', active: currentCycleStage === 1 },
-              { num: 2, title: '2. تأمين الدخول', sub: 'Break-Even', active: currentCycleStage === 2 },
-              { num: 3, title: '3. تعزيز بصفقتين', sub: 'Scale-In 0.01x2', active: currentCycleStage === 3 },
-              { num: 4, title: '4. حجز الهدف $20', sub: 'Daily Target', active: currentCycleStage === 4 }
-            ].map(st => (
-              <div
-                key={st.num}
-                style={{
-                  background: st.active ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.2) 100%)' : currentCycleStage > st.num ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${st.active ? '#f59e0b' : currentCycleStage > st.num ? '#10b981' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: '8px',
-                  padding: '8px 4px',
-                  textAlign: 'center',
-                  boxShadow: st.active ? '0 0 10px rgba(245, 158, 11, 0.3)' : 'none'
-                }}
-              >
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: st.active ? '#f59e0b' : currentCycleStage > st.num ? '#10b981' : '#94a3b8' }}>
-                  {currentCycleStage > st.num ? '✅' : st.active ? '⚡' : '⚪'} {st.title}
-                </div>
-                <div style={{ fontSize: '9.5px', color: st.active ? '#fff' : '#64748b', marginTop: '2px' }}>
-                  {st.sub}
-                </div>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '1.45rem', fontWeight: '900', color: '#fff', fontFamily: 'monospace' }}>
+              ${formatPrice(currentPrice)}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: isUp ? '#10b981' : '#f87171' }}>
+              {changePct >= 0 ? `+${changePct.toFixed(2)}%` : `${changePct.toFixed(2)}%`}
+            </span>
+          </div>
+
+          <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+            <span>Fair Value Gap (FVG): <b style={{ color: '#f59e0b' }}>${formatPrice(fvgBottom)} - ${formatPrice(fvgTop)}</b></span>
+          </div>
+        </div>
+
+        {/* Card 2: Live Global Market Session Intel */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(13, 18, 28, 0.85) 0%, rgba(17, 24, 39, 0.95) 100%)',
+          border: `1px solid ${sessionInfo.color}60`,
+          borderRadius: '14px',
+          padding: '12px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '6px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: '800', color: sessionInfo.color, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Compass size={14} />
+              <span>{sessionInfo.badge}</span>
+            </span>
+            <span style={{ fontSize: '9.5px', color: '#94a3b8', fontFamily: 'monospace' }}>
+              Volume: {sessionInfo.volumeLevel}%
+            </span>
+          </div>
+
+          <div style={{ fontSize: '13px', fontWeight: '800', color: '#fff' }}>
+            {sessionInfo.title}
+          </div>
+
+          {/* Volume progress meter */}
+          <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
+            <div style={{ width: `${sessionInfo.volumeLevel}%`, height: '100%', background: sessionInfo.color, borderRadius: '6px' }}></div>
+          </div>
+
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            <span>Active Financial Hubs:</span>
+            {sessionInfo.activeHubs?.map((hub, i) => (
+              <span key={i} style={{ color: '#e2e8f0', background: 'rgba(255,255,255,0.06)', padding: '0 4px', borderRadius: '3px' }}>{hub}</span>
             ))}
           </div>
         </div>
 
-        {/* Live Market Bias & Key Target Strip */}
-        <div style={{ 
-          background: 'rgba(0,0,0,0.35)', 
-          border: `1px solid ${actionColor}50`, 
-          borderRadius: '12px', 
-          padding: '10px 14px', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '8px'
+        {/* Card 3: Dynamic Orderflow & Liquidity Imbalance for selected asset */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(13, 18, 28, 0.85) 0%, rgba(17, 24, 39, 0.95) 100%)',
+          border: '1px solid rgba(56, 189, 248, 0.35)',
+          borderRadius: '14px',
+          padding: '12px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '6px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '16px' }}>{arrowSymbol}</span>
-            <div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>حالة سحب السيولة الحالية:</div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: actionColor, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>{sweepBiasTitle}</span>
-                <span dir="ltr" style={{ fontSize: '11px', color: '#cbd5e1', unicodeBidi: 'isolate' }}>({sweepBiasTag})</span>
-              </div>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: '800', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Layers size={14} />
+              <span>Order Flow Imbalance (Delta Bias)</span>
+            </span>
+            <span style={{ fontSize: '9.5px', color: buyPressure >= 50 ? '#10b981' : '#f87171', fontWeight: '800' }}>
+              {orderflowStatus}
+            </span>
           </div>
 
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>مستوى الكسر المستهدف:</div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', fontFamily: 'monospace' }} dir="ltr">
-              ${sweepKeyLevel}
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: '800' }}>
+            <span style={{ color: '#10b981' }}>Buyer Volume: {buyPressure}%</span>
+            <span style={{ color: '#f87171' }}>Seller Volume: {sellPressure}%</span>
+          </div>
+
+          {/* Dynamic Imbalance Meter Bar */}
+          <div style={{ width: '100%', height: '6px', background: '#ef4444', borderRadius: '6px', overflow: 'hidden', display: 'flex' }}>
+            <div style={{ width: `${buyPressure}%`, height: '100%', background: '#10b981', transition: 'width 0.4s ease' }}></div>
+          </div>
+
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+            {orderflowDesc}
           </div>
         </div>
 
-        {/* REAL LIVE ACTIVE POSITIONS CARD (Synced with MT5) */}
-        {activeSweepPositions && activeSweepPositions.length > 0 ? (
+      </div>
+
+      {/* 3. Main Split Layout: Liquidity Matrix & Heatmap (Left) + Pro TradingView Chart & Setup (Right) */}
+      <div className="workbench-split-grid">
+        
+        {/* Left Column: Interactive TradingView Chart & Visual Liquidity Map */}
+        <div className="workbench-chart-pane">
           <div style={{
-            background: 'rgba(16, 185, 129, 0.08)',
-            border: '1.5px solid #10b981',
-            borderRadius: '14px',
-            padding: '14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}>
-            {/* Header: Real Count & Quick Control Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 12px #10b981' }}></span>
-                <div>
-                  <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#fff' }}>
-                    الصفقات المفتوحة على MT5: ({activeSweepPositions.length} صفقات)
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    إجمالي اللوت: <b style={{ color: '#f59e0b' }}>{totalOpenLots}</b> | أرباح الحساب اللحظية: <b style={{ color: totalRealProfit >= 0 ? '#10b981' : '#f87171' }}>{totalRealProfit >= 0 ? '+' : ''}{totalRealProfit.toFixed(2)}$</b>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Action Buttons */}
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={handleBreakEvenAll}
-                  disabled={executingOrder}
-                  style={{
-                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)'
-                  }}
-                >
-                  <Lock size={12} />
-                  <span>تأمين الدخول (BE)</span>
-                </button>
-
-                <button
-                  onClick={handleCloseAllPositions}
-                  disabled={executingOrder}
-                  style={{
-                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
-                  }}
-                >
-                  <XCircle size={12} />
-                  <span>إغلاق وحجز الأرباح 💰</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Sub-Orders Grid */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-              {activeSweepPositions.map((sub, idx) => {
-                const isBuy = sub.side === 'buy';
-                return (
-                  <div 
-                    key={sub.id || idx}
-                    style={{
-                      background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '12px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ 
-                        background: isBuy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                        color: isBuy ? '#10b981' : '#f87171',
-                        border: `1px solid ${isBuy ? '#10b981' : '#ef4444'}`,
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 'bold'
-                      }}>
-                        {sub.type}
-                      </span>
-                      <span style={{ color: '#fff', fontWeight: 'bold' }}>
-                        #{sub.ticket} [{isBuy ? 'BUY' : 'SELL'}] ({sub.lot} لوت)
-                      </span>
-                      <span style={{ color: '#cbd5e1' }}>دخول: <b>${sub.entryPrice}</b></span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {sub.sl > 0 && <span style={{ color: '#f87171' }}>SL: ${sub.sl}</span>}
-                      {sub.tp > 0 && <span style={{ color: '#4ade80' }}>TP: ${sub.tp}</span>}
-                      <span style={{ 
-                        color: sub.profit >= 0 ? '#10b981' : '#f87171', 
-                        fontWeight: 'bold',
-                        background: sub.profit >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        padding: '2px 6px',
-                        borderRadius: '4px'
-                      }}>
-                        {sub.profit >= 0 ? '+' : ''}{sub.profit.toFixed(2)}$
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            background: 'rgba(0,0,0,0.4)',
-            border: autoSweepBot ? '1px solid rgba(16, 185, 129, 0.4)' : '1px dashed rgba(255,255,255,0.12)',
-            borderRadius: '14px',
-            padding: '14px',
+            background: 'rgba(13, 18, 28, 0.75)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '16px',
+            padding: '10px 12px',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={16} color={autoSweepBot ? '#10b981' : '#f59e0b'} />
-                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
-                  {autoSweepBot ? 'القناص الآلي نشط ويرصد السوق لحظياً 🎯' : 'حالة رادار قناص الذهب:'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Activity size={15} color="#f59e0b" />
+                <span style={{ fontSize: '13px', fontWeight: '800', color: '#fff' }}>
+                  Live Institutional Chart ({selectedAsset.pair})
                 </span>
               </div>
-              <span style={{ 
-                background: autoSweepBot ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)', 
-                color: autoSweepBot ? '#10b981' : '#94a3b8', 
-                padding: '2px 8px', 
-                borderRadius: '10px', 
-                fontSize: '10px', 
-                fontWeight: 'bold' 
-              }}>
-                {autoSweepBot ? 'Scanning M1/M5 Live ⚡' : 'بانتظار الإشارة ⚪'}
-              </span>
-            </div>
-
-            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.6' }}>
-              {autoSweepBot ? (
-                <>
-                  🔍 <b>النشاط الحالي:</b> جاري مراقبة كسر مناطق السيولة عند <code>${sweepKeyLevel}</code> وتأكيد شمعة الارتداد لفتح صفقة الاختبار (0.01 لوت) تلقائياً.
-                </>
-              ) : (
-                <>
-                  لا توجد صفقات مفتوحة حالياً. يمكنك الضغط على <b>"تشغيل القناص الآلي"</b> بالأعلى للتداول الذكي الآلي، أو فتح صفقة الاختبار يدوياً بالزر أدناه.
-                </>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '10.5px', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '8px', textAlign: 'center' }}>
-              <div>السعر اللحظي: <b style={{ color: '#f59e0b' }}>${price}</b></div>
-              <div>السبريد: <b>${spreadGold}</b></div>
-              <div>المرحلة: <b style={{ color: '#38bdf8' }}>1. اختبار (0.01)</b></div>
-            </div>
-          </div>
-        )}
-
-        {/* Execution Status Feedback Banner */}
-        {orderStatus && (
-          <div style={{
-            background: orderError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-            border: `1px solid ${orderError ? '#ef4444' : '#10b981'}`,
-            color: orderError ? '#f87171' : '#10b981',
-            borderRadius: '10px',
-            padding: '10px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            textAlign: 'center'
-          }}>
-            {orderStatus}
-          </div>
-        )}
-
-        {/* Contextual Action Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {/* Main Scout Action Button (0.01 Lot) */}
-          {goldPositions.length === 0 && (
-            <button
-              onClick={() => handleExecuteScoutTrade()}
-              disabled={executingOrder || Boolean(dailyLocked) || cooldownRemaining > 0}
-              style={{
-                width: '100%',
-                background: isUp ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)' : 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '14px',
-                fontWeight: '900',
-                fontSize: '15px',
-                cursor: executingOrder || dailyLocked || cooldownRemaining > 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: `0 6px 20px ${actionColor}50`,
-                opacity: dailyLocked || cooldownRemaining > 0 ? 0.5 : 1
-              }}
-            >
-              <Target size={20} />
-              <span>
-                {executingOrder ? 'جاري فتح الصفقة...' : `🎯 فتح صفقة اختبار السوق (0.01 لوت) - (${recommendedAction})`}
-              </span>
-            </button>
-          )}
-
-          {/* Scale-In Action Button (Active when 1 scout trade is running) */}
-          {goldPositions.length === 1 && (
-            <button
-              onClick={handleExecuteScaleIn}
-              disabled={executingOrder || Boolean(dailyLocked)}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#000',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '14px',
-                fontWeight: '900',
-                fontSize: '15px',
-                cursor: executingOrder || dailyLocked ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)'
-              }}
-            >
-              <Zap size={20} />
-              <span>
-                {executingOrder ? 'جاري التعزيز...' : `🚀 تأمين الدخول (BE) + تعزيز بصفقتين (0.01x2 لوت) مع الاتجاه`}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 📚 COMPREHENSIVE GOLD SCALPING INSTRUCTIONS & RULES */}
-      {/* ============================================================ */}
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px',
-        padding: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Info size={18} />
-          <span>قواعد وتعليمات استراتيجية قناص الذهب (Scout & Scale-in):</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', fontSize: '12.5px', color: '#cbd5e1', lineHeight: '1.7' }}>
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #10b981' }}>
-            <b style={{ color: '#10b981' }}>1. مرحلة اختبار السوق (Scout Trade):</b>
-            <div>لا يتم التسرع بفتح لوت كبير؛ ندخل صفقة استكشافية واحدة فقط بلوت <b>0.01</b> بستوب وقائي منطقي (<b>$2.50 إلى $3.50</b>) لحماية الحساب من ضرب السبريد والذبذبة.</div>
-          </div>
-
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #3b82f6' }}>
-            <b style={{ color: '#3b82f6' }}>2. تأمين الدخول والتعزيز الذكي (Scaling In):</b>
-            <div>بمجرد تحقيق صفقة الاختبار ربحاً مبدئياً (+1.50$)، يتم نقل الستوب فوراً لنقطة الدخول (Break-Even)، ثم فتح صفقتين تعزيز فقط (0.01 لكل منهما) لمضاعفة الأرباح بدون مخاطرة على رأس المال.</div>
-          </div>
-
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #f59e0b' }}>
-            <b style={{ color: '#f59e0b' }}>3. قانون الهدف اليومي ($20) وحماية الخسارة ($10):</b>
-            <div>عند تحقيق <b>20$ ربح يومي</b> يتم قفل النظام تلقائياً لمنع الطمع والإفراط. وفي حال الوصول لأقصى خسارة <b>(-10$)</b> يقفل النظام للحفاظ على الحساب.</div>
-          </div>
-
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '10px', borderRight: '3px solid #ef4444' }}>
-            <b style={{ color: '#ef4444' }}>4. وضع التهدئة الصارم (Cooldown - 20 دقيقة):</b>
-            <div>في حال ضرب الستوب، يدخل النظام تلقائياً في وضع التهدئة لمدة 20 دقيقة لمنع التداول الانتقامي ولإعطاء السوق وقتاً لتكوين سيولة حقيقية جديدة.</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Embedded Live Chart with Chart Overlay Liquidity Indicator */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
-        
-        {/* Chart Header Title */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>شارت الذهب المباشر ومؤشر هدف السيولة 📊</span>
-          </div>
-          <span style={{ background: '#388bfd25', color: '#58a6ff', border: '1px solid #388bfd50', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
-            مؤشر هدف انجذاب السيولة مُفعّل 🎯
-          </span>
-        </div>
-
-        {/* Dynamic Chart Toolbar & Options */}
-        <div style={{
-          background: '#121721',
-          border: '1px solid #1f2937',
-          borderRadius: '14px',
-          padding: '12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px'
-        }}>
-          {/* Top Control Bar: Timeframe & Status */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>شارت الذهب النقـي 📊</span>
               <button
-                onClick={() => setShowAdvancedIndicators(!showAdvancedIndicators)}
+                onClick={() => onAnalyzeAsset && onAnalyzeAsset(selectedAsset.pair)}
                 style={{
-                  background: showAdvancedIndicators ? '#2563eb' : 'rgba(255,255,255,0.06)',
-                  color: showAdvancedIndicators ? '#fff' : '#9ca3af',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '4px 10px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
+                  background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(37, 99, 235, 0.3) 100%)',
+                  border: '1px solid #38bdf8',
+                  color: '#38bdf8',
+                  borderRadius: '7px',
+                  padding: '3px 8px',
+                  fontSize: '10.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}
               >
-                {showAdvancedIndicators ? 'إخفاء المؤشرات الإضافية ✖' : '⚙️ مؤشرات فنية اختيارية (RSI/EMA/MACD)'}
+                <Zap size={12} />
+                <span>Deep AI Analysis 🤖</span>
               </button>
             </div>
 
-            {/* Timeframe Selector Buttons */}
-            <div style={{ display: 'flex', gap: '4px', background: '#0d0f14', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-              {['1m', '5m', '15m', '1h', '4h', '1d'].map(tf => (
-                <button
-                  key={tf}
-                  onClick={() => setSelectedTimeframe(tf)}
-                  style={{
-                    background: selectedTimeframe === tf ? '#2563eb' : 'transparent',
-                    color: selectedTimeframe === tf ? '#fff' : '#9ca3af',
-                    border: 'none',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {tf}
-                </button>
-              ))}
+            <TradingViewWidget
+              symbol={selectedAsset.symbol || selectedAsset.pair}
+              timeframe="15m"
+              height={390}
+            />
+          </div>
+        </div>
+
+        {/* Right Column: SMC Liquidity Pools & Live Execution Card */}
+        <div className="workbench-side-pane">
+          
+          {/* Institutional SMC Liquidity Pools */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(13, 18, 28, 0.9) 0%, rgba(17, 24, 39, 0.98) 100%)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '16px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '800', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Target size={14} color="#38bdf8" />
+              <span>Institutional Liquidity Pools (SMC Targets):</span>
+            </div>
+
+            {/* BSL Pools (Buy-Side Liquidity / Short Stop Traps) */}
+            <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '10px', padding: '8px 10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <TrendingUp size={12} />
+                  <span>Buy-Side Liquidity (BSL / Short Stop Clusters)</span>
+                </span>
+                <span style={{ fontSize: '9px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                  TARGET BUY
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '5px 8px', borderRadius: '6px', fontSize: '10.5px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Liquidity High (BSL 1):</span>
+                  <span style={{ color: '#10b981', fontWeight: 'bold', fontFamily: 'monospace' }}>${formatPrice(bsl1)}</span>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '5px 8px', borderRadius: '6px', fontSize: '10.5px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Major Sweep (BSL 2):</span>
+                  <span style={{ color: '#10b981', fontWeight: 'bold', fontFamily: 'monospace' }}>${formatPrice(bsl2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* SSL Pools (Sell-Side Liquidity / Long Stop Traps) */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', padding: '8px 10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <TrendingDown size={12} />
+                  <span>Sell-Side Liquidity (SSL / Long Stop Clusters)</span>
+                </span>
+                <span style={{ fontSize: '9px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                  TARGET SELL
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '5px 8px', borderRadius: '6px', fontSize: '10.5px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Liquidity Low (SSL 1):</span>
+                  <span style={{ color: '#f87171', fontWeight: 'bold', fontFamily: 'monospace' }}>${formatPrice(ssl1)}</span>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '5px 8px', borderRadius: '6px', fontSize: '10.5px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Major Sweep (SSL 2):</span>
+                  <span style={{ color: '#f87171', fontWeight: 'bold', fontFamily: 'monospace' }}>${formatPrice(ssl2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Block & FVG Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', padding: '6px 8px' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8' }}>Bullish Order Block (Demand)</div>
+                <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#10b981', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(demandOB)}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '6px 8px' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8' }}>Bearish Order Block (Supply)</div>
+                <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#f87171', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(supplyOB)}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Actionable SMC Scalp Radar Setup Box */}
+          <div style={{
+            background: isUp 
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(13, 18, 28, 0.95) 100%)' 
+              : 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(13, 18, 28, 0.95) 100%)',
+            border: `1.5px solid ${isUp ? '#10b981' : '#ef4444'}`,
+            borderRadius: '16px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            boxShadow: `0 6px 25px ${isUp ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)'}`
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="pulse-dot" style={{ width: '8px', height: '8px', background: isUp ? '#10b981' : '#ef4444' }}></div>
+                <span style={{ fontSize: '12.5px', fontWeight: '800', color: '#fff' }}>
+                  Radar Actionable Signal: <b style={{ color: isUp ? '#10b981' : '#f87171' }}>{isUp ? 'BUY SCALP 🟢' : 'SELL SCALP 🔴'}</b>
+                </span>
+              </div>
+              <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: '800', background: 'rgba(56, 189, 248, 0.15)', padding: '1px 5px', borderRadius: '4px' }}>
+                R:R 1:2.6
+              </span>
+            </div>
+
+            {/* 4 Trade Key Numbers Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '7px', padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', color: '#94a3b8' }}>Entry Price</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#fff', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(scalpEntry)}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '7px', padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', color: '#86efac' }}>Target 1 (TP1)</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#4ade80', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(scalpTp1)}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '7px', padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', color: '#38bdf8' }}>Target 2 (TP2)</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(scalpTp2)}
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '7px', padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', color: '#fca5a5' }}>Stop Loss (SL)</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#f87171', fontFamily: 'monospace', marginTop: '1px' }}>
+                  ${formatPrice(scalpSl)}
+                </div>
+              </div>
+            </div>
+
+            {/* 1-Click Copy Trade Numbers */}
+            <button
+              onClick={() => {
+                const text = `🎯 SMC Institutional Liquidity Signal for ${selectedAsset.pair}:\n• Bias: ${scalpDirection}\n• Entry: $${formatPrice(scalpEntry)}\n• Target 1 (TP1): $${formatPrice(scalpTp1)}\n• Target 2 (TP2): $${formatPrice(scalpTp2)}\n• Stop Loss (SL): $${formatPrice(scalpSl)}\n• Market Session: ${sessionInfo.title}`;
+                handleCopy('Trade Setup Numbers', text);
+              }}
+              style={{
+                width: '100%',
+                background: isUp ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px',
+                fontSize: '11.5px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 3px 10px rgba(0,0,0,0.3)'
+              }}
+            >
+              <Copy size={13} />
+              <span>Copy Trade Setup Parameters (Entry / SL / TP) 📋</span>
+            </button>
+
+            {/* Practical Step-by-Step Execution Playbook Guide */}
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.45)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+              padding: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Sparkles size={13} color="#f59e0b" />
+                <span>Trade Execution Playbook (When to Enter & Manage):</span>
+              </div>
+
+              <div style={{ fontSize: '10.5px', color: '#cbd5e1', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div>
+                  <b style={{ color: isUp ? '#4ade80' : '#f87171' }}>1. Immediate Execution:</b> Enter {isUp ? 'BUY SCALP' : 'SELL SCALP'} at <b>${formatPrice(scalpEntry)}</b> matching the dominant order flow and institutional pool targets.
+                </div>
+                <div>
+                  <b style={{ color: '#4ade80' }}>2. Secure Profits at TP1:</b> When price taps <b>${formatPrice(scalpTp1)}</b>, <u>close 50% of your position size</u> and instantly move Stop Loss to Breakeven <b>${formatPrice(scalpEntry)}</b> (Risk-Free trade).
+                </div>
+                <div>
+                  <b style={{ color: '#38bdf8' }}>3. Runner to TP2:</b> Let the remaining 50% position run toward major liquidity pool target <b>${formatPrice(scalpTp2)}</b> or trail stop manually.
+                </div>
+                <div>
+                  <b style={{ color: '#fca5a5' }}>4. Invalidation (SL):</b> If the market reverses beyond <b>${formatPrice(scalpSl)}</b>, exit cleanly to preserve capital.
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Optional Indicator Toggles */}
-          {showAdvancedIndicators && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              {[
-                { id: 'STD;RSI', name: '📈 RSI', desc: 'القوة النسبية' },
-                { id: 'STD;EMA', name: '🌊 EMA 20/50', desc: 'المتوسط الأسي' },
-                { id: 'STD;Volume', name: '📊 Volume', desc: 'حجم الأحجام' },
-                { id: 'STD;MACD', name: '📉 MACD', desc: 'مؤشر الماكدي' },
-                { id: 'STD;Bollinger_Bands', name: '🛡️ Bollinger', desc: 'بولينجر باندز' },
-                { id: 'STD;VWAP', name: '⚡ VWAP', desc: 'متوسط السعر بالحجم' },
-                { id: 'STD;Stochastic', name: '📍 Stochastic', desc: 'الاستوكاستك' }
-              ].map(ind => {
-                const isActive = activeStudies.includes(ind.id);
-                return (
-                  <button
-                    key={ind.id}
-                    onClick={() => {
-                      if (isActive) {
-                        setActiveStudies(activeStudies.filter(s => s !== ind.id));
-                      } else {
-                        setActiveStudies([...activeStudies, ind.id]);
-                      }
-                    }}
-                    style={{
-                      background: isActive ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${isActive ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
-                      color: isActive ? '#fbbf24' : '#9ca3af',
-                      padding: '5px 10px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <span>{ind.name}</span>
-                    <span style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: isActive ? '#10b981' : '#6b7280'
-                    }}></span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
-
-        {/* Clean Live Chart Canvas */}
-        <TradingViewWidget 
-          symbol="OANDA:XAUUSD" 
-          height={480} 
-          timeframe={selectedTimeframe}
-          studies={activeStudies} 
-        />
       </div>
 
     </div>

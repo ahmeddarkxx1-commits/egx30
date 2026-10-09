@@ -3,10 +3,11 @@ import { CheckCircle2, Send, ChevronDown, ChevronUp, Shield, Target, Activity, Z
 import { AssetLogo } from '../utils/assetLogos';
 import TradingViewSparkline from './TradingViewSparkline';
 
-export default function RasadAnalysisCard({ data, onSendToTelegram }) {
+export default function RasadAnalysisCard({ data: propData, result, onSendToTelegram }) {
   const [showFullReport, setShowFullReport] = useState(false);
   const [copyToast, setCopyToast] = useState('');
 
+  const data = propData || result;
   if (!data) return null;
 
   // Extract Symbol & Asset Name
@@ -22,9 +23,9 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
 
   const scoreNum = parseInt(data.score) || 86;
   const confidencePercent = `${scoreNum}%`;
-  const confidenceText = data.confidenceText || (isSell ? 'هابط قوي جداً' : isBuy ? 'صاعد قوي جداً' : 'محايد ومستقر');
+  const confidenceText = data.confidenceText || (isSell ? 'Strong Bearish Trend' : isBuy ? 'Strong Bullish Expansion' : 'Neutral / Rangebound');
 
-  const nowTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   // Format indicators with smart fallbacks
   const rsi = data.rsi || data.indicators?.rsi || (isSell ? '32.4' : isBuy ? '64.8' : '50.0');
@@ -33,9 +34,9 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const macd = data.macd || data.indicators?.macd || (isSell ? '-27.74' : isBuy ? '+14.30' : '0.00');
   const pctBb = data.pctBb || data.indicators?.pctBb || (isSell ? '-23%' : isBuy ? '84%' : '50%');
   const volume = data.volume || data.indicators?.volume || (isSell ? '0.05x' : isBuy ? '1.85x' : '1.00x');
-  const emaTrend = data.emaTrend || data.indicators?.emaTrend || (isSell ? 'هابط' : isBuy ? 'صاعد' : 'عرضي');
-  const ema200 = data.ema200 || data.indicators?.ema200 || (isSell ? 'تحت' : isBuy ? 'فوق' : 'متذبذب');
-  const vwap = data.vwap || data.indicators?.vwap || (isSell ? 'تحت' : isBuy ? 'فوق' : 'عند المستوى');
+  const emaTrend = data.emaTrend || data.indicators?.emaTrend || (isSell ? 'Bearish' : isBuy ? 'Bullish' : 'Neutral');
+  const ema200 = data.ema200 || data.indicators?.ema200 || (isSell ? 'Below' : isBuy ? 'Above' : 'At EMA');
+  const vwap = data.vwap || data.indicators?.vwap || (isSell ? 'Below' : isBuy ? 'Above' : 'At VWAP');
 
   // Key Levels
   const support = data.support || data.sl || '---';
@@ -43,15 +44,9 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
   const high24 = data.high24 || '---';
   const low24 = data.low24 || '---';
 
-  // Macro
-  const dxy = data.dxy || '101.209';
-  const us10y = data.us10y || '5.24%';
-  const vix = data.vix || '16.07';
-
   // 1-Click Copy Helper for SL & TP
   const handleCopy = (label, value) => {
     if (!value) return;
-    // Extract clean decimal numbers e.g. "1.3321" or "46.00"
     const cleaned = value.toString().replace(/[^0-9.]/g, '').trim() || value.toString().trim();
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -69,103 +64,20 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
       try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch (e) {}
     }
 
-    setCopyToast(`تم نسخ ${label}: ${cleaned} 📋`);
+    setCopyToast(`${label} copied: ${cleaned} 📋`);
     setTimeout(() => setCopyToast(''), 2200);
-  };
-
-  const [executingOrder, setExecutingOrder] = useState(false);
-  const [orderStatus, setOrderStatus] = useState('');
-  const [orderError, setOrderError] = useState(false);
-
-  const DEFAULT_RAILWAY_URL = 'https://worker-production-f2a42.up.railway.app';
-
-  const fetchWithCloudFallback = async (endpoint, options = {}) => {
-    let cloudUrl = (localStorage.getItem('traden_cloud_url') || DEFAULT_RAILWAY_URL).trim();
-    if (cloudUrl && !cloudUrl.startsWith('http://') && !cloudUrl.startsWith('https://')) {
-      cloudUrl = `https://${cloudUrl}`;
-    }
-    const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
-    const hosts = [
-      cloudUrl,
-      DEFAULT_RAILWAY_URL,
-      currentOrigin,
-      '',
-      'http://localhost:5000',
-      'http://127.0.0.1:5000'
-    ].filter(Boolean);
-
-    for (const host of hosts) {
-      try {
-        const url = host.endsWith('/') ? `${host.slice(0, -1)}${endpoint}` : `${host}${endpoint}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(url, { ...options, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res) return res;
-      } catch (e) {
-        // try next
-      }
-    }
-    throw new Error('Cloud server unreachable');
-  };
-
-  const cleanFloat = (val, fallback = 0) => {
-    if (typeof val === 'number') return val;
-    if (!val) return fallback;
-    const clean = String(val).replace(/,/g, '').trim();
-    const num = parseFloat(clean);
-    return isNaN(num) ? fallback : num;
-  };
-
-  const handleExecuteLiveOrder = async () => {
-    setExecutingOrder(true);
-    setOrderStatus('جاري إرسال وتنفيذ الصفقة فورياً على الحساب المربوط...');
-    setOrderError(false);
-
-    const safeLot = cleanFloat(data.rawLot || data.recommendedLot, 0.01);
-    const safeSl = cleanFloat(data.rawSl || data.sl, 0);
-    const safeTp = cleanFloat(data.rawTp1 || data.tp1, 0);
-
-    try {
-      const response = await fetchWithCloudFallback('/api/orders/place', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: assetSymbol,
-          side: isSell ? 'sell' : 'buy',
-          lot: safeLot,
-          sl: safeSl,
-          tp: safeTp
-        })
-      });
-
-      const resData = await response.json();
-      if (response && response.ok && resData.success) {
-        setOrderError(false);
-        setOrderStatus(resData.message || `✅ تم تنفيذ صفقة ${signalLabel} بنجاح على الحساب المربوط!`);
-      } else {
-        setOrderError(true);
-        setOrderStatus(resData?.message || '❌ تعذر فتح الصفقة تلقائياً. تأكد من أن حساب MT5 أو الكريبتو متصل ومفتوح.');
-      }
-    } catch (e) {
-      setOrderError(false);
-      setOrderStatus(`✅ تم استلام أمر ${signalLabel} لـ ${assetSymbol} (حجم: ${safeLot} لوت) وإرساله للسحابة!`);
-    } finally {
-      setExecutingOrder(false);
-    }
   };
 
   return (
     <div style={{
       background: 'linear-gradient(180deg, #121721 0%, #0d1017 100%)',
       border: `1px solid ${signalColor}60`,
-      borderRadius: '18px',
-      padding: '18px 16px',
+      borderRadius: '14px',
+      padding: '12px 14px',
       color: '#f8fafc',
-      boxShadow: `0 8px 30px ${signalColor}25`,
-      marginBottom: '24px',
-      direction: 'rtl',
-      fontFamily: 'Cairo, sans-serif',
+      boxShadow: `0 6px 24px ${signalColor}20`,
+      marginBottom: '10px',
+      direction: 'ltr',
       position: 'relative'
     }}>
       
@@ -173,15 +85,15 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
       {copyToast && (
         <div style={{
           position: 'absolute',
-          top: '-14px',
+          top: '-12px',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#10b981',
           color: '#000000',
-          padding: '6px 16px',
+          padding: '4px 14px',
           borderRadius: '20px',
           fontWeight: 'bold',
-          fontSize: '0.78rem',
+          fontSize: '0.74rem',
           boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
           zIndex: 10,
           display: 'flex',
@@ -189,56 +101,56 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
           gap: '6px',
           whiteSpace: 'nowrap'
         }}>
-          <CheckCircle2 size={14} />
+          <CheckCircle2 size={13} />
           <span>{copyToast}</span>
         </div>
       )}
 
       {/* 1. Header Card: Signal Badge + Symbol + Real Logo + Time */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         
         {/* Signal Badge */}
         <div style={{
           background: isSell ? 'rgba(239, 68, 68, 0.18)' : isBuy ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
           border: `1px solid ${signalColor}`,
           color: signalColor,
-          padding: '6px 16px',
-          borderRadius: '24px',
+          padding: '4px 12px',
+          borderRadius: '20px',
           fontWeight: '900',
-          fontSize: '1rem',
+          fontSize: '0.85rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          boxShadow: `0 0 15px ${signalColor}30`
+          gap: '5px',
+          boxShadow: `0 0 12px ${signalColor}25`
         }}>
           {signalLabel}
         </div>
 
         {/* Real Symbol Info & Logo */}
-        <div style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+            <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-start' }}>
               <span>{assetSymbol}</span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-              {data.timeframe || '1h'} · {data.timestamp || nowTime}
+            <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '1px' }}>
+              {data.timeframe || '15m'} · {data.timestamp || nowTime}
             </div>
           </div>
 
           {/* Real Logo Component */}
-          <AssetLogo symbol={assetSymbol} fallbackIcon={data.icon || '📊'} size={24} containerSize={36} />
+          <AssetLogo symbol={assetSymbol} fallbackIcon={data.icon || '📊'} size={18} containerSize={28} />
         </div>
 
       </div>
 
       {/* 2. Large Price & 24h Change */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '12px' }}>
-        <div style={{ fontSize: '2rem', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.5px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.3px' }}>
           {data.entry || data.price || '---'}
         </div>
         {data.changePercent && (
           <div style={{
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             fontWeight: 'bold',
             color: (data.changePercent || '').includes('-') ? '#f87171' : '#4ade80',
             display: 'flex',
@@ -250,331 +162,417 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         )}
       </div>
 
-      {/* 3. Live Synchronized Sparkline Wave SVG (TradingView Style) */}
-      <div style={{ height: '52px', width: '100%', marginBottom: '14px' }}>
+      {/* 3. Live Synchronized Sparkline Wave SVG (Compact) */}
+      <div style={{ height: '38px', width: '100%', marginBottom: '8px' }}>
         <TradingViewSparkline
           isUp={!isSell}
-          height={52}
+          height={38}
           id={`rasad-${assetSymbol}`}
           seed={assetSymbol}
           data={data.sparkline || null}
-          strokeWidth={2.4}
+          strokeWidth={2.0}
         />
       </div>
 
       {/* 4. Confidence Level & Score Bar */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 'bold' }}>
+      <div style={{ marginBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 'bold' }}>
+          <span>Confidence Score</span>
           <span style={{ color: '#cbd5e1' }}>{scoreNum}/100 · {confidencePercent}</span>
-          <span>مستوى الثقة</span>
         </div>
         {/* Progress bar */}
-        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden', marginBottom: '6px' }}>
+        <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden', marginBottom: '4px' }}>
           <div style={{
             width: confidencePercent,
             height: '100%',
             background: `linear-gradient(90deg, ${signalColor}80 0%, ${signalColor} 100%)`,
             borderRadius: '10px',
-            boxShadow: `0 0 10px ${signalColor}`
+            boxShadow: `0 0 8px ${signalColor}`
           }}></div>
         </div>
-        <div style={{ fontSize: '0.74rem', color: signalColor, fontWeight: 'bold', textAlign: 'right' }}>
+        <div style={{ fontSize: '0.7rem', color: signalColor, fontWeight: 'bold', textAlign: 'left' }}>
           {confidenceText}
         </div>
       </div>
 
       {/* 5. Click-to-Copy TP & SL Boxes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
         
-        {/* SL Box (Left side in RTL) - Clickable to Copy */}
+        {/* SL Box */}
         <div 
-          onClick={() => handleCopy('وقف الخسارة SL', data.sl)}
+          onClick={() => handleCopy('Stop Loss (SL)', data.sl)}
           style={{
-            background: 'rgba(239, 68, 68, 0.09)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '14px',
-            padding: '12px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.28)',
+            borderRadius: '10px',
+            padding: '8px 10px',
             textAlign: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            position: 'relative',
             userSelect: 'none'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.borderColor = '#ef4444';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-          }}
-          title="اضغط لنسخ سعر الستوب SL فوراً"
+          title="Click to copy Stop Loss level"
         >
-          <div style={{ fontSize: '0.72rem', color: '#fca5a5', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px' }}>
-            <Shield size={13} color="#f87171" />
-            <span>وقف الخسارة SL</span>
-            <Copy size={11} color="#fca5a5" style={{ opacity: 0.7 }} />
+          <div style={{ fontSize: '0.68rem', color: '#fca5a5', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '2px' }}>
+            <Shield size={12} color="#f87171" />
+            <span>Stop Loss (SL)</span>
+            <Copy size={10} color="#fca5a5" style={{ opacity: 0.7 }} />
           </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#f87171', margin: '2px 0' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: '900', color: '#f87171', margin: '1px 0' }}>
             {data.sl || '---'}
           </div>
-          <div style={{ fontSize: '0.68rem', color: '#fca5a5', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+          <div style={{ fontSize: '0.64rem', color: '#fca5a5', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
             <span>{data.slChange || '-5.00%'}</span>
-            <span>· (اضغط للنسخ 📋)</span>
+            <span>· (Click to copy 📋)</span>
           </div>
         </div>
 
-        {/* TP Box (Right side in RTL) - Clickable to Copy */}
+        {/* TP Box */}
         <div 
-          onClick={() => handleCopy('هدف الربح TP', data.tp1)}
+          onClick={() => handleCopy('Take Profit (TP)', data.tp1)}
           style={{
-            background: 'rgba(16, 185, 129, 0.09)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: '14px',
-            padding: '12px',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.28)',
+            borderRadius: '10px',
+            padding: '8px 10px',
             textAlign: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            position: 'relative',
             userSelect: 'none'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.borderColor = '#10b981';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-          }}
-          title="اضغط لنسخ سعر الهدف TP فوراً"
+          title="Click to copy Take Profit level"
         >
-          <div style={{ fontSize: '0.72rem', color: '#86efac', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px' }}>
-            <Target size={13} color="#4ade80" />
-            <span>هدف الربح TP</span>
-            <Copy size={11} color="#86efac" style={{ opacity: 0.7 }} />
+          <div style={{ fontSize: '0.68rem', color: '#86efac', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '2px' }}>
+            <Target size={12} color="#4ade80" />
+            <span>Take Profit (TP)</span>
+            <Copy size={10} color="#86efac" style={{ opacity: 0.7 }} />
           </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#4ade80', margin: '2px 0' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: '900', color: '#4ade80', margin: '1px 0' }}>
             {data.tp1 || '---'}
           </div>
-          <div style={{ fontSize: '0.68rem', color: '#86efac', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+          <div style={{ fontSize: '0.64rem', color: '#86efac', opacity: 0.85, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
             <span>{data.tp1Change || '+8.50%'}</span>
-            <span>· (اضغط للنسخ 📋)</span>
+            <span>· (Click to copy 📋)</span>
           </div>
         </div>
 
       </div>
 
-      {/* Action Execution Status Banner */}
-      {orderStatus && (
-        <div style={{
-          background: orderError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-          border: `1px solid ${orderError ? '#ef4444' : '#10b981'}`,
-          color: orderError ? '#f87171' : '#10b981',
-          borderRadius: '10px',
-          padding: '10px 14px',
-          fontSize: '0.8rem',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          marginBottom: '12px'
-        }}>
-          {orderStatus}
-        </div>
-      )}
-
-      {/* ⚡ Primary Action Button: Execute Live Trade Immediately */}
+      {/* Quick Copy Trade Action Button */}
       <button
-        onClick={handleExecuteLiveOrder}
-        disabled={executingOrder}
+        onClick={() => {
+          const quickTrade = `⚡ ${signalLabel} Setup for ${assetName}:\n• Entry: $${data.entry || data.price}\n• TP: $${data.tp1}\n• SL: $${data.sl}\n• Risk-Reward: 1:2.4`;
+          handleCopy('Trade Setup Parameters', quickTrade);
+        }}
         style={{
           width: '100%',
-          marginBottom: '12px',
-          background: isSell ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)' : 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '12px',
-          padding: '14px',
-          fontWeight: '900',
-          fontSize: '1rem',
-          cursor: executingOrder ? 'wait' : 'pointer',
+          marginBottom: '10px',
+          background: isSell ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.25) 100%)' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(4, 120, 87, 0.25) 100%)',
+          color: isSell ? '#f87171' : '#10b981',
+          border: `1px solid ${isSell ? '#ef4444' : '#10b981'}`,
+          borderRadius: '9px',
+          padding: '8px 10px',
+          fontWeight: 'bold',
+          fontSize: '0.82rem',
+          cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px',
-          boxShadow: `0 6px 20px ${signalColor}50`
+          gap: '6px',
+          boxShadow: `0 3px 12px ${signalColor}20`
         }}
       >
-        <Zap size={20} />
-        <span>{executingOrder ? 'جاري التنفيذ...' : `⚡ تنفيذ صفقة ${signalLabel} فورياً على الحساب المربوط`}</span>
+        <Copy size={14} />
+        <span>Copy Trade Parameters (Entry / SL / TP) 📋</span>
       </button>
 
       {/* 6. Technical Indicators Grid (9 Cards) */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Activity size={14} color="#60a5fa" />
-          <span>المؤشرات الفنية</span>
+      <div style={{ marginBottom: '10px' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 'bold', color: '#94a3b8', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Activity size={12} color="#60a5fa" />
+          <span>Technical Indicators Matrix</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
           
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>RSI(14)</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '2px' }}>{rsi}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>RSI(14)</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '1px' }}>{rsi}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>StochRSI</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>{stochRsi}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>StochRSI</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#4ade80', marginTop: '1px' }}>{stochRsi}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Williams%R</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>{williamsR}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Williams%R</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#4ade80', marginTop: '1px' }}>{williamsR}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>MACD</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '2px' }}>{macd}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>MACD</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '1px' }}>{macd}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>BB%</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>{pctBb}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>BB%</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#4ade80', marginTop: '1px' }}>{pctBb}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Volume</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>{volume}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Volume</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#f59e0b', marginTop: '1px' }}>{volume}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>EMA Trend</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '2px' }}>{emaTrend}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>EMA Trend</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '1px' }}>{emaTrend}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>EMA200</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '2px' }}>{ema200}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>EMA200</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '1px' }}>{ema200}</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>VWAP</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '2px' }}>{vwap}</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '5px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>VWAP</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: isSell ? '#f87171' : '#4ade80', marginTop: '1px' }}>{vwap}</div>
           </div>
 
         </div>
       </div>
 
-      {/* 7. Key Levels Row (دعم | مقاومة | أعلى 24h | أدنى 24h) */}
+      {/* 7. Key Levels Row (Support | Resistance | 24h High | 24h Low) */}
       <div style={{
         background: 'rgba(0,0,0,0.3)',
         border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '12px',
-        padding: '10px 8px',
-        marginBottom: '16px',
+        borderRadius: '10px',
+        padding: '6px 8px',
+        marginBottom: '10px',
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '4px',
         textAlign: 'center'
       }}>
         <div>
-          <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>دعم</div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#4ade80', marginTop: '2px' }}>{support}</div>
+          <div style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Support</div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#4ade80', marginTop: '1px' }}>{support}</div>
         </div>
         <div>
-          <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>مقاومة</div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#f87171', marginTop: '2px' }}>{resistance}</div>
+          <div style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Resistance</div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#f87171', marginTop: '1px' }}>{resistance}</div>
         </div>
         <div>
-          <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>أعلى 24h</div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#cbd5e1', marginTop: '2px' }}>{high24}</div>
+          <div style={{ fontSize: '0.6rem', color: '#94a3b8' }}>24h High</div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#cbd5e1', marginTop: '1px' }}>{high24}</div>
         </div>
         <div>
-          <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>أدنى 24h</div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#cbd5e1', marginTop: '2px' }}>{low24}</div>
+          <div style={{ fontSize: '0.6rem', color: '#94a3b8' }}>24h Low</div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#cbd5e1', marginTop: '1px' }}>{low24}</div>
         </div>
       </div>
 
       {/* 8. Portfolio & Capital Management Box */}
-      <div style={{
-        background: 'rgba(0, 0, 0, 0.45)',
-        border: '1px solid rgba(16, 185, 129, 0.3)',
-        borderRadius: '12px',
-        padding: '12px',
-        marginBottom: '14px'
-      }}>
-        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#10b981', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Shield size={14} color="#10b981" />
-          <span>إدارة المحفظة والكميات لرأس مالك ({data.capitalEgp ? Number(data.capitalEgp).toLocaleString() + ' ج.م' : '$' + (data.capital || 100)}):</span>
-        </div>
+      {(() => {
+        const isEgx = (data.unit && data.unit.includes('ج.م')) || data.capitalEgp || data.currencySymbol === 'ج.م' || data.currency === 'EGP' || (data.dataSource && data.dataSource.includes('EGX'));
+        const currPrefix = isEgx ? '' : '$';
+        const currSuffix = isEgx ? ' ج.م' : '';
+        const capText = data.capitalEgp 
+          ? `${Number(data.capitalEgp).toLocaleString()} ج.م` 
+          : (data.capital ? (isEgx ? `${Number(data.capital).toLocaleString()} ج.م` : `$${data.capital}`) : (isEgx ? '10,000 ج.م' : '$100'));
 
-        <div style={{ fontSize: '0.76rem', color: '#cbd5e1', lineHeight: '1.7' }}>
-          {data.recommendedShares && (
-            <div>• <b>الكمية الموصى بشرائها:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{Number(data.recommendedShares).toLocaleString()} {data.code === 'AZG' ? 'جرام ذهب 24' : data.code === 'SILVER_EGP' ? 'جرام فضة 999' : 'سهم'}</span></div>
-          )}
-          {data.recommendedLot && (
-            <div>• <b>حجم اللوت الموصى به:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{data.recommendedLot}</span></div>
-          )}
+        return (
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.45)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            borderRadius: '10px',
+            padding: '8px 10px',
+            marginBottom: '10px'
+          }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#10b981', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Shield size={12} color="#10b981" />
+              <span>Position Sizing & Risk Management ({capText}):</span>
+            </div>
 
-          {data.totalInvestmentAmount && (
-            <div>• <b>قيمة السيولة المستثمرة:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{Number(data.totalInvestmentAmount).toLocaleString()} ج.م</span></div>
-          )}
+            <div style={{ fontSize: '0.7rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+              {data.recommendedShares && (
+                <div>• <b>Recommended Position Units:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{Number(data.recommendedShares).toLocaleString()} Shares / Units</span></div>
+              )}
+              {data.totalInvestmentAmount && (
+                <div>• <b>Total Investment Capital:</b> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{currPrefix}{Number(data.totalInvestmentAmount).toLocaleString()}{currSuffix}</span></div>
+              )}
+              {data.recommendedLot && (
+                <div>• <b>Recommended Lot Size:</b> <span style={{ color: '#7ee787', fontWeight: 'bold' }}>{data.recommendedLot}</span></div>
+              )}
 
-          {data.maxRiskAmount && (
-            <div>• <b>أقصى خسارة محسوبة عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-{Number(data.maxRiskAmount).toLocaleString()} ج.م</span> (مخاطرة 5%)</div>
-          )}
-          {data.riskDollar && (
-            <div>• <b>أقصى خسارة بالدولار عند SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{data.riskDollar}</span></div>
-          )}
+              {data.maxRiskAmount && (
+                <div>• <b>Max Risk Amount at SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>-{currPrefix}{Number(data.maxRiskAmount).toLocaleString()}{currSuffix}</span> (5% Capital Risk)</div>
+              )}
+              {data.riskDollar && (
+                <div>• <b>Max Risk at SL:</b> <span style={{ color: '#f87171', fontWeight: 'bold' }}>{data.riskDollar}</span></div>
+              )}
 
-          {data.expectedProfitTp1 && (
-            <div>• <b>الربح المتوقع عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+{Number(data.expectedProfitTp1).toLocaleString()} ج.م</span> (+8.5%)</div>
-          )}
-          {data.tp1Dollar && (
-            <div>• <b>الربح المتوقع بالدولار عند TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{data.tp1Dollar}</span></div>
-          )}
+              {data.expectedProfitTp1 && (
+                <div>• <b>Expected Profit at TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+{currPrefix}{Number(data.expectedProfitTp1).toLocaleString()}{currSuffix}</span> (+8.5%)</div>
+              )}
+              {data.tp1Dollar && (
+                <div>• <b>Expected Profit at TP1:</b> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{data.tp1Dollar}</span></div>
+              )}
 
-          {data.expectedProfitTp2 && (
-            <div>• <b>الربح المتوقع عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>+{Number(data.expectedProfitTp2).toLocaleString()} ج.م</span> (+16.8%)</div>
-          )}
-          {data.tp2Dollar && (
-            <div>• <b>الربح المتوقع بالدولار عند TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{data.tp2Dollar}</span></div>
-          )}
-        </div>
-      </div>
+              {data.expectedProfitTp2 && (
+                <div>• <b>Expected Profit at TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>+{currPrefix}{Number(data.expectedProfitTp2).toLocaleString()}{currSuffix}</span> (+16.8%)</div>
+              )}
+              {data.tp2Dollar && (
+                <div>• <b>Expected Profit at TP2:</b> <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{data.tp2Dollar}</span></div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
-      {/* 8.5 MULTI-AGENT AI DELIBERATION PANEL (مجلس الوكلاء والخبراء) */}
-      {data.multiAgent && data.multiAgent.agents && (
+      {/* 8.2 PRIMARY AI & SMC TECHNICAL INSIGHT (ARABIC) */}
+      {data.trend && (
         <div style={{
-          background: 'rgba(15, 23, 42, 0.7)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          borderRadius: '14px',
-          padding: '12px',
-          marginBottom: '14px',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)',
+          border: '1px solid rgba(148, 163, 184, 0.2)',
+          borderRadius: '10px',
+          padding: '9px 11px',
+          marginBottom: '10px',
+          direction: 'rtl',
+          textAlign: 'right'
+        }}>
+          <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span>⚡</span>
+            <span>التحليل الفني المؤسسي وقراءة السيولة:</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#e2e8f0', lineHeight: '1.5', fontWeight: '500' }}>
+            {data.trend}
+          </div>
+        </div>
+      )}
+
+      {/* 8.3 INSTITUTIONAL SMC GUARDS & SAFETY SHIELD (4 GOLDEN RULES) */}
+      {data.institutionalGuards && (
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: '10px',
+          padding: '9px 11px',
+          marginBottom: '10px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '6px'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>🧠</span>
-              <span>تحليل مجلس وكلاء الذكاء الاصطناعي (AI Council):</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '4px' }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>🛡️</span>
+              <span>فلاتر الأمان المؤسسية (SMC Liquidity Shield):</span>
             </div>
-            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 'bold', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '10px' }}>
-              توافق العقل الجمعي: {data.multiAgent.consensusScore || 90}%
+            <span style={{ fontSize: '0.62rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 7px', borderRadius: '8px', fontWeight: 'bold' }}>
+              4 Active Filters
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '5px' }}>
+            
+            {/* Guard 1: Extended Lows */}
+            <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '7px', padding: '6px 8px', direction: 'rtl', textAlign: 'right' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: data.institutionalGuards.avoidSellingLows.passed ? '#10b981' : '#f87171' }}>
+                  {data.institutionalGuards.avoidSellingLows.title}
+                </span>
+                <span style={{ fontSize: '0.62rem', fontWeight: '900', color: data.institutionalGuards.avoidSellingLows.passed ? '#10b981' : '#f87171', background: data.institutionalGuards.avoidSellingLows.passed ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                  {data.institutionalGuards.avoidSellingLows.status}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.63rem', color: '#94a3b8', lineHeight: '1.3' }}>
+                {data.institutionalGuards.avoidSellingLows.desc}
+              </div>
+            </div>
+
+            {/* Guard 2: Retest vs Direct Breakdown */}
+            <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '7px', padding: '6px 8px', direction: 'rtl', textAlign: 'right' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: data.institutionalGuards.sellOnRetestOnly.passed ? '#10b981' : '#38bdf8' }}>
+                  {data.institutionalGuards.sellOnRetestOnly.title}
+                </span>
+                <span style={{ fontSize: '0.62rem', fontWeight: '900', color: data.institutionalGuards.sellOnRetestOnly.passed ? '#10b981' : '#38bdf8', background: data.institutionalGuards.sellOnRetestOnly.passed ? 'rgba(16,185,129,0.1)' : 'rgba(56,189,248,0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                  {data.institutionalGuards.sellOnRetestOnly.status}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.63rem', color: '#94a3b8', lineHeight: '1.3' }}>
+                {data.institutionalGuards.sellOnRetestOnly.desc}
+              </div>
+            </div>
+
+            {/* Guard 3: Liquidity & Oversold Filter */}
+            <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '7px', padding: '6px 8px', direction: 'rtl', textAlign: 'right' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: data.institutionalGuards.liquidityFilter.passed ? '#10b981' : '#eab308' }}>
+                  {data.institutionalGuards.liquidityFilter.title}
+                </span>
+                <span style={{ fontSize: '0.62rem', fontWeight: '900', color: data.institutionalGuards.liquidityFilter.passed ? '#10b981' : '#eab308', background: data.institutionalGuards.liquidityFilter.passed ? 'rgba(16,185,129,0.1)' : 'rgba(234,179,8,0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                  {data.institutionalGuards.liquidityFilter.status}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.63rem', color: '#94a3b8', lineHeight: '1.3' }}>
+                {data.institutionalGuards.liquidityFilter.desc}
+              </div>
+            </div>
+
+            {/* Guard 4: Session & News Volatility */}
+            <div style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '7px', padding: '6px 8px', direction: 'rtl', textAlign: 'right' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: data.institutionalGuards.sessionNewsGuard.isWarning ? '#f59e0b' : '#10b981' }}>
+                  {data.institutionalGuards.sessionNewsGuard.title}
+                </span>
+                <span style={{ fontSize: '0.62rem', fontWeight: '900', color: data.institutionalGuards.sessionNewsGuard.isWarning ? '#f59e0b' : '#10b981', background: data.institutionalGuards.sessionNewsGuard.isWarning ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                  {data.institutionalGuards.sessionNewsGuard.status}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.63rem', color: '#94a3b8', lineHeight: '1.3' }}>
+                {data.institutionalGuards.sessionNewsGuard.desc}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 8.5 MULTI-AGENT AI DELIBERATION PANEL */}
+      {data.multiAgent && data.multiAgent.agents && (
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.7)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: '10px',
+          padding: '8px 10px',
+          marginBottom: '10px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>🧠</span>
+              <span>AI Agent Committee Consensus:</span>
+            </div>
+            <span style={{ fontSize: '0.64rem', color: '#10b981', fontWeight: 'bold', background: 'rgba(16, 185, 129, 0.15)', padding: '1px 6px', borderRadius: '8px' }}>
+              Consensus: {data.multiAgent.consensusScore || 90}%
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '5px' }}>
             {data.multiAgent.agents.map((agent, idx) => (
-              <div key={idx} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '8px' }}>
+              <div key={idx} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '7px', padding: '6px 7px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <div>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: agent.color || '#fff' }}>{agent.name}</span>
-                    {agent.model && <div style={{ fontSize: '0.58rem', color: '#64748b' }}>{agent.model}</div>}
+                    <span style={{ fontSize: '0.68rem', fontWeight: 'bold', color: agent.color || '#fff' }}>{agent.name}</span>
+                    {agent.model && <div style={{ fontSize: '0.55rem', color: '#64748b' }}>{agent.model}</div>}
                   </div>
-                  <span style={{ fontSize: '0.65rem', color: agent.color, fontWeight: 'bold' }}>{agent.status}</span>
+                  <span style={{ fontSize: '0.62rem', color: agent.color, fontWeight: 'bold' }}>{agent.status}</span>
                 </div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', lineHeight: '1.4', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.64rem', color: '#94a3b8', lineHeight: '1.35', marginTop: '2px' }}>
                   {agent.insight}
                 </div>
               </div>
@@ -585,7 +583,7 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
 
       {/* 9. AI Full Report Accordion */}
       {data.fullReport && (
-        <div style={{ marginTop: '10px' }}>
+        <div style={{ marginTop: '8px' }}>
           <button
             onClick={() => setShowFullReport(!showFullReport)}
             style={{
@@ -593,9 +591,9 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               color: '#cbd5e1',
-              padding: '8px 12px',
+              padding: '6px 10px',
               borderRadius: '8px',
-              fontSize: '0.74rem',
+              fontSize: '0.7rem',
               fontWeight: 'bold',
               cursor: 'pointer',
               display: 'flex',
@@ -603,19 +601,19 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
               justifyContent: 'space-between'
             }}
           >
-            <span>🤖 التقرير التحليلي الشامل بالذكاء الاصطناعي</span>
-            {showFullReport ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <span>🤖 Comprehensive Institutional AI Report</span>
+            {showFullReport ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
 
           {showFullReport && (
             <div style={{
-              fontSize: '0.74rem',
+              fontSize: '0.7rem',
               color: '#94a3b8',
               background: 'rgba(0,0,0,0.3)',
               borderRadius: '8px',
-              padding: '12px',
-              marginTop: '6px',
-              lineHeight: '1.6',
+              padding: '10px',
+              marginTop: '5px',
+              lineHeight: '1.5',
               whiteSpace: 'pre-line',
               border: '1px solid rgba(255,255,255,0.05)'
             }}>
@@ -625,32 +623,32 @@ export default function RasadAnalysisCard({ data, onSendToTelegram }) {
         </div>
       )}
 
-      {/* 10. Optional Telegram Send Button */}
-      {onSendToTelegram && (
-        <button
-          onClick={() => onSendToTelegram(data)}
-          style={{
-            width: '100%',
-            marginTop: '14px',
-            background: 'linear-gradient(135deg, #0088cc 0%, #006699 100%)',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '10px',
-            fontWeight: 'bold',
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 12px rgba(0, 136, 204, 0.3)'
-          }}
-        >
-          <Send size={16} />
-          <span>إرسال التقرير والتوصية إلى شات التليجرام 📲</span>
-        </button>
-      )}
+      {/* 10. Copy Analysis & Signal Summary */}
+      <button
+        onClick={() => {
+          const report = `📊 TRADEN AI Signal for ${assetName} (${assetSymbol}):\n• Bias: ${data.signal}\n• Entry: $${data.entry || data.price}\n• Target 1 (TP1): $${data.tp1}\n• Target 2 (TP2): $${data.tp2}\n• Stop Loss (SL): $${data.sl}\n• Trend: ${data.trend || ''}`;
+          handleCopy('Full Signal Summary', report);
+        }}
+        style={{
+          width: '100%',
+          marginTop: '8px',
+          background: 'rgba(56, 189, 248, 0.15)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          color: '#38bdf8',
+          borderRadius: '8px',
+          padding: '8px 10px',
+          fontWeight: 'bold',
+          fontSize: '0.78rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px'
+        }}
+      >
+        <Copy size={14} />
+        <span>Copy Full AI Signal & Technical Report 📋</span>
+      </button>
 
     </div>
   );

@@ -60,7 +60,22 @@ const globalMarketDictionary = [
   { pair: 'GOOGL', name: 'جوجل ألفابت (Alphabet)', symbol: 'NASDAQ:GOOGL', icon: '🔍', category: 'stocks', price: '$178.60', changeStr: '+0.40%', isUp: true },
   { pair: 'AMD', name: 'شركة AMD للمعالجات', symbol: 'NASDAQ:AMD', icon: '💻', category: 'stocks', price: '$156.40', changeStr: '+2.10%', isUp: true },
   { pair: 'COIN', name: 'منصة كوينبيس (Coinbase)', symbol: 'NASDAQ:COIN', icon: '🪙', category: 'stocks', price: '$215.80', changeStr: '+4.20%', isUp: true },
-  { pair: 'PLTR', name: 'بالانتير (Palantir AI)', symbol: 'NASDAQ:PLTR', icon: '🛡️', category: 'stocks', price: '$36.50', changeStr: '+2.80%', isUp: true }
+  { pair: 'PLTR', name: 'بالانتير (Palantir AI)', symbol: 'NASDAQ:PLTR', icon: '🛡️', category: 'stocks', price: '$36.50', changeStr: '+2.80%', isUp: true },
+
+  // 🇪🇬 Egyptian Stocks (EGX)
+  { pair: 'COMI', name: 'البنك التجاري الدولي (CIB)', symbol: 'EGX:COMI', icon: '🏦', category: 'stocks', price: '84.50 EGP', changeStr: '+2.15%', isUp: true },
+  { pair: 'FAWR', name: 'فوري للمدفوعات الرقمية (Fawry)', symbol: 'EGX:FWRY', icon: '💳', category: 'stocks', price: '6.80 EGP', changeStr: '+3.80%', isUp: true },
+  { pair: 'TMGH', name: 'مجموعة طلعت مصطفى (TMG)', symbol: 'EGX:TMGH', icon: '🏢', category: 'stocks', price: '64.00 EGP', changeStr: '+3.40%', isUp: true },
+  { pair: 'SWDY', name: 'السويدي إليكتريك (Elsewedy)', symbol: 'EGX:SWDY', icon: '⚡', category: 'stocks', price: '48.20 EGP', changeStr: '+1.45%', isUp: true },
+  { pair: 'HRHO', name: 'إي إف جي القابضة (هيرميس)', symbol: 'EGX:HRHO', icon: '📊', category: 'stocks', price: '22.80 EGP', changeStr: '+1.65%', isUp: true },
+  { pair: 'BTFH', name: 'بلتون المالية القابضة (Beltone)', symbol: 'EGX:BTFH', icon: '📈', category: 'stocks', price: '3.42 EGP', changeStr: '+4.25%', isUp: true },
+  { pair: 'ESRS', name: 'حديد عز (Ezz Steel)', symbol: 'EGX:ESRS', icon: '🏗️', category: 'stocks', price: '92.50 EGP', changeStr: '+2.75%', isUp: true },
+  { pair: 'EFIN', name: 'إي فاينانس (e-finance)', symbol: 'EGX:EFIN', icon: '💻', category: 'stocks', price: '24.50 EGP', changeStr: '+1.45%', isUp: true },
+  { pair: 'ETEL', name: 'المصرية للاتصالات (WE)', symbol: 'EGX:ETEL', icon: '📡', category: 'stocks', price: '38.50 EGP', changeStr: '+1.95%', isUp: true },
+  { pair: 'MFPC', name: 'موبكو للأسمدة (Mopco)', symbol: 'EGX:MFPC', icon: '🌾', category: 'stocks', price: '46.50 EGP', changeStr: '+2.20%', isUp: true },
+  { pair: 'ABUK', name: 'أبو قير للأسمدة', symbol: 'EGX:ABUK', icon: '🧪', category: 'stocks', price: '58.20 EGP', changeStr: '+1.15%', isUp: true },
+  { pair: 'AMOC', name: 'أموك للبترول', symbol: 'EGX:AMOC', icon: '🛢️', category: 'stocks', price: '9.60 EGP', changeStr: '+0.65%', isUp: true },
+  { pair: 'AZG', name: 'صندوق أزيموت الذهب (AZ Gold)', symbol: 'OANDA:XAUUSD', icon: '🥇', category: 'metals', price: '4,125 EGP', changeStr: '+0.85%', isUp: true }
 ];
 
 // Binance Live Search Cache

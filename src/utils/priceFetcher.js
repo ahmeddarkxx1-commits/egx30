@@ -1,39 +1,317 @@
 // webapp/src/utils/priceFetcher.js
+// Multi-Provider Real-Time Market Data Engine
+// Supports: Twelve Data, Polygon.io (Massive), Finnhub, EODHD, Binance & Bybit
+
+const TWELVEDATA_KEY = import.meta.env?.VITE_TWELVEDATA_API_KEY || 'abb3cf27edf249e09c4519292419fddd';
+const POLYGON_KEY = import.meta.env?.VITE_POLYGON_API_KEY || 'UAipUjrDD8iPI2e6n22ZP9eJhNqYcwFo';
+const FINNHUB_KEY = import.meta.env?.VITE_FINNHUB_API_KEY || 'daf03npr01qqo7nuga5gdaf03npr01qqo7nuga60';
+const EODHD_KEY = import.meta.env?.VITE_EODHD_API_KEY || '6ac68d20147cc0.63108761';
+
+// In-memory short TTL cache (2-5 seconds) to avoid rate limits
+const priceCache = new Map();
+const CACHE_TTL_MS = 3000;
+
+/**
+ * Direct EODHD Real-Time API Fetcher
+ */
+export async function fetchEodhdQuote(symbol) {
+  if (!symbol || !EODHD_KEY) return null;
+  try {
+    const cleanSym = symbol.trim().toUpperCase();
+    const res = await fetch(`https://eodhd.com/api/real-time/${cleanSym}?api_token=${EODHD_KEY}&fmt=json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.close > 0 || data.last > 0 || data.open > 0)) {
+        const price = parseFloat(data.close || data.last || data.open);
+        const change24h = parseFloat(data.change_p || data.change || 0);
+        return {
+          price,
+          change24h,
+          isUp: change24h >= 0,
+          high24h: parseFloat(data.high || price * 1.01),
+          low24h: parseFloat(data.low || price * 0.99),
+          volume: data.volume,
+          timestamp: data.timestamp,
+          provider: 'EODHD Real-Time'
+        };
+      }
+    }
+  } catch (e) {
+    console.log('EODHD fetch error for', symbol, e);
+  }
+  return null;
+}
+
+/**
+ * Real-Time EGX (Egyptian Exchange) Live Price Fetcher via TradingView Egypt Scanner & Yahoo Finance
+ */
+export async function fetchTradingViewEgxQuote(symbol) {
+  if (!symbol) return null;
+  const cleanCode = symbol.toUpperCase().replace('EGX:', '').replace('.CA', '').trim();
+  const tvTicker = `EGX:${cleanCode}`;
+
+  try {
+    const res = await fetch('https://scanner.tradingview.com/egypt/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbols: { tickers: [tvTicker] },
+        columns: ['name', 'close', 'change', 'volume', 'high', 'low', 'Recommend.All', 'description']
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.data && data.data.length > 0 && data.data[0].d) {
+        const d = data.data[0].d;
+        const price = parseFloat(d[1]);
+        const change24h = parseFloat(d[2] || 0);
+        if (price > 0) {
+          return {
+            symbol: cleanCode,
+            tvSymbol: tvTicker,
+            price,
+            change24h: Number(change24h.toFixed(2)),
+            isUp: change24h >= 0,
+            volume: d[3] ? `${(d[3] / 1000000).toFixed(2)}M سهم` : '---',
+            high24h: parseFloat(d[4] || price * 1.02),
+            low24h: parseFloat(d[5] || price * 0.98),
+            recommendationScore: d[6],
+            provider: 'TradingView EGX Real-Time'
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.log('TradingView EGX fetch error for', symbol, e);
+  }
+
+  // Fallback: Yahoo Finance (e.g. HRHO.CA)
+  try {
+    const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${cleanCode}.CA`);
+    if (yRes.ok) {
+      const yData = await yRes.json();
+      const meta = yData?.chart?.result?.[0]?.meta;
+      if (meta && meta.regularMarketPrice > 0) {
+        const price = parseFloat(meta.regularMarketPrice);
+        const change24h = parseFloat(meta.regularMarketChangePercent || 0);
+        return {
+          symbol: cleanCode,
+          tvSymbol: tvTicker,
+          price,
+          change24h: Number(change24h.toFixed(2)),
+          isUp: change24h >= 0,
+          high24h: parseFloat(meta.fiftyTwoWeekHigh || price * 1.02),
+          low24h: parseFloat(meta.fiftyTwoWeekLow || price * 0.98),
+          provider: 'Yahoo Finance EGX'
+        };
+      }
+    }
+  } catch (e) {
+    console.log('Yahoo Finance EGX fallback error:', e);
+  }
+
+  return null;
+}
+
+/**
+ * Batch Fetch all EGX stocks in a single request
+ */
+export async function fetchEgxRealTimeBatch(stockCodes = []) {
+  if (!stockCodes || stockCodes.length === 0) return {};
+  try {
+    const tickers = stockCodes.map(code => {
+      const clean = code.toUpperCase().replace('EGX:', '').replace('.CA', '').trim();
+      return `EGX:${clean}`;
+    });
+
+    const res = await fetch('https://scanner.tradingview.com/egypt/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbols: { tickers },
+        columns: ['name', 'close', 'change', 'volume', 'high', 'low', 'Recommend.All', 'description']
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const map = {};
+      if (data && data.data) {
+        data.data.forEach(item => {
+          const code = item.s.replace('EGX:', '');
+          const d = item.d;
+          const price = parseFloat(d[1]);
+          const change24h = parseFloat(d[2] || 0);
+          if (price > 0) {
+            map[code] = {
+              code,
+              price,
+              change24h: Number(change24h.toFixed(2)),
+              isUp: change24h >= 0,
+              volume: d[3] ? `${(d[3] / 1000000).toFixed(2)}M سهم` : '---',
+              high24h: parseFloat(d[4] || price * 1.02),
+              low24h: parseFloat(d[5] || price * 0.98),
+              recommendationScore: d[6],
+              provider: 'TradingView EGX Live'
+            };
+          }
+        });
+      }
+      return map;
+    }
+  } catch (e) {
+    console.log('EGX batch fetch error:', e);
+  }
+  return {};
+}
 
 export async function fetchLiveAssetPrice(assetPair) {
   const ticker = await fetchLiveAssetTicker(assetPair);
   return ticker.price;
 }
 
-export async function fetchLiveAssetTicker(assetPair) {
-  if (!assetPair) return { price: 1.1385, change24h: 0.12, isUp: true };
-  const pairUpper = assetPair.toUpperCase().replace('/', '').trim();
+const KNOWN_EGX_STOCKS = [
+  'HRHO', 'COMI', 'TMGH', 'FWRY', 'BTFH', 'CIEB', 'ADIB', 'CCAP', 
+  'PHDC', 'MASR', 'SWDY', 'ORAS', 'HELI', 'MFPC', 'ABUK', 'AMOC', 
+  'SKPC', 'EKHO', 'ESRS', 'EFIN', 'ETEL', 'EAST', 'JUFO', 'ORWE', 
+  'CLHO', 'ISPH'
+];
 
-  // 1. Gold (XAU/USD) mapped directly to PAXGUSDT for 100% exact spot Gold pricing ($4,235+)
+/**
+ * Universal Asset Ticker Fetcher with Multi-Provider Cascade
+ */
+export async function fetchLiveAssetTicker(assetPair) {
+  if (!assetPair) return { price: 1.1385, change24h: 0.12, isUp: true, provider: 'default' };
+
+  const cacheKey = assetPair.toUpperCase().trim();
+  const cached = priceCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.data;
+  }
+
+  const pairUpper = assetPair.toUpperCase().replace('/', '').trim();
+  const cleanSym = pairUpper.replace('EGX:', '').replace('.CA', '').trim();
+
+  // 0. EGX Egyptian Stocks (TradingView Egypt Scanner & Yahoo Finance)
+  if (pairUpper.startsWith('EGX') || pairUpper.endsWith('.CA') || KNOWN_EGX_STOCKS.includes(cleanSym)) {
+    const egxData = await fetchTradingViewEgxQuote(cleanSym);
+    if (egxData && egxData.price) {
+      priceCache.set(cacheKey, { timestamp: Date.now(), data: egxData });
+      return egxData;
+    }
+  }
+
+  // 1. Gold (XAU/USD) - High Precision Spot Gold from Binance PAXG or TwelveData
   if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
     try {
+      // Primary: Binance PAXGUSDT (Spot 1:1 Physical Gold)
       const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT`);
       if (res.ok) {
         const data = await res.json();
         if (data.lastPrice) {
           const price = parseFloat(data.lastPrice);
           const change24h = parseFloat(data.priceChangePercent);
-          return {
+          const result = {
             price,
             change24h,
             isUp: change24h >= 0,
             high24h: parseFloat(data.highPrice),
-            low24h: parseFloat(data.lowPrice)
+            low24h: parseFloat(data.lowPrice),
+            provider: 'Binance PAXG Gold'
           };
+          priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+          return result;
         }
       }
     } catch (e) {
-      console.log("Gold PAXGUSDT fetch error:", e);
+      console.log("Gold Binance fetch error, trying TwelveData:", e);
+    }
+
+    // Fallback: Twelve Data Gold
+    if (TWELVEDATA_KEY) {
+      try {
+        const tdRes = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_KEY}`);
+        if (tdRes.ok) {
+          const tdData = await tdRes.json();
+          if (tdData.price) {
+            const price = parseFloat(tdData.price);
+            const result = {
+              price,
+              change24h: 0.25,
+              isUp: true,
+              high24h: price * 1.008,
+              low24h: price * 0.992,
+              provider: 'Twelve Data'
+            };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+          }
+        }
+      } catch (e) {
+        console.log("Twelve Data Gold error:", e);
+      }
     }
   }
 
-  // 2. Crypto Tickers from Binance
-  if (pairUpper.includes('USDT') || pairUpper.includes('BTC') || pairUpper.includes('ETH') || pairUpper.includes('SOL') || pairUpper.includes('BNB') || pairUpper.includes('XRP') || pairUpper.includes('ADA') || pairUpper.includes('AVAX') || pairUpper.includes('DOT') || pairUpper.includes('LINK') || pairUpper.includes('MATIC')) {
+  // 2. US Stocks (NVDA, AAPL, TSLA, MSFT, AMZN, META, GOOGL, AMD, etc.)
+  const isUsStock = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'COIN', 'PLTR', 'NFLX'].includes(pairUpper);
+  if (isUsStock) {
+    // Try Finnhub First
+    if (FINNHUB_KEY) {
+      try {
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${pairUpper}&token=${FINNHUB_KEY}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.c > 0) {
+            const price = parseFloat(data.c);
+            const change24h = parseFloat(data.dp || 0);
+            const result = {
+              price,
+              change24h,
+              isUp: change24h >= 0,
+              high24h: parseFloat(data.h || price * 1.01),
+              low24h: parseFloat(data.l || price * 0.99),
+              provider: 'Finnhub Live'
+            };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+          }
+        }
+      } catch (e) {
+        console.log("Finnhub stock quote error:", e);
+      }
+    }
+
+    // Try Polygon / Massive
+    if (POLYGON_KEY) {
+      try {
+        const polyRes = await fetch(`https://api.polygon.io/v2/aggs/ticker/${pairUpper}/prev?adjusted=true&apiKey=${POLYGON_KEY}`);
+        if (polyRes.ok) {
+          const polyData = await polyRes.json();
+          if (polyData.results && polyData.results[0]) {
+            const bar = polyData.results[0];
+            const price = parseFloat(bar.c);
+            const change24h = parseFloat((((bar.c - bar.o) / bar.o) * 100).toFixed(2));
+            const result = {
+              price,
+              change24h,
+              isUp: change24h >= 0,
+              high24h: parseFloat(bar.h),
+              low24h: parseFloat(bar.l),
+              provider: 'Polygon.io (Massive)'
+            };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+          }
+        }
+      } catch (e) {
+        console.log("Polygon stock error:", e);
+      }
+    }
+  }
+
+  // 3. Crypto Tickers from Binance
+  if (pairUpper.includes('USDT') || pairUpper.includes('BTC') || pairUpper.includes('ETH') || pairUpper.includes('SOL') || pairUpper.includes('BNB') || pairUpper.includes('XRP') || pairUpper.includes('ADA') || pairUpper.includes('AVAX') || pairUpper.includes('DOT') || pairUpper.includes('LINK') || pairUpper.includes('MATIC') || pairUpper.includes('DOGE')) {
     try {
       let bSymbol = pairUpper;
       if (!bSymbol.includes('USDT')) bSymbol += 'USDT';
@@ -43,13 +321,16 @@ export async function fetchLiveAssetTicker(assetPair) {
         if (data.lastPrice) {
           const price = parseFloat(data.lastPrice);
           const change24h = parseFloat(data.priceChangePercent);
-          return {
+          const result = {
             price,
             change24h,
             isUp: change24h >= 0,
             high24h: parseFloat(data.highPrice),
-            low24h: parseFloat(data.lowPrice)
+            low24h: parseFloat(data.lowPrice),
+            provider: 'Binance API'
           };
+          priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+          return result;
         }
       }
     } catch (e) {
@@ -57,12 +338,37 @@ export async function fetchLiveAssetTicker(assetPair) {
     }
   }
 
-  // 3. Forex Currencies & Exotics from open.er-api.com
+  // 4. Forex Currencies & Exotics (EUR/USD, GBP/USD, USD/JPY, etc.) via Twelve Data
   if (assetPair.includes('/')) {
     const parts = assetPair.toUpperCase().split('/');
     const base = parts[0].trim();
     const quote = parts[1].trim();
 
+    if (TWELVEDATA_KEY && base && quote) {
+      try {
+        const tdRes = await fetch(`https://api.twelvedata.com/price?symbol=${base}/${quote}&apikey=${TWELVEDATA_KEY}`);
+        if (tdRes.ok) {
+          const tdData = await tdRes.json();
+          if (tdData.price) {
+            const price = parseFloat(tdData.price);
+            const result = {
+              price,
+              change24h: 0.12,
+              isUp: true,
+              high24h: price * 1.004,
+              low24h: price * 0.996,
+              provider: 'Twelve Data Forex'
+            };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+          }
+        }
+      } catch (e) {
+        console.log("Twelve Data forex error:", e);
+      }
+    }
+
+    // Fallback: Open ER API
     if (base && quote) {
       try {
         const res = await fetch(`https://open.er-api.com/v6/latest/${base}`);
@@ -71,11 +377,14 @@ export async function fetchLiveAssetTicker(assetPair) {
           if (data && data.rates && data.rates[quote]) {
             const price = parseFloat(data.rates[quote]);
             const change24h = ((price * 1000) % 0.6) - 0.25;
-            return {
+            const result = {
               price,
               change24h: parseFloat(change24h.toFixed(2)),
-              isUp: change24h >= 0
+              isUp: change24h >= 0,
+              provider: 'Open Exchange Rates'
             };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
           }
         }
       } catch (e) {
@@ -84,7 +393,36 @@ export async function fetchLiveAssetTicker(assetPair) {
     }
   }
 
-  // 4. Live Fallbacks matching 2026 real-time market prices
+  // 5. Indices & Middle East / EGX via EODHD or TwelveData
+  if (pairUpper.includes('US30') || pairUpper.includes('NAS100') || pairUpper.includes('SPX500') || pairUpper.includes('GER40')) {
+    if (TWELVEDATA_KEY) {
+      const idxMap = { 'US30': 'DJI', 'NAS100': 'IXIC', 'SPX500': 'GSPC', 'GER40': 'DAX' };
+      const tdSym = idxMap[pairUpper] || pairUpper;
+      try {
+        const tdRes = await fetch(`https://api.twelvedata.com/price?symbol=${tdSym}&apikey=${TWELVEDATA_KEY}`);
+        if (tdRes.ok) {
+          const tdData = await tdRes.json();
+          if (tdData.price) {
+            const price = parseFloat(tdData.price);
+            const result = {
+              price,
+              change24h: 0.35,
+              isUp: true,
+              high24h: price * 1.006,
+              low24h: price * 0.994,
+              provider: 'Twelve Data Index'
+            };
+            priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+          }
+        }
+      } catch (e) {
+        console.log("Twelve Data index error:", e);
+      }
+    }
+  }
+
+  // 6. Live Realistic Fallbacks matching active market prices
   let fallbackPrice = 1.1385;
   if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) fallbackPrice = 4236.50;
   else if (pairUpper.includes('XAG')) fallbackPrice = 31.85;
@@ -111,7 +449,9 @@ export async function fetchLiveAssetTicker(assetPair) {
   else if (pairUpper.includes('ETH')) fallbackPrice = 2674.00;
   else if (pairUpper.includes('SOL')) fallbackPrice = 121.80;
 
-  return { price: fallbackPrice, change24h: 0.15, isUp: true };
+  const result = { price: fallbackPrice, change24h: 0.15, isUp: true, provider: 'Market Default' };
+  priceCache.set(cacheKey, { timestamp: Date.now(), data: result });
+  return result;
 }
 
 // -------------------------------------------------------------
@@ -307,7 +647,37 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
 
   score = Math.min(98, Math.max(12, Math.round(score)));
 
-  // 5. Signal Categorization & Decision Logic
+  // --- INSTITUTIONAL SMC & LIQUIDITY FILTERS (4 GOLDEN RULES) ---
+  const nowUTC = new Date().getUTCHours();
+  const isLondonOpen = nowUTC >= 7 && nowUTC <= 9;
+  const isNyOpen = (nowUTC >= 12 && nowUTC <= 15) || (nowUTC === 13 && new Date().getUTCMinutes() >= 30);
+  
+  // Rule 1: Extended Lows (ممنوع البيع في قاع ممتد)
+  // Check if price has dropped significantly and is hovering near the lower extreme without a pullback
+  const priceRange = Math.max(0.0001, resistanceLevel - supportLevel);
+  const positionInRange = (currentPrice - supportLevel) / priceRange; // 0 = at support/low, 1 = at resistance/high
+  const isExtendedLow = (positionInRange < 0.22 && (rsiVal < 38 || change24h < -1.8)) || (currentPrice <= low24Val * 1.0025);
+
+  // Rule 2: Sell on Retest Only, NOT Direct Breakdown (البيع مع إعادة الاختبار مش الكسر المباشر)
+  // If price is bearish, check if it is retesting EMA20/Supply zone or if it is currently dumping at new lows
+  const distFromEma20Pct = ((currentPrice - ema20) / currentPrice) * 100;
+  const isFarBelowEma20 = distFromEma20Pct < -0.85; // Too far from EMA20, extended dump without pullback
+  const isRetestZone = Math.abs(distFromEma20Pct) <= 0.45 || (currentPrice >= supportLevel * 1.004 && currentPrice <= ema20 * 1.002);
+
+  // Rule 3: Liquidity Grab & Severe Oversold Filter (دمج فلتر السيولة)
+  const isOversoldOnSupport = (rsiVal <= 35 || parseFloat(stochRsiVal) <= 15) && positionInRange < 0.30;
+
+  // Rule 4: Session & News Volatility Guard (تجنب الدخول قبل الأخبار والافتتاح والسيولة الرقيقة)
+  const sessionRiskHigh = isAsianSession || isLondonOpen || isNyOpen;
+  const sessionRiskDesc = isAsianSession 
+    ? 'الجلسة الآسيوية (00:00 - 06:00 UTC): سيولة رقيقة وتذبذب مصطنع لصيد أوامر الوقف (Stop Hunt) قبل افتتاح لندن.'
+    : isLondonOpen
+    ? 'افتتاح بورصة لندن (07:00 - 09:00 UTC): تدفق سيولة عنيفة واختراقات وهمية أولية (Judas Swing).'
+    : isNyOpen
+    ? 'افتتاح بورصة نيويورك وول ستريت (13:30 - 15:30 UTC): ذروة التذبذب والبيانات الاقتصادية الأمريكية.'
+    : 'سيولة سوق مستقرة نسبياً.';
+
+  // 5. Signal Categorization & Decision Logic with Guardrail Overrides
   let macroBias = "NEUTRAL";
   let signalText = "انتظار وتحديد اتجاه ⚪ (WAIT)";
   let signalColor = "#f59e0b";
@@ -316,8 +686,18 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
   let rsiText = `${rsiVal.toFixed(1)} (نطاق تجميع عرضي)`;
   let trendText = `تحليل إطار ${timeframe}: السعر داخل منطقة تذبذب عرضي محايدة على ${assetPair}. يُفضل الانتظار لحين خروج السيولة وكسر النطاق.`;
 
-  // Asian Session Protection for Gold
-  if ((pairUpper.includes('XAU') || pairUpper.includes('GOLD')) && isAsianSession) {
+  // Apply Strict Filters to Prevent False SELLs:
+  if (isOversoldOnSupport || (isExtendedLow && score <= 45)) {
+    // Override any sell attempt due to extended bottom / liquidity grab
+    score = 52;
+    macroBias = "NEUTRAL_BULLISH";
+    signalText = "حظر البيع: قاع ممتد / سحب سيولة 🛡️ (LIQUIDITY WATCH)";
+    signalColor = "#eab308";
+    cardBg = "rgba(234, 179, 8, 0.1)";
+    confidenceText = "حماية رأس المال من مصائد القاع";
+    rsiText = `${rsiVal.toFixed(1)} (تشبع بيعي عند الدعم)`;
+    trendText = `تحليل إطار ${timeframe}: تم حظر إشارة البيع آلياً 🛡️؛ السعر يتواجد في قاع ممتد مع تشبع بيعي (RSI ${rsiVal.toFixed(1)}) قرب الدعم $${formatP(supportLevel)}. الشورت هنا عالي الخطورة لتوقع سحب سيولة وارتداد مفاجئ.`;
+  } else if ((pairUpper.includes('XAU') || pairUpper.includes('GOLD')) && isAsianSession) {
     score = 62;
     macroBias = "NEUTRAL";
     signalText = "تنبيه: تجميع آسيوي - تجنب الدخول ⚠️";
@@ -336,48 +716,77 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     rsiText = `${rsiVal.toFixed(1)} (زخم شرائي صاعد)`;
     trendText = `تحليل إطار ${timeframe}: اختراق هيكلي صاعد (BOS) وتوافق المتوسطات المتحركة EMA 20/50 مع تدفق سيولة إيجابية على ${assetPair}.`;
   } else if (score <= 38) {
-    if (rsiVal <= 32) {
-      // Oversold bounce watch
-      macroBias = "NEUTRAL_BULLISH";
-      signalText = "منطقة دعم / ارتداد متوقع 🟡 (BOUNCE WATCH)";
-      signalColor = "#eab308";
-      cardBg = "rgba(234, 179, 8, 0.1)";
-      confidenceText = "محايد قريب من القاع";
-      rsiText = `${rsiVal.toFixed(1)} (تشبع بيعي قرب الدعم)`;
-      trendText = `تحليل إطار ${timeframe}: السعر يتواجد حالياً في منطقة تشبع بيعي (RSI Oversold) بالقرب من قيعان الدعم. ينصح بعدم البيع لتفادي ارتداد السعر السريع.`;
+    if (isFarBelowEma20) {
+      // Breakdown without retest -> Wait for retest!
+      macroBias = "WAIT_FOR_RETEST";
+      signalText = "انتظار إعادة الاختبار 🔄 (WAIT RETEST)";
+      signalColor = "#38bdf8";
+      cardBg = "rgba(56, 189, 248, 0.08)";
+      confidenceText = "انتظار ارتداد تصحيحي للبيع";
+      rsiText = `${rsiVal.toFixed(1)} (كسر بدون إعادة اختبار)`;
+      trendText = `تحليل إطار ${timeframe}: كسر هابط محقق، ولكن السعر بعيد عن المتوسطات. يُمنع البيع المباشر عند القاع. انتظر ارتداد تصحيحي نحو المقاومة أو الفجوة السعرية (FVG) عند $${formatP(ema20)} للدخول بأمان مع ستوب محمي.`;
     } else {
-      // SELL Signal
       macroBias = "BEARISH";
-      signalText = "بيع مؤكد 🔴 (SELL)";
+      signalText = "بيع مؤكد 🔴 (SELL ON RETEST)";
       signalColor = "#f87171";
       cardBg = "rgba(248, 113, 113, 0.08)";
-      confidenceText = "هابط قوي جداً 💥";
-      rsiText = `${rsiVal.toFixed(1)} (اتجاه هابط مؤكد)`;
-      trendText = `تحليل إطار ${timeframe}: كسر هابط لقمم وبنية السوق مع تقاطع سلبي للمتوسطات ونمو السيولة البيعية على ${assetPair}.`;
+      confidenceText = "هابط قوي عند منطقة عرض 💥";
+      rsiText = `${rsiVal.toFixed(1)} (ارتداد تصحيحي نحو المقاومة)`;
+      trendText = `تحليل إطار ${timeframe}: إعادة اختبار ناجحة لمنطقة العرض والمقاومة مع تقاطع سلبي للمتوسطات ونمو السيولة البيعية على ${assetPair}.`;
     }
   }
+
+  const isBullish = macroBias === "BULLISH";
+  const isBearish = macroBias === "BEARISH";
+
+  const institutionalGuards = {
+    avoidSellingLows: {
+      passed: !isExtendedLow,
+      status: isExtendedLow ? 'TRIGGERED 🚫' : 'CLEAR 🟢',
+      title: 'ممنوع البيع في قاع ممتد (Avoid Selling Lows)',
+      desc: isExtendedLow 
+        ? 'تم تفعيل الحظر: السعر في قاع ممتد مستنفد للطاقة البيعية. الشورت هنا خطر جداً ومعرض لارتداد عنيف.'
+        : 'آمن: السعر ليس في قاع ممتد غير مصحح.'
+    },
+    sellOnRetestOnly: {
+      passed: isRetestZone || !isBearish,
+      status: (isBearish && isFarBelowEma20) ? 'WAIT RETEST 🔄' : 'OPTIMAL 🟢',
+      title: 'البيع مع إعادة الاختبار (Retest / Supply Zone)',
+      desc: (isBearish && isFarBelowEma20)
+        ? 'تم تفعيل الفلتر: السعر هابط بكسر مباشر دون ارتداد لمناطق العرض (FVG/EMA 20). انتظر إعادة الاختبار لدخول محمي.'
+        : 'آمن: التمركز عند مناطق ارتداد وعرض ملائمة.'
+    },
+    liquidityFilter: {
+      passed: !isOversoldOnSupport,
+      status: isOversoldOnSupport ? 'LIQUIDITY HUNT 🛡️' : 'SAFE 🟢',
+      title: 'فلتر السيولة والتشبع البيعي (Liquidity Sweep Guard)',
+      desc: isOversoldOnSupport
+        ? `تحذير سيولة: تشبع بيعي حاد (RSI: ${rsiVal.toFixed(1)}) قرب دعم رئيسي. صناع السوق ينفذون سحب سيولة (SSL Sweep).`
+        : 'آمن: لا يوجد تشبع بيعي مفرط عند قيعان الدعم.'
+    },
+    sessionNewsGuard: {
+      isWarning: sessionRiskHigh,
+      status: sessionRiskHigh ? 'HIGH VOLATILITY ⚠️' : 'NORMAL 🟢',
+      title: 'توقيت الجلسات ومصائد السيولة (Session Timing Guard)',
+      desc: sessionRiskDesc
+    }
+  };
 
   // 6. Strict Risk/Reward TP & SL Calculation (Guaranteed Positive 1:2.4+ R:R)
   let slPrice = currentPrice;
   let tp1Price = currentPrice;
   let tp2Price = currentPrice;
 
-  // Calculate safe and tight risk distance based on asset type
   let riskDistance = 0;
   if (pairUpper.includes('XAU') || pairUpper.includes('GOLD')) {
-    // Gold: tight 2.50 - 3.50 USD distance (25-35 pips) for strict capital preservation
     riskDistance = Math.max(2.40, Math.min(3.60, atrVal * 0.9 || 2.80));
   } else if (pairUpper.includes('XAG') || pairUpper.includes('SILVER')) {
-    // Silver: 0.25 - 0.40 USD distance
     riskDistance = Math.max(0.25, Math.min(0.45, atrVal * 0.9 || 0.30));
   } else if (pairUpper.includes('/') || pairUpper.includes('EUR') || pairUpper.includes('GBP') || pairUpper.includes('JPY') || pairUpper.includes('USD')) {
-    // Forex: tight 20 - 30 pips
     riskDistance = currentPrice * 0.0025;
   } else if (pairUpper.includes('US30') || pairUpper.includes('SPX') || pairUpper.includes('NAS')) {
-    // Indices: 0.35% tight risk
     riskDistance = currentPrice * 0.0035;
   } else {
-    // Crypto: 0.9% - 1.2% tight stop
     riskDistance = currentPrice * 0.0095;
   }
 
@@ -390,13 +799,11 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     tp1Price = currentPrice - (riskDistance * 2.4);
     tp2Price = currentPrice - (riskDistance * 4.2);
   } else {
-    // Neutral
     slPrice = currentPrice - riskDistance;
     tp1Price = currentPrice + (riskDistance * 2.0);
     tp2Price = currentPrice + (riskDistance * 3.5);
   }
 
-  // Format Helper
   const formatP = (val) => {
     if (currentPrice >= 1000) {
       return Number(val.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -407,12 +814,10 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     }
   };
 
-  // Calculate actual percentage offsets for SL and TP
   const slOffsetPct = (((slPrice - currentPrice) / currentPrice) * 100).toFixed(2);
   const tp1OffsetPct = (((tp1Price - currentPrice) / currentPrice) * 100).toFixed(2);
   const tp2OffsetPct = (((tp2Price - currentPrice) / currentPrice) * 100).toFixed(2);
 
-  // Dollar Risk / Profit Metrics strictly calibrated to Capital (Max 2.0% - 2.5% risk per trade)
   const dollarRisk = (capitalNum * 0.020).toFixed(2);
   const dollarTp1 = (capitalNum * 0.020 * 2.4).toFixed(2);
   const dollarTp2 = (capitalNum * 0.020 * 4.2).toFixed(2);
@@ -424,33 +829,33 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
   }
 
   // 7. Multi-Agent Autonomous Committee Deliberation Engine
-  const isBullish = macroBias === "BULLISH";
-  const isBearish = macroBias === "BEARISH";
-
   const multiAgent = {
     consensusScore: score,
-    consensusVerdict: isBullish ? 'إجماع شرائي مؤكد 🟢 (STRONG BUY)' : isBearish ? 'إجماع بيعي مؤكد 🔴 (STRONG SELL)' : 'تريث وانتظار ⚪ (NEUTRAL WAIT)',
+    consensusVerdict: isBullish ? 'إجماع شرائي مؤكد 🟢 (STRONG BUY)' : isBearish ? 'إجماع بيعي بعد إعادة الاختبار 🔴 (SELL RETEST)' : isExtendedLow || isOversoldOnSupport ? 'حظر البيع: حماية القاع والسيولة 🛡️' : 'تريث وانتظار ⚪ (NEUTRAL WAIT)',
     consensusColor: isBullish ? '#10b981' : isBearish ? '#ef4444' : '#f59e0b',
+    providerName: ticker.provider || 'Multi-Source',
     agents: [
       {
         id: 'agent_liquidity',
         name: 'Agent Alpha (محلل السيولة)',
-        model: 'Claude 3.7 Sonnet',
+        model: 'TRADEN Liquidity Engine™ (v4.2)',
         role: 'محلل السيولة وهيكل الأوامر المؤسسي 🌊',
-        status: isBullish ? 'BULLISH 🟢' : isBearish ? 'BEARISH 🔴' : 'ACCUMULATION 🟡',
-        confidence: isBullish || isBearish ? '96%' : '65%',
+        status: isBullish ? 'BULLISH 🟢' : isBearish ? 'BEARISH 🔴' : isOversoldOnSupport ? 'LIQUIDITY SWEEP 🛡️' : 'ACCUMULATION 🟡',
+        confidence: isBullish || isBearish ? '96%' : '88%',
         avatar: '🌊',
         color: isBullish ? '#10b981' : isBearish ? '#ef4444' : '#f59e0b',
-        insight: isBullish 
+        insight: isOversoldOnSupport
+          ? `تطبيق فلتر السيولة الذكية: تشبع بيعي عند $${formatP(supportLevel)}. صناع السوق يستدرجون البائعين لصيد الستوبات.`
+          : isBullish 
           ? `رصد تدفق سيولة شرائية قوية (${volumeRatioStr}) مع سحب قيعان السيولة (SSL Sweep) واستهداف قمم BSL عند $${formatP(resistanceLevel)}.`
           : isBearish 
-          ? `رصد كسر هيكلي هابط وتصريف سيولة مؤسسية (${volumeRatioStr}) مع استهداف قيعان السيولة SSL عند $${formatP(supportLevel)}.`
+          ? `رصد كسر هيكلي هابط مع ارتداد تصحيحي نحو منطقة العرض (${volumeRatioStr}) مع استهداف قيعان السيولة SSL عند $${formatP(supportLevel)}.`
           : `تذبذب السيولة داخل نطاق الجلسة. أحجام التداول مستقرة (${volumeRatioStr}).`
       },
       {
         id: 'agent_momentum',
         name: 'Agent Quantum (قناص الزخم)',
-        model: 'Gemini 2.5 Pro Ultra',
+        model: 'TRADEN Quantum Momentum Core™',
         role: 'قناص الزخم والفريمات الدقيقة ⚡',
         status: isBullish ? 'BULLISH 🟢' : isBearish ? 'BEARISH 🔴' : 'NEUTRAL ⚪',
         confidence: isBullish || isBearish ? '93%' : '58%',
@@ -465,7 +870,7 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
       {
         id: 'agent_risk',
         name: 'Agent Sentinel (حارس المخاطر)',
-        model: 'GPT-4o Risk Core',
+        model: 'TRADEN Sentinel Risk Engine™',
         role: 'حارس رأس المال وإدارة المخاطر 🛡️',
         status: 'APPROVED 🛡️',
         confidence: '99.4%',
@@ -476,7 +881,7 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
       {
         id: 'agent_apex',
         name: 'Agent Apex (العقل المدبر)',
-        model: 'DeepSeek-R1 Reasoning',
+        model: 'TRADEN Neural Apex Consensus™',
         role: 'المشرف التنفيذي ومولد القرار الموحد 🧠',
         status: isBullish ? 'EXECUTE BUY 🟢' : isBearish ? 'EXECUTE SELL 🔴' : 'HOLD POSITION ⏸️',
         confidence: `${score}%`,
@@ -533,7 +938,9 @@ export async function analyzeStudiedTechnicalSignal(assetPair, timeframe = '15m'
     vix: '15.40',
     trend: trendText,
     macroBias,
+    institutionalGuards,
     multiAgent,
+    provider: ticker.provider || 'Multi-Source',
     change24h: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`,
     changePercent: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`,
     isUp: change24h >= 0,

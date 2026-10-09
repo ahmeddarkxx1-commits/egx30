@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Bot, BarChart2, Shield, Activity, Zap, Lock, Key, 
-  Send, Sparkles, TrendingUp, Cpu, Globe, Crosshair, 
-  Layers, ArrowUpRight, DollarSign, RefreshCw, ChevronRight
+  Bot, BarChart2, Shield, Activity, Zap, Sparkles, TrendingUp, Cpu, Globe, Crosshair, 
+  Layers, ArrowUpRight, DollarSign, RefreshCw, ChevronRight, BookOpen, Flame, 
+  ArrowLeft, LayoutDashboard, Compass
 } from 'lucide-react';
 import { fetchLiveAssetTicker } from './utils/priceFetcher';
-import MarketScanner from './components/MarketScanner';
 import SignalBot from './components/SignalBot';
 import MarketNews from './components/MarketNews';
 import TradenRadar from './components/TradenRadar';
@@ -13,16 +12,11 @@ import PreciousMetals from './components/PreciousMetals';
 import HalalGuide from './components/HalalGuide';
 import InvestmentBot from './components/InvestmentBot';
 import GoldLiquidityRadar from './components/GoldLiquidityRadar';
-import AutoPilotTrader from './components/AutoPilotTrader';
 import EgxAnalysis from './components/EgxAnalysis';
 import TradingViewSparkline from './components/TradingViewSparkline';
-import PlatformsConnect from './components/PlatformsConnect';
 import './App.css';
 
-const MASTER_VIP_CODE = 'TRADEN2026';
-const WHITELISTED_TELEGRAM_IDS = [1914514519, 12345678, 87654321];
-
-function LiveMarketWidget({ onOpenBot }) {
+function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
   const [activeAsset, setActiveAsset] = useState('BTC/USDT');
   const [tickerData, setTickerData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +32,7 @@ function LiveMarketWidget({ onOpenBot }) {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData(activeAsset);
     const interval = setInterval(() => loadData(activeAsset), 2000);
     return () => clearInterval(interval);
@@ -59,274 +53,219 @@ function LiveMarketWidget({ onOpenBot }) {
   const trendColor = changeVal > 0.15 ? '#10b981' : changeVal < -0.15 ? '#f43f5e' : '#f59e0b';
 
   return (
-    <div className="hero-market-card">
-      {/* Asset Selector Tabs */}
-      <div className="asset-pill-group">
-        {[
-          { symbol: 'BTC/USDT', label: 'BTC' },
-          { symbol: 'XAU/USD', label: 'GOLD' },
-          { symbol: 'EUR/USD', label: 'EUR/USD' },
-          { symbol: 'ETH/USDT', label: 'ETH' },
-          { symbol: 'US30', label: 'US30' },
-        ].map(item => (
-          <button
-            key={item.symbol}
-            onClick={() => setActiveAsset(item.symbol)}
-            className={`asset-pill ${activeAsset === item.symbol ? 'active' : ''}`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Price & Trend Row */}
-      <div className="hero-price-row">
+    <div className="hero-layout-grid">
+      {/* 1. Main Live Chart & Market Card */}
+      <div className="hero-market-card">
         <div>
-          <div className="hero-price-big mono">
-            {loading && !tickerData ? 'SYNCING...' : priceFormatted}
+          {/* Asset Selector Tabs */}
+          <div className="asset-pill-group">
+            {[
+              { symbol: 'BTC/USDT', label: 'BTC' },
+              { symbol: 'XAU/USD', label: 'GOLD' },
+              { symbol: 'EUR/USD', label: 'EUR/USD' },
+              { symbol: 'ETH/USDT', label: 'ETH' },
+              { symbol: 'US30', label: 'US30' },
+            ].map(item => (
+              <button
+                key={item.symbol}
+                onClick={() => setActiveAsset(item.symbol)}
+                className={`asset-pill ${activeAsset === item.symbol ? 'active' : ''}`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '600' }}>
-            {activeAsset} · REAL-TIME TICKER
+
+          {/* Main Price & Trend Row */}
+          <div className="hero-price-row">
+            <div>
+              <div className="hero-price-big mono">
+                {loading && !tickerData ? 'SYNCING...' : priceFormatted}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '3px', fontWeight: '600' }}>
+                {activeAsset} · Live Global Exchange Stream ({tickerData?.provider || 'LIVE FEED'})
+              </div>
+            </div>
+            <div className={`hero-pct-badge mono ${isUp ? 'pct-up' : 'pct-down'}`}>
+              {isUp ? '▲ +' : '▼ '}{changeVal.toFixed(2)}%
+            </div>
+          </div>
+          
+          {/* Wave Sparkline */}
+          <div style={{ height: '64px', width: '100%', margin: '8px 0 12px 0' }}>
+            <TradingViewSparkline
+              isUp={isUp}
+              height={64}
+              id={`home-widget-${activeAsset}`}
+              seed={activeAsset}
+              strokeWidth={2.4}
+            />
+          </div>
+
+          {/* 3 Metric Chips */}
+          <div className="hero-metrics-grid">
+            <div className="metric-chip">
+              <div className="metric-chip-label">24H LOW</div>
+              <div className="metric-chip-val mono">{lowVal}</div>
+            </div>
+            <div className="metric-chip">
+              <div className="metric-chip-label">24H HIGH</div>
+              <div className="metric-chip-val mono">{highVal}</div>
+            </div>
+            <div className="metric-chip">
+              <div className="metric-chip-label">AI BIAS</div>
+              <div className="metric-chip-val mono" style={{ color: trendColor }}>{trendText}</div>
+            </div>
           </div>
         </div>
-        <div className={`hero-pct-badge mono ${isUp ? 'pct-up' : 'pct-down'}`}>
-          {isUp ? '▲ +' : '▼ '}{changeVal.toFixed(2)}%
-        </div>
-      </div>
-      
-      {/* Wave Sparkline */}
-      <div style={{ height: '54px', width: '100%', margin: '6px 0 10px 0' }}>
-        <TradingViewSparkline
-          isUp={isUp}
-          height={54}
-          id={`home-widget-${activeAsset}`}
-          seed={activeAsset}
-          strokeWidth={2.2}
-        />
+
+        {/* Instant Action Button */}
+        <button
+          onClick={() => {
+            if (onSelectSymbol) onSelectSymbol(activeAsset);
+            onOpenView('signal_bot');
+          }}
+          className="hero-action-btn"
+        >
+          <Zap size={17} />
+          <span>Analyze & Generate Instant {activeAsset} AI Trade Setup</span>
+          <ArrowUpRight size={17} style={{ marginLeft: 'auto' }} />
+        </button>
       </div>
 
-      {/* 3 Metric Chips */}
-      <div className="hero-metrics-grid">
-        <div className="metric-chip">
-          <div className="metric-chip-label">24H LOW</div>
-          <div className="metric-chip-val mono">{lowVal}</div>
+      {/* 2. AI Market Pulse & Quick Insights Panel */}
+      <div className="hero-side-card">
+        <div>
+          <div className="side-card-header">
+            <div className="side-card-title">
+              <Activity size={16} color="#38bdf8" />
+              <span>AI Market Intelligence & Session Status</span>
+            </div>
+            <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: '800', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+              LIVE 🟢
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+            <div className="pulse-stat-row">
+              <div className="pulse-stat-label">
+                <Globe size={14} color="#10b981" />
+                <span>Egyptian Exchange (EGX)</span>
+              </div>
+              <span className="pulse-stat-value mono" style={{ color: '#34d399' }}>10:00 AM - 02:30 PM</span>
+            </div>
+
+            <div className="pulse-stat-row">
+              <div className="pulse-stat-label">
+                <Crosshair size={14} color="#f59e0b" />
+                <span>Gold Liquidity Concept (SMC)</span>
+              </div>
+              <span className="pulse-stat-value mono" style={{ color: '#f59e0b' }}>BSL / SSL ACTIVE</span>
+            </div>
+
+            <div className="pulse-stat-row">
+              <div className="pulse-stat-label">
+                <Bot size={14} color="#38bdf8" />
+                <span>AI Engine Consensus</span>
+              </div>
+              <span className="pulse-stat-value mono" style={{ color: '#38bdf8' }}>TRADEN AI MATRIX™</span>
+            </div>
+
+            <div className="pulse-stat-row">
+              <div className="pulse-stat-label">
+                <Shield size={14} color="#a855f7" />
+                <span>Risk & Position Sizing</span>
+              </div>
+              <span className="pulse-stat-value mono" style={{ color: '#c084fc' }}>1:2.5 RR TARGET</span>
+            </div>
+          </div>
         </div>
-        <div className="metric-chip">
-          <div className="metric-chip-label">24H HIGH</div>
-          <div className="metric-chip-val mono">{highVal}</div>
-        </div>
-        <div className="metric-chip">
-          <div className="metric-chip-label">AI SENTIMENT</div>
-          <div className="metric-chip-val mono" style={{ color: trendColor }}>{trendText}</div>
+
+        {/* Quick Shortcut Pills */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '6px' }}>
+          <button 
+            onClick={() => onOpenView('egx_stocks')}
+            style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#34d399',
+              borderRadius: '10px',
+              padding: '8px 10px',
+              fontSize: '11.5px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>🇪🇬 EGX 30 STOCKS</span>
+            <ChevronRight size={13} />
+          </button>
+
+          <button 
+            onClick={() => onOpenView('gold_liquidity')}
+            style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              color: '#fbbf24',
+              borderRadius: '10px',
+              padding: '8px 10px',
+              fontSize: '11.5px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>🥇 GOLD SMC RADAR</span>
+            <ChevronRight size={13} />
+          </button>
         </div>
       </div>
-
-      {/* Instant Action Button */}
-      <button
-        onClick={() => onOpenBot(activeAsset)}
-        className="hero-action-btn"
-      >
-        <Zap size={16} />
-        <span>Analyze & Instant Trade {activeAsset}</span>
-        <ArrowUpRight size={16} style={{ marginLeft: 'auto' }} />
-      </button>
     </div>
   );
 }
 
 function App() {
-  const [tgUser, setTgUser] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
-  const [accountBalance, setAccountBalance] = useState(null);
-  
-  // Authorization state
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [activationInput, setActivationInput] = useState('');
-  const [activationError, setActivationError] = useState(false);
-  const [showCodeInput, setShowCodeInput] = useState(false);
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const res = await fetch('https://worker-production-f2a42.up.railway.app/api/account');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.connected && data.balance !== undefined) {
-            setAccountBalance(data.balance);
-          }
-        }
-      } catch (e) {
-        // silent fail
-      }
-    };
-    fetchBalance();
-    const bInterval = setInterval(fetchBalance, 6000);
-    return () => clearInterval(bInterval);
-  }, []);
-
-  useEffect(() => {
-    if (window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.expand();
-      if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const u = tg.initDataUnsafe.user;
-        setTgUser(u);
-        
-        const userStorageKey = `traden_user_authorized_${u.id}`;
-        const storedUserAuth = localStorage.getItem(userStorageKey);
-
-        if (WHITELISTED_TELEGRAM_IDS.includes(u.id) || u.id === 1914514519 || storedUserAuth === 'true') {
-          setIsAuthorized(true);
-        } else {
-          setIsAuthorized(false);
-        }
-      } else {
-        const storedAuth = localStorage.getItem('traden_user_authorized_browser');
-        if (storedAuth === 'true') {
-          setIsAuthorized(true);
-        }
-      }
-    }
-  }, []);
-
-  const handleActivateWithCode = () => {
-    const cleanInput = activationInput.trim().toUpperCase();
-    const isValidKey = cleanInput === MASTER_VIP_CODE || 
-                       cleanInput.startsWith('TRADEN-') || 
-                       cleanInput.includes('TRADEN');
-
-    if (isValidKey) {
-      setIsAuthorized(true);
-      const userKey = tgUser ? `traden_user_authorized_${tgUser.id}` : 'traden_user_authorized_browser';
-      localStorage.setItem(userKey, 'true');
-      setActivationError(false);
-    } else {
-      setActivationError(true);
-    }
-  };
-
-  // 🔒 RESTRICTED ACCESS SCREEN
-  if (!isAuthorized) {
-    return (
-      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', textAlign: 'center', padding: '20px' }}>
-        <div style={{ 
-          width: '72px', height: '72px', borderRadius: '50%', 
-          background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto',
-          boxShadow: '0 0 24px rgba(244, 63, 94, 0.2)'
-        }}>
-          <Lock size={34} color="#f43f5e" />
-        </div>
-
-        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 8px 0' }}>
-          Terminal Access Required 🔒
-        </h2>
-
-        <p style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: '1.5', maxWidth: '320px', margin: '0 0 18px 0' }}>
-          Traden Pro Terminal requires verified VIP activation to execute algorithmic trades.
-        </p>
-
-        {tgUser && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '8px 14px', fontSize: '11.5px', color: '#f59e0b', marginBottom: '16px' }}>
-            ID: <b>{tgUser.id}</b> (@{tgUser.username || tgUser.first_name})
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '300px' }}>
-          <a 
-            href={tgUser ? `https://t.me/share/url?url=Request%20Traden%20AI%20Access%20ID:${tgUser.id}` : 'https://t.me/'}
-            target="_blank" 
-            rel="noreferrer"
-            style={{ 
-              background: '#f59e0b', color: '#000', textDecoration: 'none', 
-              padding: '12px', borderRadius: '10px', fontWeight: '700', fontSize: '13px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)'
-            }}
-          >
-            <Send size={16} />
-            <span>Contact Admin for Activation</span>
-          </a>
-
-          <button 
-            onClick={() => setShowCodeInput(!showCodeInput)}
-            style={{ 
-              background: 'rgba(255,255,255,0.04)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
-              padding: '10px', borderRadius: '10px', fontSize: '12px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-            }}
-          >
-            <Key size={14} color="#a855f7" />
-            <span>Enter License Key (VIP)</span>
-          </button>
-
-          {showCodeInput && (
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '12px', padding: '12px', marginTop: '4px' }}>
-              <input 
-                type="text"
-                placeholder="Enter License Key..."
-                value={activationInput}
-                onChange={(e) => { setActivationInput(e.target.value); setActivationError(false); }}
-                style={{
-                  width: '100%', background: 'rgba(0,0,0,0.5)', border: `1px solid ${activationError ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '8px', padding: '9px', color: '#fff', fontSize: '12px', textAlign: 'center', outline: 'none', boxSizing: 'border-box'
-                }}
-              />
-              {activationError && (
-                <div style={{ color: '#f43f5e', fontSize: '11px', marginTop: '4px' }}>Invalid Key ❌</div>
-              )}
-              <button 
-                onClick={handleActivateWithCode}
-                style={{
-                  width: '100%', background: '#a855f7', color: '#fff', border: 'none',
-                  borderRadius: '8px', padding: '9px', marginTop: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer'
-                }}
-              >
-                Activate Terminal ✨
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const navItems = [
+    { id: 'home', label: 'DASHBOARD 📊', icon: LayoutDashboard },
+    { id: 'signal_bot', label: 'AI SIGNALS 🤖', icon: Bot },
+    { id: 'gold_liquidity', label: 'SMC LIQUIDITY 🎯', icon: Crosshair },
+    { id: 'traden_radar', label: 'GLOBAL RADAR 🌐', icon: Activity },
+    { id: 'egx_stocks', label: 'EGX 30 🇪🇬', icon: Globe },
+    { id: 'market_news', label: 'NEWS & SENTIMENT 📰', icon: Zap },
+    { id: 'precious_metals', label: 'METALS (XAU/XAG) 🥇', icon: Layers },
+    { id: 'halal_guide', label: 'HALAL CHECK 🕌', icon: BookOpen },
+  ];
 
   const renderHeaderNav = () => (
     <div className="header-glass-wrapper">
       <div className="top-navbar-row">
         <div className="brand-logo" onClick={() => setCurrentView('home')}>
           <div className="brand-icon-chip">
-            <Cpu size={16} color="#38bdf8" />
+            <Cpu size={18} color="#38bdf8" />
           </div>
           <span>TRADEN</span>
           <span className="brand-badge">PRO AI</span>
         </div>
 
-        <div 
-          className="account-pill"
-          onClick={() => setCurrentView('platforms_connect')}
-        >
-          <span className="pulse-dot"></span>
-          <span className="mono">
-            {accountBalance !== null ? `MT5: $${accountBalance.toFixed(2)}` : 'MT5 Live'}
-          </span>
+        <div className="header-status-group">
+          <div className="account-pill">
+            <span className="pulse-dot"></span>
+            <span className="mono">LIVE STREAM CONNECTED 🟢</span>
+          </div>
         </div>
       </div>
 
       <div className="sub-nav-tabs">
-        {[
-          { id: 'home', label: 'Terminal', icon: Activity },
-          { id: 'autopilot_trader', label: 'Auto-Pilot 🤖', icon: Bot },
-          { id: 'gold_liquidity', label: 'Gold Radar', icon: Crosshair },
-          { id: 'signal_bot', label: 'AI Signals', icon: Zap },
-          { id: 'traden_radar', label: 'Market Radar', icon: Activity },
-          { id: 'market_scanner', label: 'Scanner', icon: BarChart2 },
-          { id: 'egx_stocks', label: 'EGX Stocks', icon: Globe },
-          { id: 'platforms_connect', label: 'Broker Sync', icon: Shield },
-          { id: 'investment_bot', label: 'Investment', icon: TrendingUp },
-          { id: 'market_news', label: 'News', icon: Globe },
-        ].map(tab => {
+        {navItems.map(tab => {
           const IconComponent = tab.icon;
           const isActive = currentView === tab.id;
           return (
@@ -335,7 +274,7 @@ function App() {
               onClick={() => setCurrentView(tab.id)}
               className={`sub-nav-btn ${isActive ? 'active' : ''}`}
             >
-              <IconComponent size={13} />
+              <IconComponent size={14} />
               <span>{tab.label}</span>
             </button>
           );
@@ -344,48 +283,34 @@ function App() {
     </div>
   );
 
-  // VIEW ROUTING
-  if (currentView === 'autopilot_trader') {
+  // VIEW ROUTING (Clean, dedicated views)
+  if (currentView === 'gold_liquidity') {
     return (
       <div className="app-container">
         {renderHeaderNav()}
-        <AutoPilotTrader onBack={() => setCurrentView('home')} />
+        <GoldLiquidityRadar 
+          onBack={() => setCurrentView('home')} 
+          onAnalyzeAsset={(symbol) => {
+            if (symbol) setSelectedSymbol(symbol);
+            setCurrentView('signal_bot');
+          }}
+          onAnalyzeGold={(symbol) => {
+            if (symbol) setSelectedSymbol(symbol);
+            setCurrentView('signal_bot');
+          }}
+        />
       </div>
     );
   }
 
-  if (currentView === 'platforms_connect') {
+  if (currentView === 'signal_bot' || currentView === 'market_scanner') {
     return (
       <div className="app-container">
         {renderHeaderNav()}
-        <PlatformsConnect onBack={() => setCurrentView('home')} />
-      </div>
-    );
-  }
-
-  if (currentView === 'investment_bot') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <InvestmentBot onBack={() => setCurrentView('home')} />
-      </div>
-    );
-  }
-
-  if (currentView === 'halal_guide') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <HalalGuide onBack={() => setCurrentView('home')} />
-      </div>
-    );
-  }
-
-  if (currentView === 'precious_metals') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <PreciousMetals onBack={() => setCurrentView('home')} />
+        <SignalBot 
+          initialSymbol={selectedSymbol} 
+          onBack={() => setCurrentView('home')} 
+        />
       </div>
     );
   }
@@ -397,39 +322,6 @@ function App() {
         <TradenRadar 
           onBack={() => setCurrentView('home')} 
           onOpenBot={(symbol) => {
-            if (symbol) setSelectedSymbol(symbol);
-            setCurrentView('signal_bot');
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (currentView === 'market_scanner') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <MarketScanner onBack={() => setCurrentView('home')} />
-      </div>
-    );
-  }
-
-  if (currentView === 'signal_bot') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <SignalBot initialSymbol={selectedSymbol} onBack={() => setCurrentView('home')} />
-      </div>
-    );
-  }
-
-  if (currentView === 'gold_liquidity') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <GoldLiquidityRadar 
-          onBack={() => setCurrentView('home')} 
-          onAnalyzeGold={(symbol) => {
             if (symbol) setSelectedSymbol(symbol);
             setCurrentView('signal_bot');
           }}
@@ -456,121 +348,143 @@ function App() {
     );
   }
 
-  // DEFAULT DASHBOARD
+  if (currentView === 'precious_metals') {
+    return (
+      <div className="app-container">
+        {renderHeaderNav()}
+        <PreciousMetals onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
+  if (currentView === 'halal_guide') {
+    return (
+      <div className="app-container">
+        {renderHeaderNav()}
+        <HalalGuide onBack={() => setCurrentView('home')} />
+      </div>
+    );
+  }
+
+  // DEFAULT DASHBOARD (HOME OVERVIEW)
   return (
     <div className="app-container">
       {renderHeaderNav()}
 
-      {/* 1. Compact Live Market Hero Widget */}
+      {/* 1. Live Market Hero Layout */}
       <LiveMarketWidget 
-        onOpenBot={(symbol) => {
-          if (symbol) setSelectedSymbol(symbol);
-          setCurrentView('signal_bot');
-        }} 
+        onOpenView={setCurrentView} 
+        onSelectSymbol={setSelectedSymbol}
       />
 
       {/* 2. Pro Bento Tools Grid */}
       <div>
         <div className="section-header-row">
           <div className="section-title-clean">
-            <Zap size={14} color="#f59e0b" />
-            <span>Trading Engines & Tools</span>
+            <Zap size={16} color="#f59e0b" />
+            <span>Institutional Analytical Engines & Workspaces</span>
           </div>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
+            7 Connected Real-Time Intelligence Engines
+          </span>
         </div>
 
         <div className="bento-grid">
-          {/* AI Auto-Pilot Intraday Trader */}
-          <div className="bento-card" onClick={() => setCurrentView('autopilot_trader')} style={{ borderLeft: '3px solid #10b981', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)' }}>
+          {/* Unified AI Signal Bot & Technical Scanner */}
+          <div className="bento-card" onClick={() => setCurrentView('signal_bot')} style={{ borderLeft: '3px solid #38bdf8', gridColumn: 'span 2' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
-                <Bot size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                <Bot size={22} />
               </div>
-              <span className="bento-tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: 'bold' }}>5 صفقات يومية 🚀</span>
+              <span className="bento-tag" style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>AI CONSENSUS & SCANNER 🤖📊</span>
             </div>
             <div>
-              <div className="bento-title">التداول الآلي الذكي (Auto-Pilot)</div>
-              <div className="bento-desc">تحليل يومي مستمر + 5 صفقات مدروسة بأرباح عالية</div>
+              <div className="bento-title" style={{ fontSize: '17px' }}>AI Signal Bot & Master Technical Scanner</div>
+              <div className="bento-desc">Interactive TradingView charts, multi-timeframe RSI, MACD, EMAs, TRADEN AI Consensus Matrix, and precise Lot Size Calculator with SL/TP risk controls.</div>
             </div>
           </div>
 
           {/* Gold Liquidity Radar */}
           <div className="bento-card" onClick={() => setCurrentView('gold_liquidity')} style={{ borderLeft: '3px solid #f59e0b' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
-                <Crosshair size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+                <Crosshair size={20} />
               </div>
-              <span className="bento-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>HOT</span>
+              <span className="bento-tag" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>SMC RADAR 🥇</span>
             </div>
             <div>
-              <div className="bento-title">Gold Liquidity Radar</div>
-              <div className="bento-desc">Smart sweep & runner trailing bot</div>
+              <div className="bento-title">Gold SMC Liquidity Hub</div>
+              <div className="bento-desc">Track real-time Liquidity Sweeps (BSL/SSL), Fair Value Gaps (FVG), and Institutional Order Blocks.</div>
             </div>
           </div>
 
-          {/* AI Signal Bot */}
-          <div className="bento-card" onClick={() => setCurrentView('signal_bot')} style={{ borderLeft: '3px solid #38bdf8' }}>
+          {/* EGX Egyptian Stocks & Thndr */}
+          <div className="bento-card" onClick={() => setCurrentView('egx_stocks')} style={{ borderLeft: '3px solid #10b981' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }}>
-                <Bot size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                <Globe size={20} />
               </div>
-              <span className="bento-tag" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>AI PRO</span>
+              <span className="bento-tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>EGX & THNDR 🇪🇬</span>
             </div>
             <div>
-              <div className="bento-title">Signal & Risk Bot</div>
-              <div className="bento-desc">Exact SL/TP & 1-click execution</div>
-            </div>
-          </div>
-
-          {/* Broker Sync */}
-          <div className="bento-card" onClick={() => setCurrentView('platforms_connect')} style={{ borderLeft: '3px solid #10b981' }}>
-            <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
-                <Shield size={18} />
-              </div>
-              <span className="bento-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>LIVE</span>
-            </div>
-            <div>
-              <div className="bento-title">Broker & Terminal Sync</div>
-              <div className="bento-desc">Exness MT5 & positions monitor</div>
+              <div className="bento-title">EGX 30 & Egyptian Equities Hub</div>
+              <div className="bento-desc">AZ Gold Fund (AZG), Silver, CIB, TMGH, Fawry, and top Egyptian equities with live price analytics.</div>
             </div>
           </div>
 
           {/* Market Radar */}
-          <div className="bento-card" onClick={() => setCurrentView('traden_radar')}>
+          <div className="bento-card" onClick={() => setCurrentView('traden_radar')} style={{ borderLeft: '3px solid #818cf8' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' }}>
-                <Activity size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+                <Activity size={20} />
               </div>
+              <span className="bento-tag" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>MULTI-MARKET 🌐</span>
             </div>
             <div>
-              <div className="bento-title">Market Radar</div>
-              <div className="bento-desc">Live institutional multi-market scanner</div>
+              <div className="bento-title">Global Markets Multi-Asset Radar</div>
+              <div className="bento-desc">High-frequency scanner across Forex, US Stocks, Indices, Commodities, and Crypto with live tick streaming.</div>
             </div>
           </div>
 
-          {/* Technical Scanner */}
-          <div className="bento-card" onClick={() => setCurrentView('market_scanner')}>
+          {/* Live News & Market Sentiment */}
+          <div className="bento-card" onClick={() => setCurrentView('market_news')} style={{ borderLeft: '3px solid #38bdf8' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(236, 72, 153, 0.12)', color: '#f472b6' }}>
-                <BarChart2 size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                <Zap size={20} />
               </div>
+              <span className="bento-tag" style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>AI SENTIMENT 📰</span>
             </div>
             <div>
-              <div className="bento-title">Technical Scanner</div>
-              <div className="bento-desc">Multi-timeframe RSI, MACD & volume</div>
+              <div className="bento-title">Live Market News & AI Sentiment Hub</div>
+              <div className="bento-desc">Real-time breaking financial news with NLP sentiment scoring and market impact evaluation.</div>
             </div>
           </div>
 
-          {/* EGX Egyptian Stocks */}
-          <div className="bento-card" onClick={() => setCurrentView('egx_stocks')}>
+          {/* Precious Metals */}
+          <div className="bento-card" onClick={() => setCurrentView('precious_metals')} style={{ borderLeft: '3px solid #fbbf24' }}>
             <div className="bento-card-top">
-              <div className="bento-icon-box" style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#f8fafc' }}>
-                <Globe size={18} />
+              <div className="bento-icon-box" style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }}>
+                <Layers size={20} />
               </div>
+              <span className="bento-tag" style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24' }}>METALS 💎</span>
             </div>
             <div>
-              <div className="bento-title">EGX Egyptian Stocks</div>
-              <div className="bento-desc">EGX30, COMI & Cairo equities analysis</div>
+              <div className="bento-title">Precious Metals & Commodities</div>
+              <div className="bento-desc">Spot Gold, Silver, Platinum, and Crude Oil with supply-demand orderflow tracking.</div>
+            </div>
+          </div>
+
+          {/* Halal Investment Guide */}
+          <div className="bento-card" onClick={() => setCurrentView('halal_guide')} style={{ borderLeft: '3px solid #34d399' }}>
+            <div className="bento-card-top">
+              <div className="bento-icon-box" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
+                <BookOpen size={20} />
+              </div>
+              <span className="bento-tag" style={{ background: 'rgba(52, 211, 153, 0.2)', color: '#34d399' }}>HALAL 🕌</span>
+            </div>
+            <div>
+              <div className="bento-title">Sharia Compliance & Halal Screener</div>
+              <div className="bento-desc">Screen equities, swap-free trading rules, Islamic account parameters, and sharia benchmarks.</div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { ChevronRight, RefreshCw, Sparkles, Activity } from 'lucide-react';
 const initialMetalsData = {
   gold: {
     id: 'gold',
-    name: 'الذهب',
+    name: 'Gold Bullion',
     symbol: 'XAU/USD',
     rank: 1,
     badge: '🥇',
@@ -15,7 +15,7 @@ const initialMetalsData = {
   },
   silver: {
     id: 'silver',
-    name: 'الفضة',
+    name: 'Silver',
     symbol: 'XAG/USD',
     rank: 2,
     badge: '🥈',
@@ -26,7 +26,7 @@ const initialMetalsData = {
   },
   platinum: {
     id: 'platinum',
-    name: 'البلاتين',
+    name: 'Platinum',
     symbol: 'XPT/USD',
     rank: 3,
     badge: '💎',
@@ -38,27 +38,22 @@ const initialMetalsData = {
 };
 
 const currencies = [
-  { code: 'USD', name: 'دولار أمريكي', flag: '🇺🇸', rate: 1.0, symbol: '$' },
-  { code: 'SAR', name: 'ريال سعودي', flag: '🇸🇦', rate: 3.75, symbol: 'ر.س' },
-  { code: 'AED', name: 'درهم إماراتي', flag: '🇦🇪', rate: 3.67, symbol: 'د.إ' },
-  { code: 'KWD', name: 'دينار كويتي', flag: '🇰🇼', rate: 0.31, symbol: 'د.ك' },
-  { code: 'EGP', name: 'جنيه مصري', flag: '🇪🇬', rate: 48.60, symbol: 'ج.م' },
-  { code: 'QAR', name: 'ريال قطري', flag: '🇶🇦', rate: 3.64, symbol: 'ر.ق' },
-  { code: 'JOD', name: 'دينار أردني', flag: '🇯🇴', rate: 0.71, symbol: 'د.أ' },
-  { code: 'BHD', name: 'دينار بحريني', flag: '🇧🇭', rate: 0.38, symbol: 'د.ب' },
-  { code: 'OMR', name: 'ريال عماني', flag: '🇴🇲', rate: 0.38, symbol: 'ر.ع' },
-  { code: 'IQD', name: 'دينار عراقي', flag: '🇮🇶', rate: 1310.0, symbol: 'د.ع' },
-  { code: 'MAD', name: 'درهم مغربي', flag: '🇲🇦', rate: 9.85, symbol: 'د.م' },
-  { code: 'DZD', name: 'دينار جزائري', flag: '🇩🇿', rate: 133.5, symbol: 'د.ج' },
-  { code: 'TND', name: 'دينار تونسي', flag: '🇹🇳', rate: 3.08, symbol: 'د.ت' },
-  { code: 'EUR', name: 'يورو', flag: '🇪🇺', rate: 0.92, symbol: '€' },
-  { code: 'GBP', name: 'جنيه إسترليني', flag: '🇬🇧', rate: 0.77, symbol: '£' },
-  { code: 'JPY', name: 'ين ياباني', flag: '🇯🇵', rate: 143.5, symbol: '¥' },
-  { code: 'CHF', name: 'فرنك سويسري', flag: '🇨🇭', rate: 0.85, symbol: 'CHF' },
-  { code: 'CNY', name: 'يوان صيني', flag: '🇨🇳', rate: 7.02, symbol: '¥' },
-  { code: 'INR', name: 'روبية هندية', flag: '🇮🇳', rate: 83.75, symbol: '₹' },
-  { code: 'TRY', name: 'ليرة تركية', flag: '🇹🇷', rate: 34.15, symbol: '₺' },
-  { code: 'SYP', name: 'ليرة سورية', flag: '🇸🇾', rate: 13000.0, symbol: 'ل.س' }
+  { code: 'USD', name: 'US Dollar', flag: '🇺🇸', rate: 1.0, symbol: '$' },
+  { code: 'SAR', name: 'Saudi Riyal', flag: '🇸🇦', rate: 3.75, symbol: 'SAR' },
+  { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪', rate: 3.67, symbol: 'AED' },
+  { code: 'KWD', name: 'Kuwaiti Dinar', flag: '🇰🇼', rate: 0.31, symbol: 'KWD' },
+  { code: 'EGP', name: 'Egyptian Pound', flag: '🇪🇬', rate: 48.60, symbol: 'EGP' },
+  { code: 'QAR', name: 'Qatari Riyal', flag: '🇶🇦', rate: 3.64, symbol: 'QAR' },
+  { code: 'JOD', name: 'Jordanian Dinar', flag: '🇯🇴', rate: 0.71, symbol: 'JOD' },
+  { code: 'BHD', name: 'Bahraini Dinar', flag: '🇧🇭', rate: 0.38, symbol: 'BHD' },
+  { code: 'OMR', name: 'Omani Rial', flag: '🇴🇲', rate: 0.38, symbol: 'OMR' },
+  { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: 0.92, symbol: '€' },
+  { code: 'GBP', name: 'British Pound', flag: '🇬🇧', rate: 0.77, symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', flag: '🇯🇵', rate: 143.5, symbol: '¥' },
+  { code: 'CHF', name: 'Swiss Franc', flag: '🇨🇭', rate: 0.85, symbol: 'CHF' },
+  { code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳', rate: 7.02, symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', flag: '🇮🇳', rate: 83.75, symbol: '₹' },
+  { code: 'TRY', name: 'Turkish Lira', flag: '🇹🇷', rate: 34.15, symbol: '₺' }
 ];
 
 export default function PreciousMetals({ onBack }) {
@@ -67,8 +62,7 @@ export default function PreciousMetals({ onBack }) {
   const [unitType, setUnitType] = useState('ounce'); // 'ounce' or 'gram'
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [metalsState, setMetalsState] = useState(initialMetalsData);
-  const [lastUpdatedTime, setLastUpdatedTime] = useState(new Date().toLocaleTimeString('ar-EG'));
-  const [isLiveActive, setIsLiveActive] = useState(true);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState(new Date().toLocaleTimeString('en-US'));
 
   // Live price fetching function from Binance API (PAXGUSDT is 1-to-1 physical gold ounce index)
   const fetchLivePrices = async () => {
@@ -100,7 +94,7 @@ export default function PreciousMetals({ onBack }) {
             basePriceUSD: parseFloat((988.10 * (currentGoldUSD / 2680)).toFixed(2))
           }
         }));
-        setLastUpdatedTime(new Date().toLocaleTimeString('ar-EG'));
+        setLastUpdatedTime(new Date().toLocaleTimeString('en-US'));
       }
     } catch (err) {
       console.log('Realtime metals fetch simulation fallback active:', err);
@@ -116,7 +110,7 @@ export default function PreciousMetals({ onBack }) {
           }
         };
       });
-      setLastUpdatedTime(new Date().toLocaleTimeString('ar-EG'));
+      setLastUpdatedTime(new Date().toLocaleTimeString('en-US'));
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);
     }
@@ -164,32 +158,32 @@ export default function PreciousMetals({ onBack }) {
   const gram18 = gram24 * (18 / 24);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', direction: 'ltr' }}>
       
       {/* Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>المعادن الثمينة 🥇</h2>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>Precious Metals Live Hub 🥇</h2>
             <button 
               onClick={handleRefresh}
               style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontWeight: 'bold' }}
             >
               <RefreshCw size={12} className={isRefreshing ? 'spin' : ''} />
-              <span>تحديث لحظي</span>
+              <span>Live Refresh</span>
             </button>
           </div>
           <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
-            <span>بث حي ومباشر · آخر تحديث: {lastUpdatedTime}</span>
+            <span>Live Spot Feed · Last update: {lastUpdatedTime}</span>
           </div>
         </div>
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
-          <ChevronRight size={28} />
+          <ChevronRight size={28} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
 
-      {/* Top 3 Metals Cards Selection (الذهب، الفضة، البلاتين) */}
+      {/* Top 3 Metals Cards Selection (Gold, Silver, Platinum) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
         {Object.values(metalsState).map(item => {
           const isSelected = selectedMetal === item.id;
@@ -218,11 +212,11 @@ export default function PreciousMetals({ onBack }) {
         })}
       </div>
 
-      {/* Currency Selector Bar (العملة) */}
+      {/* Currency Selector Bar */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '12px' }}>
-        <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', textAlign: 'right', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '11px', color: '#10b981' }}>أكثر من 20 عملة تحول أوتوماتيكياً 💱</span>
-          <span>اختر العملة</span>
+        <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', textAlign: 'left', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Select Fiat Currency</span>
+          <span style={{ fontSize: '11px', color: '#10b981' }}>Auto FX Conversion 💱</span>
         </div>
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {currencies.map(c => {
@@ -268,10 +262,10 @@ export default function PreciousMetals({ onBack }) {
         {/* Live Pulse Indicator Badge top-left */}
         <div style={{ position: 'absolute', top: '14px', right: '14px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold' }}>
           <Activity size={12} />
-          <span>مباشر</span>
+          <span>LIVE SPOT</span>
         </div>
 
-        {/* Unit Toggle (أونصة / جرام) */}
+        {/* Unit Toggle (Ounce / Gram) */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '16px' }}>
           <button
             onClick={() => setUnitType('ounce')}
@@ -282,7 +276,7 @@ export default function PreciousMetals({ onBack }) {
               padding: '4px 14px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
             }}
           >
-            الأونصة
+            Per Ounce (oz)
           </button>
           <button
             onClick={() => setUnitType('gram')}
@@ -293,7 +287,7 @@ export default function PreciousMetals({ onBack }) {
               padding: '4px 14px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
             }}
           >
-            الجرام (24K)
+            Per Gram (24K)
           </button>
         </div>
 
@@ -321,7 +315,7 @@ export default function PreciousMetals({ onBack }) {
 
         {/* Sub label */}
         <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
-          لـ {unitType === 'ounce' ? 'الأونصة' : 'الجرام'}
+          for 1 {unitType === 'ounce' ? 'Ounce (Troy oz)' : 'Gram (24K)'}
         </div>
 
         {/* Change Badge */}
@@ -332,35 +326,35 @@ export default function PreciousMetals({ onBack }) {
         </div>
       </div>
 
-      {/* Gold Karat Prices Breakdown (أسعار الأعيرة بالجرام) */}
+      {/* Gold Karat Prices Breakdown */}
       {selectedMetal === 'gold' && (
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ fontSize: '12px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '8px', fontWeight: 'bold' }}>{currency.code}</span>
             <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>أسعار جرام الذهب لحظياً حسب العيار</span>
               <Sparkles size={16} color="#f59e0b" />
+              <span>Real-Time Gold Karat Breakdown (per Gram)</span>
             </div>
+            <span style={{ fontSize: '12px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '8px', fontWeight: 'bold' }}>{currency.code}</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>عيار 24 (أنقى عيار)</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>24 Karat (99.9% Pure)</div>
               <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#fff', marginTop: '2px' }}>{currency.symbol} {formatPrice(gram24)}</div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>عيار 22</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>22 Karat (91.6% Pure)</div>
               <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#fff', marginTop: '2px' }}>{currency.symbol} {formatPrice(gram22)}</div>
             </div>
 
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>عيار 21 (الأكثر طلباً ⭐)</div>
+              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>21 Karat (Market Standard ⭐)</div>
               <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#f59e0b', marginTop: '2px' }}>{currency.symbol} {formatPrice(gram21)}</div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af' }}>عيار 18</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>18 Karat (75.0% Pure)</div>
               <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#fff', marginTop: '2px' }}>{currency.symbol} {formatPrice(gram18)}</div>
             </div>
           </div>

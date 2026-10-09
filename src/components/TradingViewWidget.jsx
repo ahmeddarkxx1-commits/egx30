@@ -17,10 +17,92 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     if (!s) return 'BINANCE:BTCUSDT';
     let clean = s.toUpperCase().trim();
 
-    // Strip broken or un-entitled prefixes
-    clean = clean.replace('GLOBALPRIME:', '').replace('FX:', '').replace('OANDA:', '').replace('BINANCE:', '').replace('NASDAQ:', '').replace('FOREXCOM:', '');
-    clean = clean.replace('/', '');
+    // 1. Direct Currency / Specific Pairs
+    if (clean.includes('USDEGP') || clean.includes('USD/EGP') || clean.includes('USD_EGP') || clean === 'USD-EGP') {
+      return 'FX_IDC:USDEGP';
+    }
 
+    // 2. Direct provider prefix checks (already contains full exchange ticker)
+    if (
+      clean.startsWith('FX_IDC:') || 
+      clean.startsWith('FX_OPEN:') || 
+      clean.startsWith('TVC:') || 
+      clean.startsWith('CAPITALCOM:') || 
+      clean.startsWith('FOREXCOM:') || 
+      clean.startsWith('OANDA:') || 
+      clean.startsWith('BINANCE:') || 
+      clean.startsWith('NASDAQ:') || 
+      clean.startsWith('NYSE:') || 
+      clean.startsWith('AMEX:') || 
+      clean.startsWith('INDEX:') ||
+      clean.startsWith('PEPPERSTONE:')
+    ) {
+      return clean;
+    }
+
+    if (clean.startsWith('EGX:')) {
+      const code = clean.replace('EGX:', '').trim();
+      if (code === 'FAWR' || code === 'FWRY') return 'EGX:FWRY';
+      if (code === 'EGX70' || code === 'EGX70EWI') return 'EGX:EGX70EWI';
+      if (code === 'EGX100' || code === 'EGX100EWI') return 'EGX:EGX100EWI';
+      if (code === 'SHARIAH' || code === 'EGX33SHR' || code === 'EGX33SHRIAH') return 'EGX:SHARIAH';
+      if (code === 'AZG' || code === 'AZ-GOLD' || code === 'BELTON-GOLD') return 'OANDA:XAUUSD';
+      if (code === 'AZ-SILVER') return 'OANDA:XAGUSD';
+      return `EGX:${code}`;
+    }
+
+    // 3. EGX Stock & Index codes mapping
+    const egxMap = {
+      'FAWR': 'EGX:FWRY',
+      'FWRY': 'EGX:FWRY',
+      'COMI': 'EGX:COMI',
+      'HRHO': 'EGX:HRHO',
+      'TMGH': 'EGX:TMGH',
+      'SWDY': 'EGX:SWDY',
+      'ETEL': 'EGX:ETEL',
+      'ESRS': 'EGX:ESRS',
+      'EFIN': 'EGX:EFIN',
+      'EKHO': 'EGX:EKHO',
+      'ISPH': 'EGX:ISPH',
+      'ORAS': 'EGX:ORAS',
+      'ABUK': 'EGX:ABUK',
+      'MFPC': 'EGX:MFPC',
+      'AMOC': 'EGX:AMOC',
+      'SKPC': 'EGX:SKPC',
+      'HELI': 'EGX:HELI',
+      'ORHD': 'EGX:ORHD',
+      'MNHD': 'EGX:MNHD',
+      'MASR': 'EGX:MASR',
+      'PHDC': 'EGX:PHDC',
+      'BTFH': 'EGX:BTFH',
+      'CIEB': 'EGX:CIEB',
+      'ADIB': 'EGX:ADIB',
+      'CCAP': 'EGX:CCAP',
+      'EAST': 'EGX:EAST',
+      'JUFO': 'EGX:JUFO',
+      'ORWE': 'EGX:ORWE',
+      'CLHO': 'EGX:CLHO',
+      'EGX30': 'EGX:EGX30',
+      'EGX70': 'EGX:EGX70EWI',
+      'EGX70EWI': 'EGX:EGX70EWI',
+      'EGX100': 'EGX:EGX100EWI',
+      'EGX100EWI': 'EGX:EGX100EWI',
+      'SHARIAH': 'EGX:SHARIAH',
+      'EGX33SHR': 'EGX:SHARIAH',
+      'AZG': 'OANDA:XAUUSD',
+      'AZ-GOLD': 'OANDA:XAUUSD',
+      'BELTON-GOLD': 'OANDA:XAUUSD',
+      'AZ-SILVER': 'OANDA:XAGUSD'
+    };
+
+    if (egxMap[clean]) {
+      return egxMap[clean];
+    }
+
+    // Strip broken or un-entitled prefixes if present
+    clean = clean.replace('GLOBALPRIME:', '').replace('FX:', '').replace('/', '').trim();
+
+    // 4. Global indices & Commodities
     if (clean === 'US30' || clean.includes('US30') || clean === 'DJI') return 'FOREXCOM:US30';
     if (clean === 'NAS100' || clean.includes('NAS100') || clean === 'NDX') return 'FOREXCOM:NAS100';
     if (clean === 'SPX500' || clean.includes('SPX500') || clean === 'SPX') return 'FOREXCOM:SPX500';
@@ -29,14 +111,23 @@ function TradingViewWidget({ symbol = "BINANCE:BTCUSDT", height = 550, timeframe
     if (clean === 'JPN225' || clean.includes('JPN225')) return 'CAPITALCOM:JPN225';
     if (clean === 'WTI' || clean === 'USOIL') return 'TVC:USOIL';
     if (clean === 'BRENT' || clean === 'UKOIL') return 'TVC:UKOIL';
-    if (clean.includes('XAU') || clean.includes('GOLD')) return 'OANDA:XAUUSD';
+    if (clean.includes('XAU') || clean.includes('GOLD') || clean === '24K GOLD') return 'OANDA:XAUUSD';
     if (clean.includes('XAG') || clean.includes('SILVER')) return 'OANDA:XAGUSD';
     if (clean.includes('XPT')) return 'OANDA:XPTUSD';
 
+    // 5. US Equities
     if (['AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD', 'INTC', 'COIN', 'PLTR'].includes(clean)) return `NASDAQ:${clean}`;
+
+    // 6. Crypto
     if (clean.includes('USDT') || clean.includes('BTC') || clean.includes('ETH') || clean.includes('SOL') || clean.includes('BNB') || clean.includes('XRP') || clean.includes('ADA') || clean.includes('AVAX') || clean.includes('SUI') || clean.includes('NEAR') || clean.includes('DOGE') || clean.includes('PEPE') || clean.includes('SHIB')) {
       return `BINANCE:${clean.includes('USDT') ? clean : clean + 'USDT'}`;
     }
+
+    // Default: If 3-5 uppercase letters with no colon, check if it's EGX stock
+    if (/^[A-Z]{3,6}$/.test(clean)) {
+      return `EGX:${clean}`;
+    }
+
     return `FX:${clean}`;
   };
 

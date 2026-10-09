@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 
-// Helper to reliably parse UTC dates from RSS (e.g., "2026-09-28 20:41:44")
+const FINNHUB_KEY = import.meta.env?.VITE_FINNHUB_API_KEY || '';
+const HUGGINGFACE_KEY = import.meta.env?.VITE_HUGGINGFACE_API_KEY || '';
+
+// Helper to reliably parse UTC dates
 const parseUtcDate = (dateStr) => {
   if (!dateStr) return new Date();
+  if (typeof dateStr === 'number') return new Date(dateStr * 1000);
   if (typeof dateStr !== 'string') return new Date(dateStr);
   if (dateStr.includes('T') && (dateStr.endsWith('Z') || dateStr.includes('+'))) {
     return new Date(dateStr);
@@ -13,59 +17,50 @@ const parseUtcDate = (dateStr) => {
   return isNaN(parsed.getTime()) ? new Date(dateStr) : parsed;
 };
 
-// Smart Arabic Financial Headline Translator for English RSS Feeds
-const translateHeadlineToArabic = (text = '', category = 'FOREX') => {
-  if (!text) return 'تحديث جديد في الأسواق المالية العالمية';
-  if (/[\u0600-\u06FF]/.test(text)) return text; // Already Arabic
-
-  const lower = text.toLowerCase();
-  
-  // Custom smart phrase mapping for geopolitics, wars & disasters
-  if (lower.includes('oil') && (lower.includes('iran') || lower.includes('bounce') || lower.includes('prices') || lower.includes('strait'))) {
-    return 'أسعار النفط الخام تتفاعل بقوة وسط التطورات الجيوسياسية والعناوين الإيرانية ومخاوف التوريد';
-  }
-  if (lower.includes('trump') || lower.includes('gas prices') || lower.includes('war') || lower.includes('military')) {
-    return 'تصريحات عسكرية وجيوسياسية تؤثر على تحركات أسعار الطاقة والأسواق العالمية';
-  }
-  if (lower.includes('rba') || (lower.includes('rate hike') && lower.includes('expected'))) {
-    return 'ترقب قرار أسعار الفائدة وتحديثات البنك المركزي والأسواق المالية المرتقبة';
-  }
-  if (lower.includes('goldman sachs') || lower.includes('treasury fund')) {
-    return 'جولدمان ساكس يعزز استثماراته المؤسسية في الأصول الرقمية وصناديق الخزانة';
-  }
-  if (lower.includes('fed') || lower.includes('powell') || lower.includes('fomc')) {
-    return `تحديثات الفيدرالي الأمريكي المؤثرة على حركة الدولار والأسواق: ${text.slice(0, 70)}...`;
-  }
-
-  // Keyword replacement mapping
-  let translated = text;
-  const terms = [
-    { en: 'Oil prices', ar: 'أسعار النفط' },
-    { en: 'Gold prices', ar: 'أسعار الذهب' },
-    { en: 'Interest rates', ar: 'أسعار الفائدة' },
-    { en: 'Inflation', ar: 'معدلات التضخم' },
-    { en: 'Rate hike', ar: 'رفع الفائدة' },
-    { en: 'Rate cut', ar: 'خفض الفائدة' },
-    { en: 'Yields rise', ar: 'ارتفاع عوائد السندات' },
-    { en: 'Dollar', ar: 'الدولار الأمريكي' },
-    { en: 'Euro', ar: 'اليورو' },
-    { en: 'Bitcoin', ar: 'البيتكوين' },
-    { en: 'Crypto', ar: 'العملات الرقمية' },
-    { en: 'Central bank', ar: 'البنك المركزي' },
-    { en: 'Markets', ar: 'الأسواق' }
-  ];
-
-  terms.forEach(t => {
-    const reg = new RegExp(t.en, 'gi');
-    translated = translated.replace(reg, t.ar);
-  });
-
-  if (category === 'WARS') return `⚔️ تطورات الحروب والأزمات الجيوسياسية: ${translated}`;
-  if (category === 'GOLD') return `تحركات أسعار الذهب XAU: ${translated}`;
-  if (category === 'FED') return `تطورات الفيدرالي والدولار: ${translated}`;
-  if (category === 'FOREX') return `تحديثات سوق العملات الأجنبية: ${translated}`;
-  return `أخبار الأسواق المباشرة: ${translated}`;
+// Clean English Headline Formatter
+const formatHeadline = (text = '', category = 'FOREX') => {
+  if (!text) return 'Market update from global financial terminals';
+  return text;
 };
+
+// FinBERT Sentiment AI Classifier via Hugging Face Inference
+async function analyzeFinBertSentiment(text) {
+  if (!HUGGINGFACE_KEY || !text) return null;
+  try {
+    const res = await fetch('https://api-inference.huggingface.co/models/ProsusAI/finbert', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HUGGINGFACE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ inputs: text.slice(0, 280) })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        // Sort by highest confidence score
+        const sorted = data[0].sort((a, b) => b.score - a.score);
+        const top = sorted[0];
+        const labelMap = {
+          'positive': { label: 'Bullish Momentum 🟢', impact: 'bullish', color: '#10b981' },
+          'negative': { label: 'Bearish Breakdown 🔴', impact: 'bearish', color: '#f87171' },
+          'neutral': { label: 'Neutral / Rangebound ⚪', impact: 'neutral', color: '#94a3b8' }
+        };
+        const mapped = labelMap[top.label.toLowerCase()] || labelMap['neutral'];
+        return {
+          sentiment: top.label,
+          score: Math.round(top.score * 100),
+          label: mapped.label,
+          impact: mapped.impact,
+          color: mapped.color
+        };
+      }
+    }
+  } catch (e) {
+    console.log('FinBERT fetch error:', e);
+  }
+  return null;
+}
 
 export default function MarketNews({ onBack }) {
   const [news, setNews] = useState([]);
@@ -73,10 +68,10 @@ export default function MarketNews({ onBack }) {
   const [filter, setFilter] = useState('ALL');
   const [selectedNews, setSelectedNews] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('');
-  const [livePrices, setLivePrices] = useState({ gold: null, btc: null, eth: null, eur: null });
+  const [livePrices, setLivePrices] = useState({ gold: null, btc: null, eth: null, eur: null, spx: null });
   const [now, setNow] = useState(Date.now());
+  const [finbertActive, setFinbertActive] = useState(true);
 
-  // Dynamic time-ago ticker (updates every 5 seconds)
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
@@ -84,116 +79,69 @@ export default function MarketNews({ onBack }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Compute exact human-readable time ago dynamically from timestamp
   const calculateTimeAgo = (dateInput) => {
-    if (!dateInput) return 'الآن 🟢';
+    if (!dateInput) return 'Just now 🟢';
     const postDate = parseUtcDate(dateInput);
-    if (isNaN(postDate.getTime())) return 'الآن 🟢';
+    if (isNaN(postDate.getTime())) return 'Just now 🟢';
     
     const diffMs = Math.max(0, now - postDate.getTime());
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
 
-    if (diffSecs < 45) return 'الآن 🟢';
-    if (diffMins === 1) return 'منذ دقيقة واحدة';
-    if (diffMins === 2) return 'منذ دقيقتين';
-    if (diffMins < 11) return `منذ ${diffMins} دقائق`;
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+    if (diffSecs < 45) return 'Just now 🟢';
+    if (diffMins === 1) return '1m ago';
+    if (diffMins < 60) return `${diffMins}m ago`;
     
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return 'منذ ساعة واحدة';
-    if (diffHours === 2) return 'منذ ساعتين';
-    if (diffHours < 11) return `منذ ${diffHours} ساعات`;
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+    if (diffHours === 1) return '1h ago';
+    if (diffHours < 24) return `${diffHours}h ago`;
 
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'منذ يوم واحد';
-    if (diffDays === 2) return 'منذ يومين';
-    return `منذ ${diffDays} أيام`;
+    if (diffDays === 1) return '1d ago';
+    return `${diffDays}d ago`;
   };
 
-  // Helper to categorize news into WARS, GOLD, FED, FOREX, CRYPTO
   const categorizeItem = (title = '', desc = '') => {
     const text = (title + ' ' + desc).toLowerCase();
     
-    // Check for Geopolitical conflicts, military news, energy crises & natural disasters
     if (
       text.includes('war') || text.includes('conflict') || text.includes('military') || 
       text.includes('strike') || text.includes('attack') || text.includes('missile') || 
       text.includes('iran') || text.includes('russia') || text.includes('ukraine') || 
       text.includes('israel') || text.includes('sanction') || text.includes('geopolit') || 
       text.includes('disaster') || text.includes('earthquake') || text.includes('hurricane') || 
-      text.includes('strait') || text.includes('red sea') || text.includes('houthi') ||
-      text.includes('حرب') || text.includes('صراع') || text.includes('عسكري') || 
-      text.includes('هجوم') || text.includes('صواريخ') || text.includes('عقوبات') || 
-      text.includes('زلزال') || text.includes('إعصار') || text.includes('كارثة')
+      text.includes('strait') || text.includes('red sea') || text.includes('houthi')
     ) {
       return { 
         category: 'WARS', 
-        tags: ['XAU (الذهب 🥇)', 'WTI (النفط 🛢️)', 'USD (الدولار 💵)', 'ملاذ آمن 🛡️'], 
+        tags: ['XAU (Gold 🥇)', 'WTI (Oil 🛢️)', 'USD (Dollar 💵)', 'Safe Haven 🛡️'], 
         defaultImpact: 'bearish', 
-        defaultImpactLabel: 'أزمة جيوسياسية 🔥' 
+        defaultImpactLabel: 'Geopolitical Risk 🔥' 
       };
     }
 
-    if (text.includes('gold') || text.includes('xau') || text.includes('ذهب') || text.includes('bullion') || text.includes('metal')) {
-      return { category: 'GOLD', tags: ['XAU', 'الذهب', 'معادن'], defaultImpact: 'bullish', defaultImpactLabel: 'إيجابي 🚀' };
+    if (text.includes('gold') || text.includes('xau') || text.includes('bullion') || text.includes('metal')) {
+      return { category: 'GOLD', tags: ['XAU', 'Gold', 'Metals'], defaultImpact: 'bullish', defaultImpactLabel: 'Bullish 🚀' };
     }
-    if (text.includes('fed') || text.includes('powell') || text.includes('rate') || text.includes('inflation') || text.includes('فيدرالي') || text.includes('فائدة') || text.includes('fomc')) {
-      return { category: 'FED', tags: ['USD', 'FED', 'الفيدرالي'], defaultImpact: 'bearish', defaultImpactLabel: 'مخاطرة ⚠️' };
+    if (text.includes('fed') || text.includes('powell') || text.includes('rate') || text.includes('inflation') || text.includes('fomc')) {
+      return { category: 'FED', tags: ['USD', 'FED', 'Macro'], defaultImpact: 'bearish', defaultImpactLabel: 'High Volatility ⚠️' };
     }
-    if (text.includes('euro') || text.includes('eur') || text.includes('forex') || text.includes('dollar') || text.includes('فوركس') || text.includes('gbp') || text.includes('yen')) {
-      return { category: 'FOREX', tags: ['EUR', 'USD', 'فوركس'], defaultImpact: 'neutral', defaultImpactLabel: 'محايد ⚖️' };
+    if (text.includes('euro') || text.includes('eur') || text.includes('forex') || text.includes('dollar') || text.includes('gbp') || text.includes('yen')) {
+      return { category: 'FOREX', tags: ['EUR', 'USD', 'Forex'], defaultImpact: 'neutral', defaultImpactLabel: 'Neutral ⚖️' };
     }
-    return { category: 'CRYPTO', tags: ['BTC', 'ETH', 'كريبتو'], defaultImpact: 'bullish', defaultImpactLabel: 'إيجابي 🚀' };
-  };
-
-  // Helper to format RSS items into structured news
-  const formatRssNewsItem = (item) => {
-    const catInfo = categorizeItem(item.title, item.description);
-    const titleAr = translateHeadlineToArabic(item.title, catInfo.category);
-    
-    let rawDesc = item.description ? item.description.replace(/<[^>]+>/g, '').trim() : '';
-    let descAr = rawDesc ? (rawDesc.length > 150 ? rawDesc.slice(0, 150) + '...' : rawDesc) : titleAr;
-    if (!/[\u0600-\u06FF]/.test(descAr)) {
-      descAr = translateHeadlineToArabic(rawDesc, catInfo.category);
-    }
-
-    let aiAnalysisText = `تحليل الذكاء الاصطناعي اللحظي: الخبر يؤثر مباشرة على مستويات السيولة والتداول لـ ${catInfo.tags.join('/')}. يُنصح بمتابعة مستويات الدعم والمقاومة اللحظية قبل الدخول.`;
-
-    if (catInfo.category === 'WARS') {
-      aiAnalysisText = `⚔️ **تحليل تأثير الحروب والأزمات والكوارث على أزواج التداول:**\n` +
-        `• **الذهب (XAU/USD):** صعود صريح كملاذ آمن قيادي في حالات التحوط ضد مخاطر الحروب والأزمات.\n` +
-        `• **النفط (WTI/BRENT):** ارتفاعات حادة بسبب المخاوف من انقطاع خطوط التوريد والملاحة البحرية.\n` +
-        `• **الدولار (USD) والفرنك (CHF):** ملاذات آمنة قوية تعزز قيمتها مقابل العملات الأخرى.\n` +
-        `• **المؤشرات (US30 / NAS100):** هبوط وتراجع مؤقت نتيجة انخفاض شهية المخاطرة لدى المستثمرين.`;
-    }
-
-    const parsedDate = parseUtcDate(item.pubDate);
-
-    return {
-      id: item.guid || item.link || ('rss-' + Math.random()),
-      source: item.author || (catInfo.category === 'CRYPTO' ? 'CoinTelegraph / CoinDesk' : 'Reuters / ForexLive Geopolitics'),
-      title: titleAr,
-      description: descAr,
-      category: catInfo.category,
-      pubDate: parsedDate.toISOString(),
-      impact: catInfo.defaultImpact,
-      impactLabel: catInfo.defaultImpactLabel,
-      tags: catInfo.tags,
-      aiAnalysis: aiAnalysisText
-    };
+    return { category: 'CRYPTO', tags: ['BTC', 'ETH', 'Crypto'], defaultImpact: 'bullish', defaultImpactLabel: 'Bullish 🚀' };
   };
 
   const loadLiveData = async () => {
     setLoading(true);
     try {
       // 1. Fetch Live Asset Spot Prices
-      const [goldRes, btcRes, ethRes, eurRes] = await Promise.all([
+      const [goldRes, btcRes, ethRes, eurRes, spxRes] = await Promise.all([
         fetchLiveAssetTicker('XAU/USD').catch(() => null),
         fetchLiveAssetTicker('BTC/USDT').catch(() => null),
         fetchLiveAssetTicker('ETH/USDT').catch(() => null),
         fetchLiveAssetTicker('EUR/USD').catch(() => null),
+        fetchLiveAssetTicker('SPX500').catch(() => null),
       ]);
 
       const updatedPrices = {
@@ -201,24 +149,73 @@ export default function MarketNews({ onBack }) {
         btc: btcRes ? parseFloat(btcRes.price).toLocaleString() : null,
         eth: ethRes ? parseFloat(ethRes.price).toLocaleString() : null,
         eur: eurRes ? parseFloat(eurRes.price).toFixed(4) : null,
+        spx: spxRes ? parseFloat(spxRes.price).toLocaleString() : null
       };
       setLivePrices(updatedPrices);
 
-      // 2. Fetch Multi-source Live RSS News with timestamp cache-buster
+      let fetchedNewsItems = [];
+
+      // 2. Fetch Institutional Real-Time News from Finnhub API
+      if (FINNHUB_KEY) {
+        try {
+          const finnhubRes = await fetch(`https://finnhub.io/api/v1/news?category=general&minId=0&token=${FINNHUB_KEY}`);
+          if (finnhubRes.ok) {
+            const data = await finnhubRes.json();
+            if (Array.isArray(data)) {
+              for (const item of data.slice(0, 15)) {
+                const catInfo = categorizeItem(item.headline, item.summary);
+                
+                fetchedNewsItems.push({
+                  id: 'fh-' + (item.id || Math.random()),
+                  source: item.source || 'Finnhub Institutional',
+                  title: item.headline,
+                  description: item.summary ? item.summary.slice(0, 180) + '...' : item.headline,
+                  category: catInfo.category,
+                  pubDate: new Date(item.datetime * 1000).toISOString(),
+                  impact: catInfo.defaultImpact,
+                  impactLabel: catInfo.defaultImpactLabel,
+                  tags: catInfo.tags,
+                  provider: 'Finnhub Live',
+                  originalHeadline: item.headline,
+                  aiAnalysis: `Finnhub Terminal Intel: This event directly affects institutional order flow for ${catInfo.tags.join('/')}. Monitor support/resistance levels.`
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Finnhub news error:', e);
+        }
+      }
+
+      // 3. Complement with Live RSS News
       const cacheBust = Date.now();
       const rssUrls = [
         `https://api.rss2json.com/v1/api.json?rss_url=https://www.forexlive.com/feed/news&t=${cacheBust}`,
         `https://api.rss2json.com/v1/api.json?rss_url=https://cointelegraph.com/rss&t=${cacheBust}`,
-        `https://api.rss2json.com/v1/api.json?rss_url=https://www.coindesk.com/arc/outboundfeeds/rss/&t=${cacheBust}`,
         `https://api.rss2json.com/v1/api.json?rss_url=https://feeds.finance.yahoo.com/rss/2.0/headline?s=GC=F&t=${cacheBust}`
       ];
 
-      let fetchedNewsItems = [];
       const rssResults = await Promise.allSettled(rssUrls.map(url => fetch(url).then(r => r.json())));
-
       rssResults.forEach(res => {
         if (res.status === 'fulfilled' && res.value?.items && Array.isArray(res.value.items)) {
-          const items = res.value.items.slice(0, 10).map(formatRssNewsItem);
+          const items = res.value.items.slice(0, 8).map(item => {
+            const catInfo = categorizeItem(item.title, item.description);
+            let rawDesc = item.description ? item.description.replace(/<[^>]+>/g, '').trim() : '';
+            return {
+              id: item.guid || ('rss-' + Math.random()),
+              source: item.author || (catInfo.category === 'CRYPTO' ? 'CoinTelegraph' : 'ForexLive / Global Feed'),
+              title: item.title,
+              description: rawDesc ? (rawDesc.length > 180 ? rawDesc.slice(0, 180) + '...' : rawDesc) : item.title,
+              category: catInfo.category,
+              pubDate: parseUtcDate(item.pubDate).toISOString(),
+              impact: catInfo.defaultImpact,
+              impactLabel: catInfo.defaultImpactLabel,
+              tags: catInfo.tags,
+              provider: 'Global RSS',
+              originalHeadline: item.title,
+              aiAnalysis: `Real-time Market Intel: High volume observed across related liquidity pairs for ${catInfo.tags.join('/')}.`
+            };
+          });
           fetchedNewsItems.push(...items);
         }
       });
@@ -236,8 +233,28 @@ export default function MarketNews({ onBack }) {
       // Sort strictly by newest pubDate first
       uniqueNews.sort((a, b) => parseUtcDate(b.pubDate) - parseUtcDate(a.pubDate));
 
+      // 4. Enrich top 5 news with Hugging Face FinBERT Sentiment Analysis
+      if (HUGGINGFACE_KEY && uniqueNews.length > 0) {
+        try {
+          const topItems = uniqueNews.slice(0, 4);
+          await Promise.all(
+            topItems.map(async (item) => {
+              const textToScore = item.originalHeadline || item.title;
+              const sentimentData = await analyzeFinBertSentiment(textToScore);
+              if (sentimentData) {
+                item.finbert = sentimentData;
+                item.impact = sentimentData.impact;
+                item.impactLabel = `📊 AI Sentiment: ${sentimentData.label} (${sentimentData.score}%)`;
+              }
+            })
+          );
+        } catch (e) {
+          console.log('Sentiment enrich error:', e);
+        }
+      }
+
       setNews(uniqueNews);
-      const formattedTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setLastUpdated(formattedTime);
     } catch (e) {
       console.error('Failed loading news', e);
@@ -248,7 +265,7 @@ export default function MarketNews({ onBack }) {
 
   useEffect(() => {
     loadLiveData();
-    const interval = setInterval(loadLiveData, 20000); // Live refresh every 20 seconds
+    const interval = setInterval(loadLiveData, 25000);
     return () => clearInterval(interval);
   }, []);
 
@@ -263,8 +280,8 @@ export default function MarketNews({ onBack }) {
       minHeight: '100vh',
       color: '#c9d1d9',
       padding: '16px 12px',
-      direction: 'rtl',
-      fontFamily: 'Cairo, sans-serif'
+      direction: 'ltr',
+      fontFamily: 'Inter, system-ui, sans-serif'
     }}>
       {/* Header */}
       <div style={{
@@ -277,15 +294,15 @@ export default function MarketNews({ onBack }) {
       }}>
         <div>
           <h2 style={{ color: '#58a6ff', margin: 0, fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>📰</span> الأخبار اللحظية ورادار الأزمات (Live News)
+            <span>📰</span> Live Market News & AI Sentiment Radar (TRADEN AI)
           </h2>
           <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 1.5s infinite' }}></span>
-            <span>بث مباشر وتحديث تلقائي كل 20 ثانية</span>
+            <span>Real-time global market feeds + Instant FinBERT AI price-impact scoring</span>
           </p>
         </div>
 
-        <div style={{ textAlign: 'left' }}>
+        <div style={{ textAlign: 'right' }}>
           <button 
             onClick={loadLiveData}
             disabled={loading}
@@ -303,11 +320,11 @@ export default function MarketNews({ onBack }) {
               gap: '4px'
             }}
           >
-            <span>{loading ? '🔄 جاري التحديث...' : '🔄 تحديث فوري'}</span>
+            <span>{loading ? '🔄 Refreshing...' : '🔄 Live Refresh'}</span>
           </button>
           {lastUpdated && (
             <span style={{ fontSize: '0.72rem', color: '#7ee787', display: 'block', marginTop: '4px' }}>
-              آخر تحديث: {lastUpdated}
+              Updated: {lastUpdated}
             </span>
           )}
         </div>
@@ -322,21 +339,27 @@ export default function MarketNews({ onBack }) {
         paddingBottom: '4px'
       }}>
         <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>🥇 الذهب XAU</div>
+          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>🥇 Gold XAU/USD</div>
           <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f1e05a' }}>
-            {livePrices.gold ? `$${livePrices.gold}` : 'جاري التحميل...'}
+            {livePrices.gold ? `$${livePrices.gold}` : 'Connecting...'}
           </div>
         </div>
         <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>₿ البيتكوين BTC</div>
+          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>₿ Bitcoin BTC</div>
           <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#58a6ff' }}>
-            {livePrices.btc ? `$${livePrices.btc}` : 'جاري التحميل...'}
+            {livePrices.btc ? `$${livePrices.btc}` : 'Connecting...'}
           </div>
         </div>
         <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>💶 اليورو EUR/USD</div>
+          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>💶 EUR/USD</div>
           <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#7ee787' }}>
-            {livePrices.eur ? `${livePrices.eur}` : 'جاري التحميل...'}
+            {livePrices.eur ? `${livePrices.eur}` : 'Connecting...'}
+          </div>
+        </div>
+        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
+          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>📊 S&P 500</div>
+          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>
+            {livePrices.spx ? `$${livePrices.spx}` : 'Connecting...'}
           </div>
         </div>
       </div>
@@ -349,12 +372,12 @@ export default function MarketNews({ onBack }) {
         marginBottom: '16px'
       }}>
         {[
-          { id: 'ALL', label: '🌐 الكل' },
-          { id: 'WARS', label: '⚔️ الحروب والأزمات 🔥' },
-          { id: 'GOLD', label: '🥇 الذهب' },
-          { id: 'CRYPTO', label: '🪙 كريبتو' },
-          { id: 'FED', label: '🏛️ الفيدرالي' },
-          { id: 'FOREX', label: '💱 فوركس' },
+          { id: 'ALL', label: '🌐 All Feeds' },
+          { id: 'WARS', label: '⚔️ Geopolitics & Crisis 🔥' },
+          { id: 'GOLD', label: '🥇 Gold & Commodities' },
+          { id: 'CRYPTO', label: '🪙 Crypto Assets' },
+          { id: 'FED', label: '🏛️ Central Banks & Macro' },
+          { id: 'FOREX', label: '💱 Forex Currency Pairs' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -382,7 +405,7 @@ export default function MarketNews({ onBack }) {
       {/* News List */}
       {loading && news.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#8b949e' }}>
-          ⚡ جاري جلب الأخبار اللحظية والتحليلات المباشرة...
+          ⚡ Loading real-time institutional news feeds & FinBERT sentiment data...
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '12px' }}>
@@ -403,7 +426,7 @@ export default function MarketNews({ onBack }) {
               {/* Header Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.78rem', color: item.category === 'WARS' ? '#f87171' : '#58a6ff', fontWeight: 'bold' }}>
-                  {item.source}
+                  {item.source} {item.provider ? `(${item.provider})` : ''}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#10b981', background: '#0d1117', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
                   ⏱️ {calculateTimeAgo(item.pubDate)}
@@ -430,7 +453,7 @@ export default function MarketNews({ onBack }) {
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{
                     fontSize: '0.72rem',
-                    padding: '2px 6px',
+                    padding: '2px 8px',
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.2)' : (item.impact === 'bullish' ? 'rgba(46, 160, 67, 0.15)' : 'rgba(248, 81, 73, 0.15)'),
@@ -450,18 +473,17 @@ export default function MarketNews({ onBack }) {
                 <button
                   onClick={() => setSelectedNews(item)}
                   style={{
-                    background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.2)' : '#21262d',
-                    color: item.category === 'WARS' ? '#f87171' : '#58a6ff',
-                    border: item.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #30363d',
-                    borderRadius: '6px',
+                    background: 'transparent',
+                    border: '1px solid #30363d',
+                    color: '#58a6ff',
                     padding: '4px 10px',
+                    borderRadius: '6px',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
-                    fontWeight: 'bold',
-                    whiteSpace: 'nowrap'
+                    fontWeight: 'bold'
                   }}
                 >
-                  🤖 تحليل تأثير الأزواج
+                  🔍 View Technical Impact
                 </button>
               </div>
             </div>
@@ -469,62 +491,59 @@ export default function MarketNews({ onBack }) {
         </div>
       )}
 
-      {/* AI Modal */}
+      {/* Modal for In-depth AI Analysis */}
       {selectedNews && (
         <div style={{
           position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          zIndex: 1000,
-          padding: '15px'
+          padding: '16px',
+          zIndex: 9999
         }}>
           <div style={{
             background: '#161b22',
-            border: selectedNews.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.6)' : '1px solid #30363d',
-            borderRadius: '14px',
-            maxWidth: '500px',
+            border: '1px solid #30363d',
+            borderRadius: '12px',
+            padding: '20px',
+            maxWidth: '550px',
             width: '100%',
-            padding: '18px',
-            boxShadow: selectedNews.category === 'WARS' ? '0 0 25px rgba(239, 68, 68, 0.3)' : '0 8px 24px rgba(0,0,0,0.4)',
-            direction: 'rtl'
+            color: '#c9d1d9',
+            maxHeight: '85vh',
+            overflowY: 'auto'
           }}>
-            <h3 style={{ margin: '0 0 10px 0', color: selectedNews.category === 'WARS' ? '#f87171' : '#58a6ff', fontSize: '1.15rem' }}>
-              {selectedNews.category === 'WARS' ? '⚔️ تحليل تأثير الحروب والأزمات على الأزواج' : '🤖 تحليل الذكاء الاصطناعي للخبر'}
-            </h3>
-            <p style={{ fontSize: '0.88rem', fontWeight: 'bold', color: '#f0f6fc', marginBottom: '12px' }}>
-              {selectedNews.title}
-            </p>
-            <div style={{
-              background: '#0d1117',
-              border: selectedNews.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #30363d',
-              borderRadius: '8px',
-              padding: '12px',
-              color: selectedNews.category === 'WARS' ? '#fca5a5' : '#7ee787',
-              fontSize: '0.85rem',
-              lineHeight: '1.6',
-              marginBottom: '16px',
-              whiteSpace: 'pre-line'
-            }}>
-              {selectedNews.aiAnalysis}
+            <h3 style={{ color: '#58a6ff', marginTop: 0 }}>📊 AI Market Sentiment & Impact Intelligence</h3>
+            <p style={{ fontWeight: 'bold', color: '#f0f6fc', fontSize: '1rem' }}>{selectedNews.title}</p>
+            <div style={{ background: '#0d1117', padding: '12px', borderRadius: '8px', border: '1px solid #30363d', margin: '12px 0' }}>
+              <div style={{ fontSize: '0.85rem', color: '#8b949e', marginBottom: '6px' }}>
+                Source: <span style={{ color: '#c9d1d9' }}>{selectedNews.source}</span> · Time: <span style={{ color: '#10b981' }}>{calculateTimeAgo(selectedNews.pubDate)}</span>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#8b949e', marginBottom: '8px' }}>
+                FinBERT Sentiment: <span style={{ color: selectedNews.impact === 'bullish' ? '#3fb950' : '#f85149', fontWeight: 'bold' }}>{selectedNews.impactLabel}</span>
+              </div>
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.9rem', color: '#e6edf3' }}>
+                {selectedNews.aiAnalysis}
+              </div>
             </div>
             <button
               onClick={() => setSelectedNews(null)}
               style={{
                 width: '100%',
-                background: selectedNews.category === 'WARS' ? '#dc2626' : '#238636',
-                color: '#fff',
+                background: '#238636',
+                color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
-                padding: '9px',
-                cursor: 'pointer',
+                padding: '10px',
                 fontWeight: 'bold',
-                fontSize: '0.88rem'
+                cursor: 'pointer'
               }}
             >
-              إغلاق التحليل
+              Close
             </button>
           </div>
         </div>
