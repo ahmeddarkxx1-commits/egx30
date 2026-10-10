@@ -290,15 +290,14 @@ body,
 body[data-theme="dark"] {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-main);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.06) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.04) 0px, transparent 50%);
-  color: var(--text-primary);
+  background-color: #0b0d14 !important;
+  background-image: none !important;
+  color: #f1f5f9;
   min-height: 100vh;
   overflow-x: hidden;
   direction: ltr;
 }
+
 
 body[data-theme="light"] {
   margin: 0;
@@ -1251,11 +1250,11 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-landing-root {
-  background-color: #05080e !important;
-  background-image: 
-    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(56, 189, 248, 0.15) 0%, rgba(13, 18, 28, 0.95) 55%, #05080e 100%) !important;
-  color: #ffffff !important;
+  background-color: #0b0d14 !important;
+  background-image: none !important;
+  color: #f1f5f9 !important;
 }
+
 
 
 /* Stocketa Navbar */
@@ -1454,14 +1453,15 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-btn-primary {
-  background: linear-gradient(135deg, #995bb9 0%, #5b638c 100%) !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-  box-shadow: 0 8px 25px rgba(153, 91, 185, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid #3b82f6 !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4) !important;
 }
 
 :root[data-theme="dark"] .stocketa-btn-primary:hover {
-  background: linear-gradient(135deg, #a86cc7 0%, #6c75a3 100%) !important;
-  box-shadow: 0 12px 32px rgba(153, 91, 185, 0.6) !important;
+  background: #1d4ed8 !important;
+  box-shadow: 0 6px 22px rgba(37, 99, 235, 0.6) !important;
   transform: translateY(-2px);
 }
 
@@ -1492,19 +1492,20 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-btn-ghost {
-  background: rgba(30, 41, 59, 0.65) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  background: #161b28 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #28324a !important;
+  box-shadow: none !important;
 }
 
 :root[data-theme="dark"] .stocketa-btn-ghost:hover {
-  background: rgba(30, 41, 59, 0.95) !important;
-  color: #38bdf8 !important;
-  border-color: #38bdf8 !important;
+  background: #1e2538 !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
 }
+
 
 /* Stocketa Hero Section */
 .stocketa-hero-section {
@@ -1555,10 +1556,12 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-display-headline {
-  background: linear-gradient(90deg, #ffffff 0%, #38bdf8 65%, #f59e0b 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: #ffffff !important;
 }
+
 
 .stocketa-hero-lead {
   font-size: 17px;
@@ -2082,10 +2085,12 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-heading-gradient {
-  background: linear-gradient(90deg, #ffffff 0%, #38bdf8 65%, #f59e0b 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: #ffffff !important;
 }
+
 
 .stocketa-section-sub {
   font-size: 17px;
