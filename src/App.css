@@ -2,23 +2,24 @@
 
 :root,
 :root[data-theme="dark"] {
-  --bg-main: #07090e;
-  --bg-card: #0d121c;
-  --bg-card-hover: #131a29;
-  --bg-card-subtle: rgba(255, 255, 255, 0.02);
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-active: rgba(56, 189, 248, 0.4);
+  --bg-main: #05080e;
+  --bg-card: #0b101c;
+  --bg-card-hover: #111827;
+  --bg-card-subtle: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-active: rgba(56, 189, 248, 0.5);
   --accent-gold: #f59e0b;
   --accent-cyan: #38bdf8;
   --accent-green: #10b981;
   --accent-red: #f43f5e;
-  --accent-purple: #a855f7;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --accent-purple: #c084fc;
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --font-sans: 'Plus Jakarta Sans', 'Tajawal', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
+
 
 :root[data-theme="light"] {
   --bg-main: #e8e5ec;
@@ -1250,11 +1251,12 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-landing-root {
-  background-color: #090d16 !important;
+  background-color: #05080e !important;
   background-image: 
-    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(153, 91, 185, 0.35) 0%, rgba(56, 189, 248, 0.22) 40%, rgba(16, 185, 129, 0.1) 70%, rgba(9, 13, 22, 0) 90%) !important;
-  color: #f8fafc !important;
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(56, 189, 248, 0.15) 0%, rgba(13, 18, 28, 0.95) 55%, #05080e 100%) !important;
+  color: #ffffff !important;
 }
+
 
 /* Stocketa Navbar */
 .stocketa-navbar-container {
@@ -1552,12 +1554,28 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   text-align: left;
 }
 
+:root[data-theme="dark"] .stocketa-display-headline {
+  background: linear-gradient(90deg, #ffffff 0%, #38bdf8 65%, #f59e0b 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
 .stocketa-hero-lead {
   font-size: 17px;
   line-height: 1.5;
   color: #1d2630;
   margin: 0;
   max-width: 520px;
+}
+
+:root[data-theme="dark"] .stocketa-hero-lead {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .stocketa-pill-badge {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+  color: #38bdf8 !important;
 }
 
 .stocketa-hero-btn-row {
@@ -1589,6 +1607,10 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   background: rgba(255, 255, 255, 0.45);
 }
 
+:root[data-theme="dark"] .stocketa-feature-item:hover {
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
 .stocketa-feature-item.active {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(153, 91, 185, 0.4);
@@ -1597,10 +1619,11 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
 }
 
 :root[data-theme="dark"] .stocketa-feature-item.active {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  box-shadow: 0 10px 30px rgba(56, 189, 248, 0.18);
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 10px 35px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
+
 
 .stocketa-feature-icon-badge {
   width: 44px;
@@ -2058,11 +2081,34 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   margin: 0 0 16px 0;
 }
 
+:root[data-theme="dark"] .stocketa-heading-gradient {
+  background: linear-gradient(90deg, #ffffff 0%, #38bdf8 65%, #f59e0b 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
 .stocketa-section-sub {
   font-size: 17px;
   color: #1d2630;
   line-height: 1.5;
   margin: 0;
+}
+
+:root[data-theme="dark"] .stocketa-section-sub {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .stocketa-metrics-bar {
+  background: rgba(11, 16, 28, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:root[data-theme="dark"] .stocketa-metric-num {
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .stocketa-metric-lbl {
+  color: #94a3b8 !important;
 }
 
 .stocketa-grid-3col {
@@ -2086,9 +2132,21 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
+:root[data-theme="dark"] .stocketa-card-surface {
+  background: #0b101c !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+}
+
 .stocketa-card-surface:hover {
   transform: translateY(-4px);
   box-shadow: 0px 8px 30px 0px rgba(97, 110, 124, 0.16);
+}
+
+:root[data-theme="dark"] .stocketa-card-surface:hover {
+  background: #111827 !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 16px 45px rgba(56, 189, 248, 0.18) !important;
 }
 
 .stocketa-card-icon-badge {
@@ -2101,6 +2159,14 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   justify-content: center;
 }
 
+:root[data-theme="dark"] .stocketa-card-icon-badge {
+  background: rgba(56, 189, 248, 0.15) !important;
+}
+
+:root[data-theme="dark"] .stocketa-card-icon-badge svg {
+  color: #38bdf8 !important;
+}
+
 .stocketa-card-title {
   font-size: 20px;
   font-weight: 700;
@@ -2109,11 +2175,19 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   letter-spacing: -0.4px;
 }
 
+:root[data-theme="dark"] .stocketa-card-title {
+  color: #ffffff !important;
+}
+
 .stocketa-card-desc {
   font-size: 15px;
   color: #9aa1b2;
   line-height: 1.5;
   margin: 0;
+}
+
+:root[data-theme="dark"] .stocketa-card-desc {
+  color: #94a3b8 !important;
 }
 
 .stocketa-card-link {
@@ -2125,6 +2199,11 @@ body[data-theme="light"] .app-container button[style*="background: rgba(255, 255
   font-weight: 700;
   color: #3a4766;
 }
+
+:root[data-theme="dark"] .stocketa-card-link {
+  color: #38bdf8 !important;
+}
+
 
 /* Interactive Demo Box */
 .stocketa-demo-box {
