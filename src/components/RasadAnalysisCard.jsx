@@ -288,7 +288,7 @@ export default function RasadAnalysisCard({ data: propData, result, onSendToTele
         }}
       >
         <Copy size={14} />
-        <span>Copy Trade Parameters (Entry / SL / TP) 📋</span>
+        <span>Copy Technical Levels (Entry / SL / TP) 📋</span>
       </button>
 
       {/* 6. Technical Indicators Grid (9 Cards) */}

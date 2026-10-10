@@ -482,7 +482,7 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, userCapitalEgp =
   const maxRiskAmount = Number(((entryPrice - sl) * recommendedShares).toFixed(2));
 
   const scoreNum = isGoldOrSilver ? 95 : 88;
-  const signal = liveChange < -2 ? 'شراء ارتدادي وتجميع (DIP BUY)' : 'شراء استثماري ومتابعة الزخم (BUY)';
+  const signal = liveChange < -2 ? 'منطقة تجميع حسابية (SMC DEMAND)' : 'رصد هيكل فني صاعد (BULLISH STRUCTURE)';
   const signalColor = '#10b981';
 
   const highVal = liveHigh || Number((entryPrice * 1.025).toFixed(2));
@@ -530,7 +530,7 @@ export async function analyzeEgxStockWithGlobalMacro(stockCode, userCapitalEgp =
     riskRewardRatio: '1:3.2',
     shariahStatus: stock.shariahCompliant ? 'متوافق مع الضوابط الشرعية 🕌' : 'غير مصنف شرعياً',
     dollarStatus: stock.dollarEarner ? 'إيرادات وتدفقات دولارية تصديرية 💵' : 'إيرادات محلية',
-    technicalAnalysis: `السعر الحالي ${entryPrice.toLocaleString()} ج.م يتداول فوق المتوسطات المتحركة الرئيسية مع استقرار مؤشر القوة النسبية RSI عند مستويات تدعم استمرار الصعود نحو الهدف الأول ${tp1.toLocaleString()} ج.م ثم الهدف الثاني ${tp2.toLocaleString()} ج.م مع التزام صارم بوقف الخسارة ${sl.toLocaleString()} ج.م.`,
+    technicalAnalysis: `وفقاً لمؤشر السيولة SMC وفلاتر الهيكل الفني للبورصة المصرية، السعر يتداول عند ${entryPrice.toLocaleString()} ج.م بالقرب من منطقة دعم فني 0.618 فيبوناتشي عند ${sl.toLocaleString()} ج.م، مع مستويات رصد الفجوات والسيولة الحسابية عند ${tp1.toLocaleString()} ج.م و ${tp2.toLocaleString()} ج.م. القرار النهائي يعود بالكامل للمتداول.`,
     macroOutlook: 'السيولة المؤسسية في البورصة المصرية تشهد تدفقات إيجابية قوية مع جاذبية تقييمات الشركات المقيدة مقارنة بأسعار الصرف والتضخم.'
   };
 }

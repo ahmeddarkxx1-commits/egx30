@@ -1262,7 +1262,7 @@ export default function EgxAnalysis({ onBack }) {
               transition: 'all 0.2s ease'
             }}
           >
-            {loading ? '⚡ جاري التحليل والربط مع الماكرو العالمي...' : `🤖 تحليل السهم بالذكاء الاصطناعي (${selectedStock.code})`}
+            {loading ? '⚡ جاري حساب المؤشرات الفنية ورصد السيولة...' : `🤖 حسابات فنية ورصد السيولة (${selectedStock.code})`}
           </button>
 
           {/* Analysis Output Card */}
