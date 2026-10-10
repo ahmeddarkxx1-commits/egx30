@@ -237,7 +237,6 @@ function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
 const viewToPathMap = {
   landing: '#landing',
   home: '#dashboard',
-  terminal: '#terminal',
   signal_bot: '#signals',
   market_scanner: '#signals',
   gold_liquidity: '#gold-smc',
@@ -252,7 +251,6 @@ const viewToPathMap = {
 const pathToViewMap = {
   '#landing': 'landing',
   '#dashboard': 'home',
-  '#terminal': 'terminal',
   '#signals': 'signal_bot',
   '#gold-smc': 'gold_liquidity',
   '#radar': 'traden_radar',
@@ -317,7 +315,6 @@ function App() {
   const navItems = [
     { id: 'landing', label: 'LANDING ✨', icon: Sparkles, path: '#landing' },
     { id: 'home', label: 'DASHBOARD 📊', icon: LayoutDashboard, path: '#dashboard' },
-    { id: 'terminal', label: 'TERMINAL 💻', icon: Cpu, path: '#terminal' },
     { id: 'signal_bot', label: 'AI SIGNALS 🤖', icon: Bot, path: '#signals' },
     { id: 'gold_liquidity', label: 'GOLD SMC 🎯', icon: Crosshair, path: '#gold-smc' },
     { id: 'traden_radar', label: 'RADAR 🌐', icon: Activity, path: '#radar' },
@@ -327,6 +324,7 @@ function App() {
     { id: 'halal_guide', label: 'HALAL 🕌', icon: BookOpen, path: '#halal' },
     { id: 'disclaimer', label: 'DISCLAIMER ⚖️', icon: Shield, path: '#disclaimer' },
   ];
+
 
 
   const primaryMobileDockTabs = [
@@ -523,16 +521,6 @@ function App() {
     );
   }
 
-  if (currentView === 'terminal') {
-    return (
-      <div className="app-container">
-        {renderHeaderNav()}
-        <ProTradingTerminal onBack={() => setCurrentView('home')} />
-        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
-        {renderMobileDock()}
-      </div>
-    );
-  }
 
   if (currentView === 'gold_liquidity') {
     return (
