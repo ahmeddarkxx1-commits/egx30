@@ -16,6 +16,8 @@ import EgxAnalysis from './components/EgxAnalysis';
 import TradingViewSparkline from './components/TradingViewSparkline';
 import StocketaLandingPage from './components/StocketaLandingPage';
 import ProTradingTerminal from './components/ProTradingTerminal';
+import DisclaimerView from './components/DisclaimerView';
+import FooterDisclaimer from './components/FooterDisclaimer';
 import './App.css';
 
 function LiveMarketWidget({ onOpenView, onSelectSymbol }) {
@@ -244,6 +246,7 @@ const viewToPathMap = {
   market_news: '#news',
   precious_metals: '#metals',
   halal_guide: '#halal',
+  disclaimer: '#disclaimer',
 };
 
 const pathToViewMap = {
@@ -257,6 +260,7 @@ const pathToViewMap = {
   '#news': 'market_news',
   '#metals': 'precious_metals',
   '#halal': 'halal_guide',
+  '#disclaimer': 'disclaimer',
 };
 
 const getViewFromUrl = () => {
@@ -321,7 +325,9 @@ function App() {
     { id: 'market_news', label: 'NEWS 📰', icon: Zap, path: '#news' },
     { id: 'precious_metals', label: 'METALS 🥇', icon: Layers, path: '#metals' },
     { id: 'halal_guide', label: 'HALAL 🕌', icon: BookOpen, path: '#halal' },
+    { id: 'disclaimer', label: 'DISCLAIMER ⚖️', icon: Shield, path: '#disclaimer' },
   ];
+
 
   const primaryMobileDockTabs = [
     { id: 'home', label: 'Dashboard', icon: LayoutDashboard },
@@ -506,11 +512,23 @@ function App() {
     );
   }
 
+  if (currentView === 'disclaimer') {
+    return (
+      <div className="app-container">
+        {renderHeaderNav()}
+        <DisclaimerView onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
+        {renderMobileDock()}
+      </div>
+    );
+  }
+
   if (currentView === 'terminal') {
     return (
       <div className="app-container">
         {renderHeaderNav()}
         <ProTradingTerminal onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -531,6 +549,7 @@ function App() {
             setCurrentView('signal_bot');
           }}
         />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -544,6 +563,7 @@ function App() {
           initialSymbol={selectedSymbol} 
           onBack={() => setCurrentView('home')} 
         />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -560,6 +580,7 @@ function App() {
             setCurrentView('signal_bot');
           }}
         />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -570,6 +591,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <EgxAnalysis onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -580,6 +602,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <MarketNews onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -590,6 +613,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <PreciousMetals onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -600,6 +624,7 @@ function App() {
       <div className="app-container">
         {renderHeaderNav()}
         <HalalGuide onBack={() => setCurrentView('home')} />
+        <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
         {renderMobileDock()}
       </div>
     );
@@ -728,9 +753,11 @@ function App() {
           </div>
         </div>
       </div>
+      <FooterDisclaimer onOpenDisclaimer={() => setCurrentView('disclaimer')} />
       {renderMobileDock()}
     </div>
   );
 }
 
 export default App;
+
