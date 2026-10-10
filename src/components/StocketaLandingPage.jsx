@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { fetchLiveAssetTicker } from '../utils/priceFetcher';
 import TradingViewSparkline from './TradingViewSparkline';
+import FooterDisclaimer from './FooterDisclaimer';
 
 export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectSymbol, theme, setTheme }) {
   const [activeTab, setActiveTab] = useState('1M');
@@ -145,7 +146,9 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
             <a href="#egx" onClick={(e) => scrollToSection(e, 'features')} className="stocketa-nav-link">EGX 30 🇪🇬</a>
             <a href="#smc" onClick={(e) => scrollToSection(e, 'signals')} className="stocketa-nav-link">Gold SMC</a>
             <a href="#halal" onClick={(e) => scrollToSection(e, 'features')} className="stocketa-nav-link">Halal Check</a>
+            <a href="#disclaimer" onClick={(e) => { e.preventDefault(); onLaunchApp('disclaimer'); }} className="stocketa-nav-link" style={{ color: '#f59e0b', fontWeight: 'bold' }}>إخلاء المسؤولية ⚖️</a>
           </nav>
+
 
           <div className="stocketa-nav-actions">
             {/* Theme Switcher Toggle Pill */}
@@ -1054,12 +1057,20 @@ export default function StocketaLandingPage({ onLaunchApp, onOpenView, onSelectS
               <button onClick={() => onLaunchApp('halal_guide')}>Halal Screener</button>
             </div>
             <div>
-              <h4 className="footer-col-title">System</h4>
-              <span className="footer-status-pill">🟢 Live Feed Connected</span>
+              <h4 className="footer-col-title">System & Legal</h4>
+              <button onClick={() => onLaunchApp('disclaimer')} style={{ color: '#f59e0b', fontWeight: 'bold' }}>
+                ⚖️ Disclaimer (إخلاء المسؤولية)
+              </button>
+              <span className="footer-status-pill" style={{ marginTop: '8px' }}>🟢 Live Feed Connected</span>
             </div>
           </div>
+        </div>
+
+        <div style={{ maxWidth: '1200px', margin: '20px auto 0 auto', padding: '0 20px' }}>
+          <FooterDisclaimer onOpenDisclaimer={() => onLaunchApp('disclaimer')} />
         </div>
       </footer>
     </div>
   );
 }
+
