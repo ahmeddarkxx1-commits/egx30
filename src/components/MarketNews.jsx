@@ -276,9 +276,9 @@ export default function MarketNews({ onBack }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #0d1117 0%, #161b22 100%)',
+      background: 'var(--bg-main, #0d1117)',
       minHeight: '100vh',
-      color: '#c9d1d9',
+      color: 'var(--text-primary, #c9d1d9)',
       padding: '16px 12px',
       direction: 'ltr',
       fontFamily: 'Inter, system-ui, sans-serif'
@@ -289,14 +289,14 @@ export default function MarketNews({ onBack }) {
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '16px',
-        borderBottom: '1px solid #30363d',
+        borderBottom: '1px solid var(--border-subtle, #30363d)',
         paddingBottom: '12px'
       }}>
         <div>
-          <h2 style={{ color: '#58a6ff', margin: 0, fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 style={{ color: 'var(--accent-cyan, #58a6ff)', margin: 0, fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📰</span> Live Market News & AI Sentiment Radar (TRADEN AI)
           </h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted, #8b949e)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 1.5s infinite' }}></span>
             <span>Real-time global market feeds + Instant FinBERT AI price-impact scoring</span>
           </p>
@@ -307,7 +307,7 @@ export default function MarketNews({ onBack }) {
             onClick={loadLiveData}
             disabled={loading}
             style={{
-              background: loading ? '#21262d' : '#238636',
+              background: loading ? 'var(--bg-card-subtle, #21262d)' : '#238636',
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
@@ -323,7 +323,7 @@ export default function MarketNews({ onBack }) {
             <span>{loading ? '🔄 Refreshing...' : '🔄 Live Refresh'}</span>
           </button>
           {lastUpdated && (
-            <span style={{ fontSize: '0.72rem', color: '#7ee787', display: 'block', marginTop: '4px' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--accent-green, #7ee787)', display: 'block', marginTop: '4px' }}>
               Updated: {lastUpdated}
             </span>
           )}
@@ -338,27 +338,27 @@ export default function MarketNews({ onBack }) {
         marginBottom: '16px',
         paddingBottom: '4px'
       }}>
-        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>🥇 Gold XAU/USD</div>
-          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f1e05a' }}>
+        <div style={{ background: 'var(--bg-card, #161b22)', border: '1px solid var(--border-subtle, #30363d)', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #8b949e)' }}>🥇 Gold XAU/USD</div>
+          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-gold, #f1e05a)' }}>
             {livePrices.gold ? `$${livePrices.gold}` : 'Connecting...'}
           </div>
         </div>
-        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>₿ Bitcoin BTC</div>
-          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#58a6ff' }}>
+        <div style={{ background: 'var(--bg-card, #161b22)', border: '1px solid var(--border-subtle, #30363d)', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #8b949e)' }}>₿ Bitcoin BTC</div>
+          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-cyan, #58a6ff)' }}>
             {livePrices.btc ? `$${livePrices.btc}` : 'Connecting...'}
           </div>
         </div>
-        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>💶 EUR/USD</div>
-          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#7ee787' }}>
+        <div style={{ background: 'var(--bg-card, #161b22)', border: '1px solid var(--border-subtle, #30363d)', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #8b949e)' }}>💶 EUR/USD</div>
+          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-green, #7ee787)' }}>
             {livePrices.eur ? `${livePrices.eur}` : 'Connecting...'}
           </div>
         </div>
-        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>📊 S&P 500</div>
-          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#38bdf8' }}>
+        <div style={{ background: 'var(--bg-card, #161b22)', border: '1px solid var(--border-subtle, #30363d)', borderRadius: '8px', padding: '8px 12px', minWidth: '125px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #8b949e)' }}>📊 S&P 500</div>
+          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-cyan, #38bdf8)' }}>
             {livePrices.spx ? `$${livePrices.spx}` : 'Connecting...'}
           </div>
         </div>
@@ -385,9 +385,9 @@ export default function MarketNews({ onBack }) {
             style={{
               background: filter === tab.id 
                 ? (tab.id === 'WARS' ? 'linear-gradient(90deg, #dc2626, #b91c1c)' : '#1f6beb') 
-                : '#21262d',
-              color: '#ffffff',
-              border: filter === tab.id ? (tab.id === 'WARS' ? '1px solid #ef4444' : '1px solid #388bfd') : '1px solid #30363d',
+                : 'var(--bg-card-subtle, #21262d)',
+              color: filter === tab.id ? '#ffffff' : 'var(--text-primary, #ffffff)',
+              border: filter === tab.id ? (tab.id === 'WARS' ? '1px solid #ef4444' : '1px solid #388bfd') : '1px solid var(--border-subtle, #30363d)',
               borderRadius: '16px',
               padding: '5px 12px',
               fontSize: '0.8rem',
@@ -404,7 +404,7 @@ export default function MarketNews({ onBack }) {
 
       {/* News List */}
       {loading && news.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#8b949e' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted, #8b949e)' }}>
           ⚡ Loading real-time institutional news feeds & FinBERT sentiment data...
         </div>
       ) : (
@@ -413,31 +413,31 @@ export default function MarketNews({ onBack }) {
             <div
               key={item.id}
               style={{
-                background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.05)' : '#161b22',
-                border: item.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #30363d',
+                background: item.category === 'WARS' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-card, #161b22)',
+                border: item.category === 'WARS' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle, #30363d)',
                 borderRadius: '10px',
                 padding: '14px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
               }}
             >
               {/* Header Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.78rem', color: item.category === 'WARS' ? '#f87171' : '#58a6ff', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '0.78rem', color: item.category === 'WARS' ? 'var(--accent-red, #f87171)' : 'var(--accent-cyan, #58a6ff)', fontWeight: 'bold' }}>
                   {item.source} {item.provider ? `(${item.provider})` : ''}
                 </span>
-                <span style={{ fontSize: '0.75rem', color: '#10b981', background: '#0d1117', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-green, #10b981)', background: 'var(--bg-card-subtle, #0d1117)', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
                   ⏱️ {calculateTimeAgo(item.pubDate)}
                 </span>
               </div>
 
               {/* Title & Description */}
-              <h3 style={{ margin: 0, fontSize: '0.98rem', color: '#f0f6fc', lineHeight: '1.4' }}>
+              <h3 style={{ margin: 0, fontSize: '0.98rem', color: 'var(--text-primary, #f0f6fc)', lineHeight: '1.4' }}>
                 {item.title}
               </h3>
-              <p style={{ margin: 0, fontSize: '0.84rem', color: '#8b949e', lineHeight: '1.5' }}>
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary, #8b949e)', lineHeight: '1.5' }}>
                 {item.description}
               </p>
 

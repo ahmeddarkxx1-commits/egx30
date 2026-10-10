@@ -45,7 +45,27 @@
    ========================================================================== */
 
 :root[data-theme="light"] {
-  color: #0f172a;
+  --bg-main: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-card-subtle: #f1f5f9;
+  --border-subtle: #cbd5e1;
+  --border-active: #995bb9;
+  --accent-gold: #b45309;
+  --accent-cyan: #0284c7;
+  --accent-green: #15803d;
+  --accent-red: #dc2626;
+  --accent-purple: #7e22ce;
+  --text-primary: #0f172a;
+  --text-secondary: #1e293b;
+  --text-muted: #334155;
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] {
+  background-color: #f1f5f9 !important;
+  background-image: none !important;
+  color: #0f172a !important;
 }
 
 /* Transform all Dashboard Cards, Bento Cards, Side Cards to White in Light Mode */
@@ -55,8 +75,8 @@
 :root[data-theme="light"] .glance-chip,
 :root[data-theme="light"] .mobile-workbench-tabs {
   background: #ffffff !important;
-  border: 1px solid rgba(165, 175, 203, 0.5) !important;
-  box-shadow: 0 8px 25px rgba(97, 110, 124, 0.08) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 18px rgba(97, 110, 124, 0.08) !important;
 }
 
 :root[data-theme="light"] .hero-market-card::before {
@@ -68,7 +88,7 @@
 :root[data-theme="light"] .glance-chip:hover {
   background: #f8fafc !important;
   border-color: #995bb9 !important;
-  box-shadow: 0 12px 35px rgba(153, 91, 185, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(153, 91, 185, 0.12) !important;
 }
 
 :root[data-theme="light"] .hero-price-big,
@@ -113,71 +133,153 @@
   border: 1px solid #e2e8f0 !important;
 }
 
+/* Header Glass Container in Light Mode */
+:root[data-theme="light"] .header-glass-wrapper {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+:root[data-theme="light"] .top-navbar-row,
+:root[data-theme="light"] .brand-logo,
+:root[data-theme="light"] .brand-logo span {
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .sub-nav-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .sub-nav-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .sub-nav-btn.active {
+  background: #995bb9 !important;
+  border-color: #995bb9 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] .sub-nav-btn.active * {
+  color: #ffffff !important;
+}
+
+/* Headings & Text Elements Defaults in Light Mode */
+:root[data-theme="light"] h1,
+:root[data-theme="light"] h2,
+:root[data-theme="light"] h3,
+:root[data-theme="light"] h4,
+:root[data-theme="light"] h5,
+:root[data-theme="light"] h6 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+:root[data-theme="light"] p,
+:root[data-theme="light"] li,
+:root[data-theme="light"] label,
+:root[data-theme="light"] span,
+:root[data-theme="light"] div {
+  color: #1e293b;
+}
+
+/* High Contrast Light Mode Overrides for Hardcoded Text Colors */
+:root[data-theme="light"] [style*="color: #fff"],
+:root[data-theme="light"] [style*="color: #ffffff"],
+:root[data-theme="light"] [style*="color: #f0f6fc"],
+:root[data-theme="light"] [style*="color: #c9d1d9"],
+:root[data-theme="light"] [style*="color: #e2e8f0"],
+:root[data-theme="light"] [style*="color: #cbd5e1"],
+:root[data-theme="light"] [style*="color: #e0e0e0"],
+:root[data-theme="light"] [style*="color: white"] {
+  color: #0f172a !important;
+}
+
 :root[data-theme="light"] [style*="color: #94a3b8"],
+:root[data-theme="light"] [style*="color: #8b949e"],
 :root[data-theme="light"] [style*="color: #64748b"],
 :root[data-theme="light"] [style*="color: #9aa1b2"],
 :root[data-theme="light"] [style*="color: #a5afcb"],
-:root[data-theme="light"] [style*="color: #cbd5e1"],
-:root[data-theme="light"] [style*="color: #6b7280"] {
+:root[data-theme="light"] [style*="color: #6b7280"],
+:root[data-theme="light"] [style*="color: rgba(255,255,255"],
+:root[data-theme="light"] [style*="color: rgba(255, 255, 255"] {
   color: #334155 !important;
   font-weight: 600 !important;
 }
 
-:root[data-theme="light"] [style*="color: #10b981"] {
+:root[data-theme="light"] [style*="color: #10b981"],
+:root[data-theme="light"] [style*="color: #7ee787"],
+:root[data-theme="light"] [style*="color: #4ade80"],
+:root[data-theme="light"] [style*="color: #34d399"] {
   color: #047857 !important;
+  font-weight: 800 !important;
 }
 
 :root[data-theme="light"] [style*="color: #f87171"],
-:root[data-theme="light"] [style*="color: #f43f5e"] {
+:root[data-theme="light"] [style*="color: #f43f5e"],
+:root[data-theme="light"] [style*="color: #ef4444"],
+:root[data-theme="light"] [style*="color: #fee2e2"],
+:root[data-theme="light"] [style*="color: #fca5a5"] {
   color: #b91c1c !important;
+  font-weight: 800 !important;
 }
 
-:root[data-theme="light"] [style*="color: #38bdf8"] {
+:root[data-theme="light"] [style*="color: #38bdf8"],
+:root[data-theme="light"] [style*="color: #58a6ff"],
+:root[data-theme="light"] [style*="color: #60a5fa"],
+:root[data-theme="light"] [style*="color: #3b82f6"] {
   color: #0284c7 !important;
+  font-weight: 800 !important;
 }
 
-:root[data-theme="light"] [style*="color: #f59e0b"] {
+:root[data-theme="light"] [style*="color: #f59e0b"],
+:root[data-theme="light"] [style*="color: #fbbf24"],
+:root[data-theme="light"] [style*="color: #f1e05a"],
+:root[data-theme="light"] [style*="color: #eab308"] {
   color: #b45309 !important;
+  font-weight: 800 !important;
 }
 
-/* Light mode overrides for transparent dark boxes in cards */
-:root[data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
-:root[data-theme="light"] [style*="background: rgba(0,0,0,0.35)"],
-:root[data-theme="light"] [style*="background: rgba(0,0,0,0.4)"],
-:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.3)"],
-:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.35)"],
-:root[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.4)"] {
-  background: #f1f5f9 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-/* Light mode overrides for header gradients in Gold SMC and Hub views */
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.92)"],
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.85)"],
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.9)"],
-:root[data-theme="light"] [style*="background: rgba(13, 18, 28, 0.75)"] {
+/* Light mode overrides for transparent dark boxes inside cards */
+:root[data-theme="light"] [style*="background: rgba(0,0,0"],
+:root[data-theme="light"] [style*="background: rgba(0, 0, 0"],
+:root[data-theme="light"] [style*="background: #0d1117"],
+:root[data-theme="light"] [style*="background: #161b22"],
+:root[data-theme="light"] [style*="background: #21262d"],
+:root[data-theme="light"] [style*="background: #07090e"],
+:root[data-theme="light"] [style*="background: #0b101c"],
+:root[data-theme="light"] [style*="background: #111827"] {
   background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 20px rgba(97, 110, 124, 0.08) !important;
+  border-color: #cbd5e1 !important;
 }
 
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.92)"] span[style*="color: #fff"],
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.85)"] span[style*="color: #fff"],
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28, 0.9)"] span[style*="color: #fff"],
-:root[data-theme="light"] [style*="background: rgba(13, 18, 28, 0.75)"] span[style*="color: #fff"] {
-  color: #0f172a !important;
+/* Light mode category card background overrides (e.g. WARS / Red cards) */
+:root[data-theme="light"] [style*="background: rgba(239, 68, 68, 0.05)"],
+:root[data-theme="light"] [style*="background: rgba(239, 68, 68, 0.08)"],
+:root[data-theme="light"] [style*="background: rgba(239, 68, 68, 0.1)"] {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
 }
 
-/* ==========================================================================
-   UNIVERSAL INPUT & TEXT CONTRAST OVERRIDES FOR LIGHT MODE
-   ========================================================================== */
+:root[data-theme="light"] [style*="background: rgba(16, 185, 129, 0.05)"],
+:root[data-theme="light"] [style*="background: rgba(16, 185, 129, 0.08)"],
+:root[data-theme="light"] [style*="background: rgba(16, 185, 129, 0.1)"] {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+}
 
+/* Universal Inputs & Selects for Light Mode */
 :root[data-theme="light"] input,
 :root[data-theme="light"] select,
 :root[data-theme="light"] textarea {
   color: #0f172a !important;
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
+  font-weight: 600 !important;
 }
 
 :root[data-theme="light"] input::placeholder,
@@ -186,35 +288,24 @@
   opacity: 1 !important;
 }
 
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(13, 18, 28"],
-:root[data-theme="light"] [style*="background: linear-gradient(135deg, rgba(17, 24, 39"],
-:root[data-theme="light"] [style*="background: rgba(13, 18, 28"],
-:root[data-theme="light"] [style*="background: #161b22"],
-:root[data-theme="light"] [style*="background: #0d121c"],
-:root[data-theme="light"] [style*="background: #1e293b"] {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 20px rgba(97, 110, 124, 0.08) !important;
-}
-
-:root[data-theme="light"] [style*="color: #fff"],
-:root[data-theme="light"] [style*="color: #ffffff"],
-:root[data-theme="light"] [style*="color: white"] {
-  color: #0f172a !important;
-}
-
-/* Primary action buttons & active pill overrides (keep white text on colored bg) */
+/* Primary Action Buttons & Badges (Keep white text on solid background) */
 :root[data-theme="light"] button[style*="background: linear-gradient"],
-:root[data-theme="light"] button[style*="background: #995bb9"],
-:root[data-theme="light"] button[style*="background: #2563eb"],
+:root[data-theme="light"] button[style*="background: #238636"],
+:root[data-theme="light"] button[style*="background: #1f6beb"],
 :root[data-theme="light"] button[style*="background: #10b981"],
+:root[data-theme="light"] button[style*="background: #995bb9"],
+:root[data-theme="light"] button[style*="background: #3a4766"],
 :root[data-theme="light"] .asset-pill.active,
 :root[data-theme="light"] .mobile-sheet-card.active {
   color: #ffffff !important;
 }
 
 :root[data-theme="light"] button[style*="background: linear-gradient"] *,
-:root[data-theme="light"] button[style*="background: #2563eb"] * {
+:root[data-theme="light"] button[style*="background: #238636"] *,
+:root[data-theme="light"] button[style*="background: #1f6beb"] *,
+:root[data-theme="light"] button[style*="background: #10b981"] *,
+:root[data-theme="light"] button[style*="background: #995bb9"] *,
+:root[data-theme="light"] button[style*="background: #3a4766"] * {
   color: #ffffff !important;
 }
 
